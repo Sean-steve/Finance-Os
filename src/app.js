@@ -184,6 +184,25 @@ case 4:{
  card('<div class="kpi-row"><h3>Financial advisor · rule-based</h3>'+link(57,'Ask advisor')+'</div>'+aiNotes.map(x=>'<div class="row"><div><b>'+esc(x[0])+'</b><span class="subline">'+esc(x[1])+'</span></div>'+link(x[2],'Open')+'</div>').join('')+
  '<p class="micro muted">These insights are deterministic examples, not verified investment or professional advice.</p>',5);
  }
+case 5:{
+ const liquid=personal.filter(a=>a.type!=='Savings').reduce((n,a)=>n+a.balance,0);
+ const available=Math.max(0,liquid-obligations),fraction=Math.min(100,t.expenses/Math.max(1,monthly)*100);
+ const days=Object.keys(tx.reduce((o,x)=>{if(x.amount<0)o[x.date]=(o[x.date]||0)-x.amount;return o},{})).sort();
+ const values=days.map(d=>-tx.filter(x=>x.date===d&&x.amount<0).reduce((sum,x)=>sum+x.amount,0));
+ const share=baseCategories.map(c=>[c,categorySpend(c)]).filter(x=>x[1]>0);
+ return kpi('Safe-to-spend estimate',money(available),'After tracked bills, excludes protected savings','◎')+
+ kpi('Personal liquid balances',money(liquid),'Checking and mobile money','◈')+
+ kpi('Tracked commitments',money(obligations),'Reserve from spendable cash','▣')+
+ kpi('Monthly budget used',pct(fraction),'Selected window vs monthly plan','↘')+
+ card('<h3>Today’s financial position</h3><div class="big-number positive">'+money(available)+'</div><p>Personal liquid cash less upcoming manually tracked obligations.</p>'+moneyRow('Protected savings','Excluded from safe-to-spend',money(personal.filter(a=>a.type==='Savings').reduce((n,a)=>n+a.balance,0)))+
+ moneyRow('Available allowance per day','Budget remaining / days left',money(Math.max(0,(monthly-t.expenses)/Math.max(1,30-new Date().getDate()))))+
+ '<div class="notice info">Not an account-verified amount: unrecorded bills, pending transfers and near-term expenses may reduce this estimate.</div>',4)+
+ card('<h3>Daily spending trend</h3>'+trend(values.length?values:[0,0],days.length?days:['Yesterday','Today'])+miniLinks([23,32]),4)+
+ card('<h3>Spending distribution</h3>'+donut(share,money(t.expenses)),4)+
+ card('<h3>Upcoming obligations</h3>'+state.bills.map(b=>moneyRow(b.name,'Due day '+b.day,money(b.amount))).join('')+link(30,'Manage bills'),5)+
+ card('<h3>Recent outgoing transactions</h3>'+txRows(out.slice(0,6))+link(10,'Review ledger'),7)+
+ card('<h3>Safe-to-spend actions</h3><div class="actions">'+[21,22,23,24,26,39].map(n=>link(n)).join('')+'</div>',12);
+}
 case 7:return kpi('Personal account balances',money(t.assets),'Excludes business money','◈')+kpi('Cash & checking',money(personal.filter(a=>a.type!=='Savings').reduce((s,a)=>s+a.balance,0)),'Spendable subject to bills','▣')+kpi('Protected savings',money(personal.filter(a=>a.type==='Savings').reduce((s,a)=>s+a.balance,0)),'Not for ordinary spending','◎')+kpi('Account count',String(personal.length),'Manually tracked','▥')+accountPanel();
 case 9:return card('<h3>Add or connect an account</h3><div class="notice info">Financial provider connections are not yet implemented. Add a manual account now or import a locally stored sample CSV.</div><div class="cols2" style="margin-top:15px">'+[['Bank account','Bank and checking'],['Mobile money','M-Pesa or another wallet'],['Savings','Emergency funds and SACCO'],['Business','Separate from personal money']].map(x=>'<div class="outline-card"><b>'+x[0]+'</b><span class="subline">'+x[1]+'</span><div class="actions">'+btn('Create manually','newAccount',true)+'</div></div>').join('')+'</div>',8)+card('<h3>Connection options</h3>'+moneyRow('Manual ledger','Available in current prototype','Ready')+moneyRow('CSV statement import','Local file, no upload','Ready')+moneyRow('Automated bank sync','Requires provider authorization','Unavailable')+moneyRow('M-Pesa authorization','Requires regulated payment provider','Unavailable')+miniLinks([13,59]),4);
 case 10:return kpi('Transactions recorded',String(tx.length),'Filtered personal transactions','▣')+kpi('Incoming',money(t.income),'Verified only within demo','↗')+kpi('Outgoing',money(t.expenses),'Classified outflows','↘')+kpi('Net movement',money(t.net),'Income minus spending','⇄')+card('<h3>Transaction search & categorization</h3><div class="notice info">Search from the global header. Edit a transaction to adjust its category, type, date or account. Internal transfers are excluded.</div>'+txRows(tx)+miniLinks([11,12,13,15]),12);
@@ -200,6 +219,16 @@ case 50:return kpi('Net worth (tracked)',money(t.worth),'Liquid assets less trac
 case 51:return kpi('Liquid assets',money(t.assets),'Recorded personal accounts','◈')+kpi('Liabilities',money(t.liabilities),'Tracked debts','↘')+kpi('Net position',money(t.worth),'Partial snapshot','↗')+kpi('Coverage',t.liabilities?(t.assets/t.liabilities).toFixed(2)+'×':'No debt','Liquid balances / debt','◎')+card('<h3>Asset register</h3>'+datatable(['Account / asset','Class','Value','Edit'],personal.map(a=>'<tr><td>'+esc(a.name)+'</td><td>'+esc(a.type)+'</td><td>'+money(a.balance)+'</td><td><button class="btn small secondary" data-action="editAccount" data-id="'+a.id+'">Edit</button></td></tr>'))+btn('Add manual asset/account','newAccount'),6)+card('<h3>Liability register</h3>'+datatable(['Debt','Rate','Balance','Edit'],state.debts.map(d=>'<tr><td>'+esc(d.name)+'</td><td>'+d.rate+'%</td><td>'+money(d.balance)+'</td><td><button class="btn small secondary" data-action="debt" data-id="'+d.id+'">Edit</button></td></tr>'))+miniLinks([43,52]),6);
 case 52:return card('<h3>Asset details & valuation</h3><div class="notice info">Financial asset values in this prototype are derived from manually tracked accounts. A property/vehicle valuer or investment market data provider is not connected.</div>'+datatable(['Asset','Class','Recorded value'],personal.map(a=>'<tr><td><b>'+esc(a.name)+'</b></td><td>'+esc(a.type)+'</td><td>'+money(a.balance)+'</td></tr>'))+'<div class="actions">'+btn('Add tracked asset','newAccount')+btn('Return to asset list','nav51',true)+'</div>',8)+card('<h3>Valuation checklist</h3>'+moneyRow('Ownership share','Beneficial and legal ownership','Pending')+moneyRow('Original cost','Historical acquisition price','Pending')+moneyRow('Current value','Independent evidence','Pending')+moneyRow('Secured debt','Avoid double counting','Pending')+moneyRow('Media & documents','Secure attachments','Backend required'),4);
 case 53:return kpi('Investment positions linked','0','No broker synchronization','▥')+kpi('Portfolio return','Not available','No price data feed','↗')+kpi('Dividend yield','Not available','Manual income only','◈')+kpi('Risk profile','Unassessed','Portfolio onboarding needed','◎')+card('<h3>Investment portfolio inventory</h3><div class="notice info">The financial designs include funds, listed stocks, bonds, REITs, SACCO investments and pension assets. This working prototype does not fabricate live holdings or market values.</div><div class="cols2" style="margin-top:16px">'+[['Kenyan equities','Not linked'],['International funds','Not linked'],['Treasury bills & bonds','Not linked'],['Money market funds','Not linked'],['Pension schemes','Not linked'],['Real estate investments','Not linked']].map(x=>'<div class="outline-card"><b>'+x[0]+'</b><span class="subline">'+x[1]+'</span></div>').join('')+'</div>'+miniLinks([54,55,59]),8)+card('<h3>Investment accounting rules</h3><p>Holdings require a cost basis, trade dates, quantity, fees, currency, market price timestamp and verified dividends before performance metrics can be trusted.</p>'+btn('Manage connections','nav59'),4);
+case 57:{
+ const savings=t.income>0?Math.max(0,Math.min(100,Math.round(t.net/t.income*100))):0;
+ return kpi('Recorded personal net worth',money(t.worth),'Liquid assets less tracked debt','◈')+
+ kpi('Net cash movement',money(t.net),'Selected period, transfers excluded','↗')+
+ kpi('Savings ratio',pct(savings),'Approximate cash-flow surplus','◎')+
+ kpi('AI connection','Demo only','Rule-based responses; no model is connected','✦')+
+ advisorPanel()+
+ card('<h3>Personal finance priorities</h3>'+state.goals.map(g=>'<div class="row"><div style="flex:1"><b>'+esc(g.name)+'</b><span class="subline">'+money(g.saved)+' of '+money(g.target)+'</span>'+progress(g.saved,g.target)+'</div></div>').join('')+miniLinks([37,42,56]),7)+
+ card('<h3>Explore advice by topic</h3>'+[20,26,33,39,45,46,48].map(n=>'<div class="row"><span>'+esc(titles[n-1])+'</span>'+link(n,'Explore')+'</div>').join(''),5);
+}
 default:return null;
 }
 }
