@@ -14,14 +14,14 @@ async function main(){
   const page=await browser.newPage({viewport:{width:1536,height:1024},deviceScaleFactor:1});
   const result=[];
   for(const n of [4,5,10,22,40,57,60]){
-   await page.goto(origin+'/#screen/'+n);
+   await page.goto(origin+'/app.html#screen/'+n);
    await page.addScriptTag({content:axe.source});
    const test=await page.evaluate(async()=>window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));
    result.push({screen:n,viewport:'desktop',violations:test.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,nodes:v.nodes.slice(0,8).map(node=>({selector:node.target,summary:node.failureSummary}))}))});
   }
   for(const mode of ['mobile','dark']){
    await page.setViewportSize({width:390,height:844});
-   await page.goto(origin+'/#screen/4');
+   await page.goto(origin+'/app.html#screen/4');
    if(mode==='dark')await page.locator('[data-action="theme"]').click();
    await page.addScriptTag({content:axe.source});
    const test=await page.evaluate(async()=>window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));
