@@ -1,7 +1,9 @@
 name: Publish Finance OS prototype
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["Finance OS Browser UX QA"]
+    types: [completed]
     branches: [main]
 permissions:
   contents: read
@@ -12,21 +14,24 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
-    name: Deploy static frontend
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    name: Deploy validated static frontend
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate JavaScript syntax and screen flows
+      - name: Verify static assets and financial smoke tests
         run: |
           npm run check
           npm test
-      - name: Assemble static-only public site
+      - name: Assemble public app only
         run: |
           mkdir -p ./site/src
           cp index.html ./site/index.html
