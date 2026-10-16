@@ -19,7 +19,7 @@ async function main(){
   const page=await browser.newPage({viewport:{width:1536,height:1024},deviceScaleFactor:1,acceptDownloads:true});
   page.on('pageerror',e=>errors.push('JS: '+e.message));
   page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))errors.push('Console: '+m.text())});
-  await page.goto(base+'/#screen/4');
+  await page.goto(base+'/app.html#screen/4');
   await check('Command centre and 60 sidebar routes',async()=>{assert.match(await page.locator('.hero h1').innerText(),/Financial Command Centre/);assert.equal(await page.locator('aside .navbtn').count(),60)});
   await check('All 60 screens render with distinct headings and tabs',async()=>{
    const headings=new Set();
@@ -108,7 +108,7 @@ async function main(){
    await page.keyboard.press('Escape');assert.equal(await button.getAttribute('aria-expanded'),'false');
   });
   await check('Skip link and modal initial focus',async()=>{
-   await page.goto(base+'/#screen/4');
+   await page.goto(base+'/app.html#screen/4');
    await page.locator('.skip-link').focus();
    assert.equal(await page.evaluate(()=>document.activeElement?.classList.contains('skip-link')),true);
    await page.locator('[data-action="newTx"]').first().click();
