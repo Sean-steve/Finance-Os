@@ -29,10 +29,13 @@ jobs:
           npm test
       - name: Install browser runner
         run: |
-          npm install --no-save playwright@1.56.1
+          npm install --no-save playwright@1.56.1 axe-core@4.10.3
           npx playwright install --with-deps chromium
       - name: Exercise all 60 screens in Chromium
         run: node tests/browser-qa.cjs
+      - name: Audit accessibility and color contrast
+        if: success()
+        run: node tests/accessibility-qa.cjs
       - name: Retain screenshots and QA results
         if: always()
         uses: actions/upload-artifact@v4
