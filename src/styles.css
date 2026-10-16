@@ -195,3 +195,8 @@ body.dark .legend,body.dark .legend span{color:#e4f2f5}
 body.dark .journey-guide summary{color:#c3e6df}
 body.dark .journey-guide summary:hover{background:#25434b}
 @media(max-width:740px){.journey-guide{margin:8px 0}.journey-guide[open]{padding:8px}}
+
+/* P2.2 axe dark semantic-state contrast */
+body.dark .positive{color:#78ebc1}
+body.dark .warn{color:#f5ce82}
+body.dark .error{color:#ffb4bf}
