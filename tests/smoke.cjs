@@ -7,7 +7,7 @@ new Function(source);
 class FakeForm {constructor(id,items){this.id=id;this.items=items;this.dataset={};}}
 class FakeFormData {constructor(form){this.form=form;}entries(){return Object.entries(this.form.items)[Symbol.iterator]();}}
 const storage=new Map(),events={},nodes={},windows={};
-function el(name){return nodes[name]||(nodes[name]={innerHTML:'',value:'',hidden:true,style:{},classList:{toggle(){},remove(){},add(){}},addEventListener(){},focus(){},append(){},remove(){},querySelector(){return null}})}
+function el(name){return nodes[name]||(nodes[name]={innerHTML:'',value:'',hidden:true,style:{},classList:{toggle(){},remove(){},add(){},contains(){return false}},setAttribute(){},addEventListener(){},focus(){},append(){},remove(){},querySelector(){return null}})}
 const document={getElementById:el,addEventListener(name,fn){events[name]=fn},body:{classList:{toggle(){}},append(){}},createElement(){return el('created')}};
 const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
 const location={hash:''},window={scrollTo(){},addEventListener(n,fn){windows[n]=fn}};
@@ -15,7 +15,7 @@ const sandbox={document,localStorage,location,window,FormData:FakeFormData,HTMLF
 vm.runInNewContext(source,sandbox,{filename:'src/app.js',timeout:2000});
 assert.equal((el('app').innerHTML.match(/class="navbtn/g)||[]).length,60,'all 60 screen links');
 function goto(num){events.click({target:{closest(){return {dataset:{nav:String(num)}}}}});return el('app').innerHTML}
-assert.match(goto(5),/Daily spending allowance/);
+assert.match(goto(5),/Safe-to-spend estimate/);
 assert.match(goto(13),/id="importForm"/);
 assert.match(goto(22),/id="budgetForm"/);
 assert.match(goto(40),/id="purchaseForm"/);
