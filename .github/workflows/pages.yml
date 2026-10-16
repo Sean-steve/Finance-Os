@@ -12,15 +12,29 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
+    name: Deploy static frontend
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/setup-node@v4
         with:
-          path: .
+          node-version: '22'
+      - name: Validate JavaScript syntax and screen flows
+        run: |
+          npm run check
+          npm test
+      - name: Assemble static-only public site
+        run: |
+          mkdir -p ./site/src
+          cp index.html ./site/index.html
+          cp src/app.js src/styles.css ./site/src/
+          touch ./site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./site
       - id: deployment
         uses: actions/deploy-pages@v4
