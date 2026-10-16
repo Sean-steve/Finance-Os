@@ -310,8 +310,9 @@ function updateSearchResults(){
  const input=id('search');
  if(input){input.setAttribute('aria-expanded','true');input.setAttribute('aria-controls','searchhits');}
 }
-function modal(title,body,footer){id('overlay').innerHTML='<div class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="kpi-row"><h2>'+esc(title)+'</h2><button class="btn secondary small" data-action="close">✕</button></div><div>'+body+'</div>'+(footer||'')+'</div></div>';let first=id('overlay').querySelector('input,button');if(first)first.focus()}
-function close(){id('overlay').innerHTML=''}
+let modalReturnFocus=null;
+function modal(title,body,footer){modalReturnFocus=document.activeElement||null;id('overlay').innerHTML='<div class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="kpi-row"><h2>'+esc(title)+'</h2><button class="btn secondary small" data-action="close">✕</button></div><div>'+body+'</div>'+(footer||'')+'</div></div>';let first=id('overlay').querySelector('input,button');if(first)first.focus()}
+function close(){if(!id('overlay'))return;const wasOpen=!!id('overlay').innerHTML;id('overlay').innerHTML='';if(wasOpen&&modalReturnFocus&&modalReturnFocus.isConnected&&typeof modalReturnFocus.focus==='function')modalReturnFocus.focus();modalReturnFocus=null}
 function audit(action){state.audit.push({action,at:new Date().toISOString()});if(state.audit.length>80)state.audit.shift()}
 function openForm(kind,record){let body='',form='';if(kind==='tx'){form='txForm';body=formField('Description','name',record?.name||'')+formField('Merchant or details','merchant',record?.merchant||'')+formField('Amount (KES)','amount',Math.abs(record?.amount||0),'number')+formField('Type','kind',record?.kind||'expense','text',['expense','income'])+formField('Category','category',record?.category||'Food & Dining','text',baseCategories.concat(['Income']))+formField('Date','date',record?.date||new Date().toISOString().slice(0,10),'date')+formField('Account','account',record?.account||'a1','text',state.accounts.filter(a=>a.scope==='personal').map(a=>a.id));}
 else if(kind==='account'){form='accountForm';body=formField('Account label','name',record?.name||'')+formField('Type','type',record?.type||'Bank','text',['Bank','Mobile money','Savings','Business','Cash'])+formField('Balance (KES)','balance',record?.balance||0,'number')+formField('Scope','scope',record?.scope||'personal','text',['personal','business']);}
@@ -390,6 +391,18 @@ document.addEventListener('click',e=>{let el=e.target.closest('[data-nav],[data-
 document.addEventListener('change',e=>{if(e.target.id==='period'){period=e.target.value;render()}if(e.target.id==='journey'){journey=e.target.value;render()}});
 document.addEventListener('submit',async e=>{if(e.target.id!=='importForm'){handleForm(e);return}e.preventDefault();let f=e.target.elements.file.files[0];if(!f)return notify('Select a CSV file');if(f.size>1000000)return notify('Keep demo CSV under 1 MB');let text=await f.text(),lines=text.trim().split(/\r?\n/),header=(lines.shift()||'').split(',').map(v=>v.trim().toLowerCase());if(['date','description','amount','category','account'].some(x=>!header.includes(x)))return notify('CSV requires date,description,amount,category,account');let added=0,duplicates=0;for(const line of lines.slice(0,200)){let cells=line.split(','),get=k=>(cells[header.indexOf(k)]||'').trim(),amount=Number(get('amount')),date=get('date'),account=get('account');if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(amount)||!state.accounts.find(a=>a.id===account&&a.scope==='personal'))continue;if(state.transactions.some(t=>t.date===date&&t.name===get('description')&&t.amount===amount)){duplicates++;continue}state.transactions.push({id:'csv'+Date.now()+added,name:get('description'),merchant:get('description'),amount,kind:amount<0?'expense':'income',category:amount>0?'Income':(get('category')||'Other'),date,account,scope:'personal'});added++}state.transactions.sort((a,b)=>b.date.localeCompare(a.date));audit('Imported '+added+' CSV rows');save();render();notify('Imported '+added+' rows; skipped '+duplicates+' duplicates. Local demo only.');});
 window.addEventListener('hashchange',()=>{let n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]);if(n>=1&&n<=60&&n!==current){current=n;tab='Overview';removeSearchResults();toggleMenu(false);render()}});
-window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();id('search')?.focus()}if(e.key==='Escape'){close();removeSearchResults();toggleMenu(false)}});
+window.addEventListener('keydown',e=>{
+ const dlg=id('overlay')?.querySelector('[role="dialog"]');
+ if(e.key==='Tab'&&dlg){
+  const focusable=Array.from(dlg.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]')).filter(x=>x.offsetParent!==null);
+  if(focusable.length){
+   const first=focusable[0],last=focusable[focusable.length-1],active=document.activeElement;
+   if(e.shiftKey&&(active===first||!dlg.contains(active))){e.preventDefault();last.focus();}
+   else if(!e.shiftKey&&(active===last||!dlg.contains(active))){e.preventDefault();first.focus();}
+  }
+ }
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'&&!dlg){e.preventDefault();id('search')?.focus()}
+ if(e.key==='Escape'){close();removeSearchResults();toggleMenu(false)}
+});
 render();
 })();
