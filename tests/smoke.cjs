@@ -15,7 +15,7 @@ const sandbox={document,localStorage,location,window,FormData:FakeFormData,HTMLF
 vm.runInNewContext(source,sandbox,{filename:'src/app.js',timeout:2000});
 assert.equal((el('app').innerHTML.match(/class="navbtn/g)||[]).length,60,'all 60 screen links');
 function goto(num){events.click({target:{closest(){return {dataset:{nav:String(num)}}}}});return el('app').innerHTML}
-assert.match(goto(5),/Daily spending allowance/);
+assert.match(goto(5),/Safe-to-spend estimate/);
 assert.match(goto(13),/id="importForm"/);
 assert.match(goto(22),/id="budgetForm"/);
 assert.match(goto(40),/id="purchaseForm"/);
