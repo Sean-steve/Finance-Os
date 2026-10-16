@@ -147,3 +147,20 @@ body.dark .tab.selected{background:#194338;color:#c8f5e6;border-color:#56dcb6}
  html{scroll-behavior:auto}
  *,*::before,*::after{animation:none!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
 }
+
+
+/* Accessibility: chart labels and microcopy must remain readable. */
+.subline,.empty,.chart text{color:#536b7b}
+.subline{font-size:11px}
+.empty b{color:#304a5a}
+.chart text{fill:#526b7b;font-size:11px}
+.kpi-foot{color:#566f7b}
+.footnote{color:#546b7a}
+.btn.secondary{color:#084c3e}
+body.dark .subline,body.dark .empty,body.dark .empty b,body.dark .footnote{color:#c2d2d7}
+body.dark .chart text{fill:#c2d2d7}
+body.dark .btn.secondary{color:#c7f4e5;border-color:#365b5a}
+body.dark .notice{color:#d1e7df;background:#173e34;border-color:#39685c}
+body.dark .notice.danger{color:#ffe2e4;background:#5a222b;border-color:#985361}
+.search-results{position:fixed;top:70px;left:50%;max-height:calc(100vh - 90px)}
+@media(max-width:740px){.search-results{top:61px;max-height:calc(100vh - 82px)}}
