@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'phase-2.2/**'
+      - 'fix/**'
       - main
   pull_request:
     paths:
@@ -33,6 +34,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Exercise all 60 screens in Chromium
         run: node tests/browser-qa.cjs
+      - name: Audit exact approved design image fidelity and interaction hotspots
+        run: node tests/reference-fidelity-qa.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs
