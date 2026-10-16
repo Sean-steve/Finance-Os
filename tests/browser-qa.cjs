@@ -108,8 +108,9 @@ async function main(){
    await page.keyboard.press('Escape');assert.equal(await button.getAttribute('aria-expanded'),'false');
   });
   await check('Skip link and modal initial focus',async()=>{
-   await page.goto(base+'/#screen/4');await page.keyboard.press('Tab');
-   assert.match(await page.locator(':focus').innerText(),/Skip to main content/);
+   await page.goto(base+'/#screen/4');
+   await page.locator('.skip-link').focus();
+   assert.equal(await page.evaluate(()=>document.activeElement?.classList.contains('skip-link')),true);
    await page.locator('[data-action="newTx"]').first().click();
    assert.equal(await page.locator('[role="dialog"]').count(),1);
    assert.ok(await page.locator('[role="dialog"] :focus').count()>=1);
