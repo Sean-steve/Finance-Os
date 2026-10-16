@@ -262,13 +262,53 @@ if(current===59)return integrPanel();
 if(current===60)return prefsPanel();
 return genericPanel()}
 function primaryActions(){if(current<=3)return btn('Open command centre','nav4')+btn('Add account','nav9',true);if(current<=15)return btn('Record transaction','newTx')+btn('Import CSV','nav13',true);if(current<=26)return btn('Adjust budget','nav22')+btn('New transaction','newTx',true);if(current<=34)return btn('Track a bill','newBill')+btn('Cash-flow forecast','nav33',true);if(current<=42)return btn('Set goal','newGoal')+btn('Run scenario','nav42',true);if(current<=49)return btn('Review debts','nav43')+btn('Check risk','nav56',true);if(current<=55)return btn('View net worth','nav50')+btn('Plan wealth','nav55',true);return btn('Generate CSV report','nav58')+btn('Preferences','nav60',true)}
-function render(){document.body.classList.toggle('dark',!!state.settings.dark);
+function render(){document.body.classList.toggle('dark',!!state.settings.dark);document.title=titles[current-1]+' · Finance OS V2';
 let menus=groups.map(g=>'<div class="group-title">'+g[0]+'</div>'+titles.slice(g[1]-1,g[2]).map((title,i)=>{let idx=i+g[1];return '<button class="navbtn'+(current===idx?' active':'')+'" data-nav="'+idx+'" aria-current="'+(current===idx?'page':'false')+'"><span class="navnum">'+String(idx).padStart(2,'0')+'</span>'+esc(title)+'</button>'}).join('')).join('');
 const flows=journeys[journey]||[];const journeyBar='<div class="controls"><span class="muted micro"><b>Guided workflow</b></span><select id="journey">'+Object.keys(journeys).map(n=>'<option '+(n===journey?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select><div class="flow">'+flows.map((n,i)=>'<button data-nav="'+n+'" class="'+(n===current?'on':'')+'" title="'+esc(titles[n-1])+'">'+(i+1)+' · '+String(n).padStart(2,'0')+'</button>').join('')+'</div></div>';
 let actions=primaryActions();
 let panels=mainFor();
-id('app').innerHTML='<div class="app"><aside id="sidebar"><div class="brand">◈ Finance OS<span>Your personal CFO · V2</span></div><div class="sidebar-scroll">'+menus+'</div><div class="aside-bottom">'+btn('Reset demo data','resetDemo',true)+'</div></aside><main><header class="topbar"><button class="btn secondary small mobile-menu" data-action="menu">☰</button><div class="searchbox">⌕ <input type="search" aria-label="Search records or screens" id="search" value="'+esc(query)+'" placeholder="Search transactions, screens, goals..."><span class="kbd">Ctrl K</span></div><div class="topright"><button class="btn secondary small" data-action="theme" title="Toggle appearance">◐</button><span class="hide-sm muted">KES</span><span class="avatar" aria-label="Demo user">FO</span></div></header><div class="shell"><div class="hero"><div><small>'+esc(group(current))+' · SCREEN '+String(current).padStart(2,'0')+' / 60</small><h1>'+esc(titles[current-1])+'</h1><p>Plan deliberately. Understand your finances. Make more confident decisions.</p></div><div class="hero-actions">'+actions+'</div></div><div class="banner"><span class="demo">DEMO DATA · LOCAL ONLY</span><span>No banking, payment, investment market or AI provider connection.</span><span class="right">'+btn('Design coverage 60/60','coverage',true)+'</span></div>'+journeyBar+'<div class="controls"><b class="muted small">Report window:</b><select id="period"><option value="30" '+(period==='30'?'selected':'')+'>Past 30 days</option><option value="90" '+(period==='90'?'selected':'')+'>Past 90 days</option><option value="all" '+(period==='all'?'selected':'')+'>All recorded time</option></select><span class="right muted micro">Personal and business data separated · Transfers excluded</span></div><div class="tabs">'+tabSets[current-1].map(n=>'<button class="tab '+(tab===n?'selected':'')+'" data-tab="'+esc(n)+'" aria-pressed="'+(tab===n)+'">'+esc(n)+'</button>').join('')+'</div><div class="grid">'+panels+'</div><p class="footnote">Phase 2 frontend prototype. Content is illustrative; financial calculations are simplified. No real authorization, payments, live account synchronization or financial advice. Screen titles are complete; unique per-screen interaction fidelity is still being expanded.</p></div></main></div><div id="overlay"></div><div id="toast" class="toast" role="status" hidden></div>';
-const s=id('search');s.addEventListener('input',e=>{query=e.target.value;let q=query.toLowerCase().trim(),matches=titles.map((title,i)=>({title,i:i+1})).filter(x=>x.title.toLowerCase().includes(q));let pop=id('searchhits');if(pop)pop.remove();if(!q)return;let hit=document.createElement('div');hit.id='searchhits';hit.className='card';hit.style.cssText='position:absolute;top:60px;left:285px;z-index:15;width:min(480px,calc(100vw - 32px));max-height:380px;overflow:auto';hit.innerHTML='<div class="micro muted">Matching screens</div>'+matches.slice(0,9).map(x=>'<button class="navbtn" data-nav="'+x.i+'">'+String(x.i).padStart(2,'0')+' · '+esc(x.title)+'</button>').join('')+'<div class="micro muted">Financial tables also filter by your search.</div>';id('app').append(hit)});
+id('app').innerHTML='<a href="#main-content" class="skip-link">Skip to main content</a><div class="app"><button type="button" class="nav-scrim" id="navScrim" data-action="closeMenu" aria-label="Close mobile navigation"></button><aside id="sidebar" aria-label="Primary navigation"><div class="brand">◈ Finance OS<span>Your personal CFO · V2</span></div><div class="sidebar-scroll">'+menus+'</div><div class="aside-bottom">'+btn('Reset demo data','resetDemo',true)+'</div></aside><main id="main-content" tabindex="-1"><header class="topbar"><button type="button" class="btn secondary small mobile-menu" id="menuButton" data-action="menu" aria-expanded="false" aria-controls="sidebar" aria-label="Open navigation">☰</button><div class="searchbox">⌕ <input type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-label="Search records or screens" id="search" value="'+esc(query)+'" placeholder="Search transactions, screens, goals..."><span class="kbd">Ctrl K</span></div><div class="topright"><button class="btn secondary small" data-action="theme" title="Toggle appearance">◐</button><span class="hide-sm muted">KES</span><span class="avatar" aria-label="Demo user">FO</span></div></header><div class="shell"><div class="hero"><div><small>'+esc(group(current))+' · SCREEN '+String(current).padStart(2,'0')+' / 60</small><h1>'+esc(titles[current-1])+'</h1><p>Plan deliberately. Understand your finances. Make more confident decisions.</p></div><div class="hero-actions">'+actions+'</div></div><div class="banner"><span class="demo">DEMO DATA · LOCAL ONLY</span><span>No banking, payment, investment market or AI provider connection.</span><span class="right">'+btn('Design coverage 60/60','coverage',true)+'</span></div>'+journeyBar+'<div class="controls"><b class="muted small">Report window:</b><select id="period"><option value="30" '+(period==='30'?'selected':'')+'>Past 30 days</option><option value="90" '+(period==='90'?'selected':'')+'>Past 90 days</option><option value="all" '+(period==='all'?'selected':'')+'>All recorded time</option></select><span class="right muted micro">Personal and business data separated · Transfers excluded</span></div><div class="tabs">'+tabSets[current-1].map(n=>'<button class="tab '+(tab===n?'selected':'')+'" data-tab="'+esc(n)+'" aria-pressed="'+(tab===n)+'">'+esc(n)+'</button>').join('')+'</div><div class="grid">'+panels+'</div><p class="footnote">Phase 2 frontend prototype. Content is illustrative; financial calculations are simplified. No real authorization, payments, live account synchronization or financial advice. Screen titles are complete; unique per-screen interaction fidelity is still being expanded.</p></div></main></div><div id="overlay"></div><div id="toast" class="toast" role="status" hidden></div>';
+
+const s=id('search');
+s.addEventListener('input',e=>{
+ query=e.target.value;
+ updateSearchResults();
+});
+s.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&id('searchhits')){
+  const target=id('searchhits').querySelector('[data-nav],[data-action]');
+  if(target){e.preventDefault();target.click();}
+ }
+ if(e.key==='Escape'){removeSearchResults();}
+});
+}
+function removeSearchResults(){
+ id('searchhits')?.remove();
+ const s=id('search');if(s)s.setAttribute('aria-expanded','false');
+}
+function updateSearchResults(){
+ const q=(query||'').toLowerCase().trim();
+ removeSearchResults();
+ if(!q)return;
+ const screenMatches=titles.map((title,i)=>({title,i:i+1})).filter(x=>x.title.toLowerCase().includes(q)).slice(0,7);
+ const txMatches=state.transactions.filter(x=>x.scope==='personal'&&
+  [x.name,x.merchant,x.category].some(y=>String(y).toLowerCase().includes(q))).slice(0,5);
+ const accountMatches=state.accounts.filter(x=>x.scope==='personal'&&x.name.toLowerCase().includes(q)).slice(0,3);
+ const matchRows=screenMatches.map(x=>'<button type="button" class="navbtn" data-nav="'+x.i+'"><span class="navnum">'+String(x.i).padStart(2,'0')+'</span>'+esc(x.title)+'</button>').join('');
+ const transactionRows=txMatches.map(x=>'<button type="button" class="navbtn" data-action="selectTx" data-id="'+esc(x.id)+'"><span class="navnum">↗</span>'+esc(x.name)+' · '+money(Math.abs(x.amount))+'</button>').join('');
+ const accountRows=accountMatches.map(x=>'<button type="button" class="navbtn" data-action="editAccount" data-id="'+esc(x.id)+'"><span class="navnum">◈</span>'+esc(x.name)+'</button>').join('');
+ const hit=document.createElement('div');
+ hit.id='searchhits';
+ hit.className='card search-results';
+ hit.setAttribute('role','region');
+ hit.setAttribute('aria-label','Global search results');
+ hit.innerHTML=(screenMatches.length?'<p class="micro muted">Screens</p>'+matchRows:'')+
+  (txMatches.length?'<p class="micro muted">Transactions</p>'+transactionRows:'')+
+  (accountMatches.length?'<p class="micro muted">Accounts</p>'+accountRows:'')+
+  (!screenMatches.length&&!txMatches.length&&!accountMatches.length?'<p class="micro muted">No matches. Try “budget”, “rent” or “account”.</p>':'');
+ id('app').append(hit);
+ const input=id('search');
+ if(input){input.setAttribute('aria-expanded','true');input.setAttribute('aria-controls','searchhits');}
 }
 function modal(title,body,footer){id('overlay').innerHTML='<div class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="kpi-row"><h2>'+esc(title)+'</h2><button class="btn secondary small" data-action="close">✕</button></div><div>'+body+'</div>'+(footer||'')+'</div></div>';let first=id('overlay').querySelector('input,button');if(first)first.focus()}
 function close(){id('overlay').innerHTML=''}
@@ -305,8 +345,19 @@ else if(report==='Savings goals'){head=['name','target','saved','monthly'];rows=
 else if(report==='Debt overview'){head=['name','balance','interest_rate','monthly_repayment'];rows=state.debts.map(x=>[x.name,x.balance,x.rate,x.monthly])}
 else {head=['date','description','merchant','amount','category','account'];rows=filteredTransactions().map(t=>[t.date,t.name,t.merchant,t.amount,t.category,t.account])}
 let csv=[head,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');download(report.toLowerCase().replaceAll(' ','-')+'.csv',csv);audit('Exported '+report);save()}
+
+function toggleMenu(force){
+ const sidebar=id('sidebar'),scrim=id('navScrim'),trigger=id('menuButton');
+ if(!sidebar)return;
+ const active=typeof force==='boolean'?force:!sidebar.classList.contains('open');
+ sidebar.classList.toggle('open',active);
+ if(scrim)scrim.classList.toggle('is-active',active);
+ if(trigger){trigger.setAttribute('aria-expanded',String(active));trigger.setAttribute('aria-label',active?'Close navigation':'Open navigation');}
+}
+
 function action(a,elem){let ix=elem.dataset.id;switch(a){
-case 'menu':id('sidebar').classList.toggle('open');break;
+case 'menu':toggleMenu();break;
+case 'closeMenu':toggleMenu(false);break;
 case 'theme':state.settings.dark=!state.settings.dark;save();render();break;
 case 'newTx':openForm('tx');break;
 case 'newIncome':openForm('tx',{kind:'income',amount:0});break;
@@ -335,10 +386,10 @@ case 'coverage':modal('60-screen navigation coverage','All 60 named destinations
 case 'close':close();break;
 default: if(a&&a.startsWith('nav'))nav(Number(a.slice(3))||4)
 }}
-document.addEventListener('click',e=>{let el=e.target.closest('[data-nav],[data-action],[data-tab]');if(!el)return;if(el.dataset.tab){tab=el.dataset.tab;render()}else if(el.dataset.nav){nav(Number(el.dataset.nav));id('sidebar')?.classList.remove('open')}else action(el.dataset.action,el)});
+document.addEventListener('click',e=>{let el=e.target.closest('[data-nav],[data-action],[data-tab]');if(!el)return;if(el.dataset.tab){tab=el.dataset.tab;render()}else if(el.dataset.nav){nav(Number(el.dataset.nav));toggleMenu(false);removeSearchResults()}else action(el.dataset.action,el)});
 document.addEventListener('change',e=>{if(e.target.id==='period'){period=e.target.value;render()}if(e.target.id==='journey'){journey=e.target.value;render()}});
 document.addEventListener('submit',async e=>{if(e.target.id!=='importForm'){handleForm(e);return}e.preventDefault();let f=e.target.elements.file.files[0];if(!f)return notify('Select a CSV file');if(f.size>1000000)return notify('Keep demo CSV under 1 MB');let text=await f.text(),lines=text.trim().split(/\r?\n/),header=(lines.shift()||'').split(',').map(v=>v.trim().toLowerCase());if(['date','description','amount','category','account'].some(x=>!header.includes(x)))return notify('CSV requires date,description,amount,category,account');let added=0,duplicates=0;for(const line of lines.slice(0,200)){let cells=line.split(','),get=k=>(cells[header.indexOf(k)]||'').trim(),amount=Number(get('amount')),date=get('date'),account=get('account');if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(amount)||!state.accounts.find(a=>a.id===account&&a.scope==='personal'))continue;if(state.transactions.some(t=>t.date===date&&t.name===get('description')&&t.amount===amount)){duplicates++;continue}state.transactions.push({id:'csv'+Date.now()+added,name:get('description'),merchant:get('description'),amount,kind:amount<0?'expense':'income',category:amount>0?'Income':(get('category')||'Other'),date,account,scope:'personal'});added++}state.transactions.sort((a,b)=>b.date.localeCompare(a.date));audit('Imported '+added+' CSV rows');save();render();notify('Imported '+added+' rows; skipped '+duplicates+' duplicates. Local demo only.');});
 window.addEventListener('hashchange',()=>{let n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]);if(n>=1&&n<=60&&n!==current){current=n;render()}});
-window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();id('search')?.focus()}if(e.key==='Escape')close()});
+window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();id('search')?.focus()}if(e.key==='Escape'){close();removeSearchResults();toggleMenu(false)}});
 render();
 })();
