@@ -164,3 +164,17 @@ body.dark .notice{color:#d1e7df;background:#173e34;border-color:#39685c}
 body.dark .notice.danger{color:#ffe2e4;background:#5a222b;border-color:#985361}
 .search-results{position:fixed;top:70px;left:50%;max-height:calc(100vh - 90px)}
 @media(max-width:740px){.search-results{top:61px;max-height:calc(100vh - 82px)}}
+
+
+/* WCAG AA fixes from automated axe-core audit */
+.navnum{opacity:1;color:#435c6b}
+.navbtn.active .navnum{color:#f3fffa}
+.flow button{color:#365666;font-weight:650}
+.flow button.on{color:#064a37;background:#dbf4e7}
+.kbd{color:#345a6d}
+body.dark .navnum{color:#c8e0e7}
+body.dark .navbtn.active .navnum{color:#fff}
+body.dark .flow button{color:#dfedf1;background:#1a3440;border-color:#57717d}
+body.dark .flow button.on{color:#ffffff;background:#0c735a;border-color:#89dabc}
+body.dark .kbd{color:#e5f3f7;background:#203a43;border-color:#6a8d96}
+body.dark .legend,body.dark .legend span{color:#e4f2f5}
