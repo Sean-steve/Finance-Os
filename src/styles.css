@@ -178,3 +178,7 @@ body.dark .flow button{color:#dfedf1;background:#1a3440;border-color:#57717d}
 body.dark .flow button.on{color:#ffffff;background:#0c735a;border-color:#89dabc}
 body.dark .kbd{color:#e5f3f7;background:#203a43;border-color:#6a8d96}
 body.dark .legend,body.dark .legend span{color:#e4f2f5}
+
+/* Final axe-core color contrast closure */
+.legend,.legend span{color:#39586a}
+body.dark .legend,body.dark .legend span{color:#e4f2f5}
