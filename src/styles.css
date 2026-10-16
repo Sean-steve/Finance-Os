@@ -182,3 +182,16 @@ body.dark .legend,body.dark .legend span{color:#e4f2f5}
 /* Final axe-core color contrast closure */
 .legend,.legend span{color:#39586a}
 body.dark .legend,body.dark .legend span{color:#e4f2f5}
+
+
+/* Compact, opt-in journey guidance preserves the feature without crowding analytics. */
+.journey-guide{margin:11px 0 6px;background:transparent;border-radius:9px}
+.journey-guide summary{display:list-item;width:max-content;max-width:100%;padding:6px 10px;cursor:pointer;border-radius:8px;color:#295665;font-weight:700;font-size:12px}
+.journey-guide summary:hover,.journey-guide summary:focus-visible{background:#e4f1f1}
+.journey-guide[open]{padding:8px 12px 12px;border:1px solid var(--border);background:var(--surface)}
+.journey-guide .controls{margin:9px 0 0}
+.journey-guide .flow{flex:1}
+.journey-guide summary .muted{font-weight:450}
+body.dark .journey-guide summary{color:#c3e6df}
+body.dark .journey-guide summary:hover{background:#25434b}
+@media(max-width:740px){.journey-guide{margin:8px 0}.journey-guide[open]{padding:8px}}
