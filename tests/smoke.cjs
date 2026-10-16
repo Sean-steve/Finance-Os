@@ -39,5 +39,26 @@ goto(13);
 let file={size:100,text:async()=>'date,description,amount,category,account\n2026-10-01,Sample grocery,-1800,Food & Dining,a1'};
 await events.submit({target:{id:'importForm',elements:{file:{files:[file]}}},preventDefault(){}});
 assert.equal(parsed().transactions.filter(x=>x.name==='Sample grocery').length,1);
-console.log('PASS: 60 destinations; 9 core screen checks; persisted budgets; balanced transfers; local CSV import; JavaScript syntax');
+
+const routeContent = new Set();
+for(let n=1;n<=60;n++){
+ const html=goto(n);
+ assert.match(html,new RegExp('SCREEN '+String(n).padStart(2,'0')+' / 60'));
+ assert.match(html,/class="tabs"/,'Each screen should have contextual tabs');
+ const core=html.split('<div class="grid">')[1]?.split('<p class="footnote">')[0];
+ assert.ok(core&&core.length>450,'Screen '+n+' should render meaningful unique UI');
+ routeContent.add(core);
+ const subtab=(html.match(/data-tab="([^"]+)"/g)||[]).map(x=>x.slice(10,-1))[1];
+ if(subtab){
+  events.click({target:{closest(){return {dataset:{tab:subtab}}}}});
+  assert.match(el('app').innerHTML,/class="grid"/,'Screen '+n+' subtab should render');
+  goto(n);
+ }
+}
+assert.equal(routeContent.size,60,'All 60 primary screen renderers should produce distinct content');
+goto(12);
+await submit(new FakeForm('inlineTxForm',{name:'Phase 2.1 sample',merchant:'Demo',amount:'1200',kind:'expense',category:'Transport',account:'a1',date:'2026-10-16'}));
+assert.equal(parsed().transactions.filter(t=>t.name==='Phase 2.1 sample').length,1,'Inline transactions persist');
+
+console.log('PASS: 60 individually rendered screens and contextual tabs; 9 core screen checks; persisted budgets; balanced transfers; local CSV import; JavaScript syntax');
 })().catch(e=>{console.error(e);process.exitCode=1});
