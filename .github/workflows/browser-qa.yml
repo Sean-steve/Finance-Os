@@ -1,0 +1,43 @@
+name: Finance OS Browser UX QA
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'phase-2.2/**'
+      - main
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'index.html'
+      - 'tests/**'
+      - '.github/workflows/browser-qa.yml'
+permissions:
+  contents: read
+jobs:
+  chromium:
+    name: Functional and responsive Chromium QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax and smoke checks
+        run: |
+          npm run check
+          npm test
+      - name: Install browser runner
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Exercise all 60 screens in Chromium
+        run: node tests/browser-qa.cjs
+      - name: Retain screenshots and QA results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-chromium-visual-qa
+          path: qa-artifacts
+          if-no-files-found: ignore
+          retention-days: 14
