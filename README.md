@@ -1,4 +1,38 @@
-# Finance OS V2
+# Finance OS V2 — Approved Screen Fidelity Prototype
+
+**Current correction:** The landing page now displays the **original supplied screen designs**, not a redesigned approximation.
+
+- **Exact reference view:** [Finance OS Approved Screens](https://sean-steve.github.io/Finance-Os/) — all 59 supplied 1536×1024 screen images are committed under `assets/`. Screen 22 has no original image and has a clearly marked reconstructed budget editor.
+- **Separate coded financial demonstration:** [Working Modules](https://sean-steve.github.io/Finance-Os/app.html#screen/4) — retained from Phase 2.2, and **not** represented as a pixel-match.
+- The reference view supports 60-screen navigation (click a screenshot's sidebar / toolbar), screen search (Ctrl+K), hotspots, next/previous, native-resolution zoom, and guided related-page links.
+- Screenshot text, charts, forms and metrics remain **static image content**; hotspots and the reconstructed Screen 22 editor are the interactions. A true DOM-by-DOM screen implementation remains pending.
+
+**Privacy:** GitHub Pages is public. The design images published here are the uploaded mockups; do not treat displayed personal or financial values as verified live records.
+
+See [Exact visual fidelity correction](docs/EXACT_SCREEN_FIDELITY.md) and [Phase 2.2 QA report](docs/PHASE_2_2_QA.md).
+
+## Run locally
+
+```bash
+git clone https://github.com/Sean-steve/Finance-Os.git
+cd Finance-Os
+python3 -m http.server 8080
+```
+
+Open `http://localhost:8080` for original design images or `http://localhost:8080/app.html#screen/4` for the older interactive finance module demonstration.
+
+## Tests
+
+```bash
+npm run check
+npm test
+```
+
+GitHub Actions additionally runs Chromium UI checks, exact-reference image loading/size/navigation tests, and representative WCAG accessibility checks before publishing to GitHub Pages.
+
+---
+
+# Historical Phase 2.1 implementation notes
 
 **Phase 2.1: Complete screen-level interactive UI/UX reconstruction** — a dependency-free responsive browser prototype for financial control, budgeting, cash flow, goals, debt and wealth analysis.
 

@@ -33,9 +33,10 @@ jobs:
           npm test
       - name: Assemble public app only
         run: |
-          mkdir -p ./site/src
-          cp index.html ./site/index.html
+          mkdir -p ./site/src ./site/assets
+          cp index.html app.html ./site/
           cp src/app.js src/styles.css ./site/src/
+          cp assets/*.webp ./site/assets/
           touch ./site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
