@@ -1,6 +1,6 @@
 # Finance OS V2
 
-**Phase 2: Interactive UI/UX reconstruction** — a dependency-free responsive browser prototype for financial control, budgeting, cash flow, goals, debt and wealth analysis.
+**Phase 2.1: Complete screen-level interactive UI/UX reconstruction** — a dependency-free responsive browser prototype for financial control, budgeting, cash flow, goals, debt and wealth analysis.
 
 ## Run locally
 
@@ -30,12 +30,16 @@ The screens use real HTML controls rather than static image backgrounds. The ori
 
 ## Important status boundary
 
-This branch is **an interactive frontend prototype, not a complete product**. It has 27 specialized screen layouts and other route-specific or shared module experiences. Pixel-perfect reproduction of all 60 original image designs and exhaustive interaction validation are **not complete**.
+This branch is **an interactive frontend prototype, not a complete product**. It includes distinct primary content for all 60 routes, working contextual tabs, and shared state across financial workspaces. Pixel-for-pixel fidelity review of all original image references, exhaustive browser/accessibility QA, and secure production functions are **not complete**.
 
 All demo figures are illustrative. No authentication, backend, bank/M-Pesa sync, real payments, investment quotes, genuine AI model or secure storage is connected. **Do not input real private financial records.** The data resides in browser `localStorage` and can be reset.
 
-Read [Phase 2 implementation and outstanding gaps](docs/PHASE_2.md).
+Read [Phase 2.1 design reconciliation and remaining gaps](docs/PHASE_2_1.md).
 
-## GitHub Pages
+## Live GitHub Pages prototype
 
-The repository contains a GitHub Pages Actions workflow. Once you enable **Settings → Pages → Build and deployment → Source: GitHub Actions**, it deploys pushes to `main`. The Phase 2 work remains on its review branch until accepted.
+**[Open Finance OS V2](https://sean-steve.github.io/Finance-Os/)**
+
+GitHub Pages publishes the static frontend automatically from `main` after syntax, state, and 60-screen smoke checks pass. Only `index.html` and application JS/CSS are published. Phase 2.1 was merged through pull request #1; GitHub Pages deployment completed successfully.
+
+This is a **demo**, not a secure online banking application.
