@@ -1,0 +1,11 @@
+{
+  "name": "finance-os-v2",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Finance OS V2 frontend-only UI/UX reconstruction",
+  "scripts": {
+    "test": "node tests/smoke.cjs",
+    "check": "node --check src/app.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
