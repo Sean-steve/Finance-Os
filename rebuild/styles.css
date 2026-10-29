@@ -15,3 +15,25 @@
 @media(max-width:1000px){.app-shell{grid-template-columns:160px minmax(0,1fr)}.sidebar{padding:10px 6px}.side-link{padding:6px;gap:7px}.logo{width:170px}.user-actions .flag,.user-actions>.account-name{display:none}.content-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"accounts income" "spending advisor" "budget goals" "bills quick" "recent recent" "forecast forecast"}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:-18px}.banner{height:155px}.onboard-layout{grid-template-columns:180px minmax(0,1fr)}.onboard-story{padding:20px 12px}.onboard-caption h2{font-size:24px}.onboard-feature{gap:7px}.onboard-feature b{font-size:11px}}
 @media(max-width:700px){.header{padding:0 9px;gap:8px}.logo{width:auto;flex:none;font-size:16px}.logo small{font-size:8px}.mark{font-size:22px}.global-search kbd{display:none}.global-search{height:32px}.user-actions{gap:3px}.user-actions .topicon:nth-child(2){display:none}.user-actions .avatar{width:27px;height:27px}.app-shell{display:block}.sidebar{display:none}.main{padding:0 8px 18px}.banner{height:auto;min-height:160px;padding:15px 14px}.banner h1{font-size:22px}.banner-quote{font-size:9px}.metric-grid{gap:7px;margin:-18px 6px 12px}.metric-card{padding:9px;min-height:80px}.metric-icon{height:28px;width:28px;font-size:15px}.metric-body strong{font-size:15px}.metric-body>span,.metric-body small{font-size:9px}.content-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"accounts" "income" "spending" "advisor" "budget" "goals" "bills" "quick" "recent" "forecast"}.donut-wrap{justify-content:space-around}.rebuild-toolbar{left:6px;right:6px;bottom:6px;justify-content:space-between;flex-wrap:wrap;padding:7px}.rebuild-toolbar span{font-size:9px}.rebuild-toolbar button{font-size:9px;padding:7px 5px}.auth-wrap{margin:0;display:block;border:0;border-radius:0;padding:0;min-height:100vh}.auth-story{height:275px;min-height:0;padding:18px 22px}.story-top span,.auth-feature,.auth-story blockquote,.auth-intro>p{display:none}.auth-intro{margin-top:80px}.auth-intro h1{font-size:26px}.auth-intro em{font-size:22px}.auth-login{padding:16px 20px 100px;min-height:440px}.auth-login-header{display:none}.auth-form{max-width:440px}.auth-foot{display:none}.onboard-layout{display:block;margin:0}.onboard-story{min-height:230px;padding:12px 15px}.onboard-caption{margin-top:15px}.onboard-caption h2{font-size:22px}.onboard-caption>p{margin:6px 0}.onboard-feature,.onboard-story blockquote{display:none}.steps small{font-size:8px}.steps>div>span{width:24px;height:24px}.onboard-center{padding:0 5px}.onboard-center h1{font-size:22px}.onboard-center>.lead{font-size:12px}.provider-grid,.provider-grid.five,.profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.provider-card p{min-height:unset}.fields{grid-template-columns:1fr}.tx-head,.tx-line{grid-template-columns:70px minmax(80px,1fr) minmax(80px,1fr) 65px;gap:3px}.tx-head span:nth-child(4),.tx-line span:nth-child(4){display:none}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Responsive guardrails: prevent nowrap chart and KPI values from escaping grid tracks */
+.main,.content-grid,.panel,.metric-card,.metric-body,.tx-table{min-width:0}
+@media(max-width:1000px){
+ .metric-body strong{white-space:normal;overflow-wrap:anywhere;font-size:18px}
+ .metric-card{gap:7px;padding:9px}
+ .donut-wrap{flex-wrap:wrap}
+ .donut-legend{min-width:145px}
+ .recent-area .tx-table{overflow-x:auto}
+ .tx-head,.tx-line{min-width:500px}
+}
+@media(max-width:700px){
+ .tx-head,.tx-line{min-width:0}
+ .header{min-width:0}
+ .logo{max-width:122px}
+ .global-search{min-width:0}
+ .metric-body strong{font-size:14px}
+ .metric-body>span{white-space:normal}
+ .donut-wrap{display:flex;flex-wrap:wrap}
+ .donut-legend{min-width:135px}
+}
