@@ -1,0 +1,32 @@
+name: Exact Screens 01–04 Coded QA
+on:
+  workflow_dispatch:
+  push:
+    branches: ['reconstruction/**']
+  pull_request:
+    paths: ['rebuild/**','rebuild.html','tests/rebuild-qa.cjs','.github/workflows/rebuild-qa.yml']
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check rebuild/app.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Coded component and responsive acceptance
+        run: node tests/rebuild-qa.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finance-os-coded-screens-01-04
+          path: qa-artifacts/rebuild
+          retention-days: 14
+          if-no-files-found: ignore
