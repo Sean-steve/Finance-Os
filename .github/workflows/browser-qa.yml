@@ -36,6 +36,8 @@ jobs:
         run: node tests/browser-qa.cjs
       - name: Audit exact approved design image fidelity and interaction hotspots
         run: node tests/reference-fidelity-qa.cjs
+      - name: Validate exact reconstruction screens 06–15
+        run: node tests/rebuild-batch06-15.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs

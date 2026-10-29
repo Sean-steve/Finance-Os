@@ -14,6 +14,10 @@ See [Exact visual fidelity correction](docs/EXACT_SCREEN_FIDELITY.md) and [Phase
 
 ## Exact coded reconstruction (in progress)
 
+**Next coded batch:** [Screens 06–15](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/6) — Calendar, Accounts, Transactions, Statement Import, Transfers and Reconciliation. Reconstructed DOM layouts are interactive, but final pixel-level approvals remain pending. See [screen status](docs/EXACT_RECONSTRUCTION.md).
+
+
+
 The first five approved screens are available as **real DOM/CSS prototype views** at [rebuild.html](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/4). Navigate #screen/1 through #screen/5. These remain under visual review and **have not been approved as pixel-identical**. All other screens remain in the original screenshot viewer until individually coded. See [exact reconstruction tracker](docs/EXACT_RECONSTRUCTION.md).
 
 ## Run locally

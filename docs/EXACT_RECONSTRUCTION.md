@@ -17,10 +17,32 @@
 | 03 — Financial Profile & Setup | screen-03.webp | `rebuild.html#screen/3` | **DOM reconstruction / visual review required** |
 | 04 — Financial Command Centre | screen-04.webp | `rebuild.html#screen/4` | **DOM reconstruction / visual review required** |
 | 05 — Today: Safe to Spend | screen-05.webp | `rebuild.html#screen/5` | **DOM reconstruction / visual review required** |
-| 06–21, 23–60 | 54 supplied reference images | `index.html#screen/NN` | **Not yet coded in the exact reconstruction** |
+| 06 — Financial Calendar & Action Centre | screen-06.webp | `rebuild.html#screen/6` | **Coded DOM / browser QA; visual approval pending** |
+| 07 — Accounts Overview | screen-07.webp | `rebuild.html#screen/7` | **Coded DOM / browser QA; visual approval pending** |
+| 08 — Account Details | screen-08.webp | `rebuild.html#screen/8` | **Coded DOM / browser QA; visual approval pending** |
+| 09 — Add / Connect Financial Account | screen-09.webp | `rebuild.html#screen/9` | **Coded DOM / browser QA; visual approval pending** |
+| 10 — Transaction Management | screen-10.webp | `rebuild.html#screen/10` | **Coded DOM / browser QA; visual approval pending** |
+| 11 — Transaction Details | screen-11.webp | `rebuild.html#screen/11` | **Coded DOM / browser QA; visual approval pending** |
+| 12 — Record / Edit Transaction | screen-12.webp | `rebuild.html#screen/12` | **Coded DOM / browser QA; visual approval pending** |
+| 13 — Statement Import | screen-13.webp | `rebuild.html#screen/13` | **Coded DOM / browser QA; visual approval pending** |
+| 14 — Transfers & Payments | screen-14.webp | `rebuild.html#screen/14` | **Coded DOM / browser QA; visual approval pending** |
+| 15 — Reconciliation & Financial Ledger | screen-15.webp | `rebuild.html#screen/15` | **Coded DOM / browser QA; visual approval pending** |
+| 16–21, 23–60 | 44 supplied reference images | `index.html#screen/NN` | **Not yet reconstructed in HTML/CSS** |
 | 22 — Create / Edit Budget | Missing original | Previous prototype | **Design reference missing / not approved** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
+
+## Screens 06–15 — second implementation batch
+
+- Ten original reference compositions are represented by real HTML/CSS screen renderers in `rebuild/batch06-15.js` and `rebuild/batch06-15.css`.
+- Calendar event selection, period switching, and action queues are demonstrated.
+- Account overview/detail and local manual-account creation share the onboarding model.
+- Transaction ledger, details, editing and classification operate on the same records.
+- Local CSV statement import previews rows, validates header fields and skips duplicate records on confirmation.
+- Own-account transfers simulate balance movements, preserving combined balances. External payments are explicitly unavailable.
+- Reconciliation provides local manual matching, status filters, and a clear non-authoritative disclaimer.
+- Browser QA covers all ten screens, key workflows, and 390px mobile overflow (`tests/rebuild-batch06-15.cjs`).
+- **Not yet approved as pixel-identical.** Photography, chart geometry, iconography, some secondary tabs, text density, and spacing require reference-overlay comparison. Screenshot rendering and working navigation alone do not prove fidelity.
 
 ## Rebuild implementation behavior
 
