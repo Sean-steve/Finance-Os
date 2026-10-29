@@ -61,3 +61,13 @@
  background-size:auto,1155% 155%;
  background-position:center,26.7% 33%;
 }
+
+
+/* At laptop widths the original card columns narrow; reflow the coded
+   donut legend rather than allowing it to extend outside the viewport. */
+@media(min-width:701px) and (max-width:1350px){
+ .donut-wrap{flex-wrap:wrap;align-content:start}
+ .donut-legend{width:100%;min-width:0}
+ .donut-legend>div{max-width:100%;min-width:0}
+ .donut-legend em{flex:none}
+}
