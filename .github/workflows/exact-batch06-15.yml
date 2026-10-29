@@ -1,0 +1,36 @@
+name: Finance OS Screens 06-15 Exact Reconstruction QA
+on:
+  push:
+    branches: ['reconstruction/exact-screens-06-15']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  batch:
+    name: Screens 06–15 Chromium QA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate syntax
+        run: |
+          node --check rebuild/app.js
+          node --check rebuild/batch06-15.js
+          node --check tests/rebuild-batch06-15.cjs
+      - name: Install Chromium test runner
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test screen fidelity components and workflows
+        run: node tests/rebuild-batch06-15.cjs
+      - name: Upload browser screenshots and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-screens-06-15-qa
+          path: qa-artifacts/batch06-15
+          if-no-files-found: ignore
+          retention-days: 14
