@@ -1,0 +1,30 @@
+name: Exact DOM Reconstruction QA
+on:
+  push:
+    branches: ['phase-3/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Validate exact screen DOM and actions
+        run: node tests/exact-screen-04.cjs
+      - name: Publish screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-exact-04-evidence
+          path: qa-exact/
+          retention-days: 14
+          if-no-files-found: ignore
