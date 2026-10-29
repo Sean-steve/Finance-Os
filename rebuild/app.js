@@ -60,6 +60,8 @@ function render(){
  app.innerHTML=body+toolbar()+(compare?'<div class="reference-shade"><div class="reference-dialog"><header><b>Approved screenshot · Screen '+String(current).padStart(2,'0')+'</b><button data-action="compare">Close ✕</button></header><img alt="Approved design reference for comparison" src="assets/screen-'+String(current).padStart(2,'0')+'.webp"></div></div>':'')+modal();
 }
 document.addEventListener('click',e=>{
+ if(e.target.closest('[data-action="confirmModal"]')){dialog=null;E('app').querySelector('.shade')?.remove();return}
+ if(e.target.closest('.shade')&&e.target.closest('[data-action="close"]')){dialog=null;E('app').querySelector('.shade')?.remove();return}
  const p=e.target.closest('[data-provider]');if(p){model.connected.push(p.dataset.provider);save();dialog='connect';render();return}
  const nav=e.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return}
  const b=e.target.closest('[data-action]');if(!b)return;
