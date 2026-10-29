@@ -13,6 +13,7 @@ async function go(){
   for(let i=0;i<50;i++){try{if((await fetch(base)).status===200)break}catch(e){}await nap(200)}
   browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:1536,height:1024},acceptDownloads:true});
+  page.setDefaultTimeout(6500);
   page.on('pageerror',e=>errors.push(e.message));
   async function check(label,action){try{await action();console.log('PASS '+label)}catch(e){console.log('FAIL '+label,e.message);failures.push(label+': '+e.message)}}
   await page.goto(base+'/rebuild.html#screen/1');
@@ -33,6 +34,7 @@ async function go(){
     await page.locator('[data-provider="M-Pesa"]').first().click();
     assert.equal(await page.locator('[role="dialog"]').count(),1);
     await page.locator('[data-action="confirmModal"]').click();
+    assert.equal(await page.locator('.shade').count(),0,'Provider dialog should close');
     await page.screenshot({path:path.join(art,'02-onboarding-desktop.png'),fullPage:true});
     await page.locator('[data-nav="3"]').last().click();
   });
