@@ -51,3 +51,13 @@
  background-size:cover,270% 153%;
  background-position:center,11% 14%;
 }
+
+
+/* Precisely sampled scenic region x=375..508, y=120..780 of approved
+   screen-01. The crop contains zero rasterized labels, logos or controls.
+   The browser only paints decorative photography, while all UI remains DOM. */
+.auth-story,.onboard-story{
+ background-image:linear-gradient(105deg,rgba(0,29,36,.78),rgba(0,33,36,.38) 65%,rgba(0,22,27,.68)),url("../assets/screen-01.webp");
+ background-size:auto,1155% 155%;
+ background-position:center,26.7% 33%;
+}
