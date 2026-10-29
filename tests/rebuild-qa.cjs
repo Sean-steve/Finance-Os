@@ -86,7 +86,7 @@ async function go(){
       await page.setViewportSize({width:w,height:900});
       await page.goto(base+'/rebuild.html#screen/4');
       const nums=await page.evaluate(()=>[document.documentElement.scrollWidth,innerWidth]);
-      assert.ok(nums[0]<=nums[1]+2,w+' overflow '+nums);
+      assert.ok(nums[0]<=nums[1]+2,w+' overflow '+nums+' offending '+JSON.stringify(await page.evaluate(()=>Array.from(document.querySelectorAll('body *')).map(e=>({selector:e.className||e.tagName,right:Math.round(e.getBoundingClientRect().right)})).filter(x=>x.right>innerWidth+3).slice(0,12))));
       if(w===390)await page.screenshot({path:path.join(art,'04-command-mobile.png'),fullPage:true});
     }
   });
