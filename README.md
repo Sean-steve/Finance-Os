@@ -11,6 +11,11 @@
 
 See [Exact visual fidelity correction](docs/EXACT_SCREEN_FIDELITY.md) and [Phase 2.2 QA report](docs/PHASE_2_2_QA.md).
 
+
+## Exact coded reconstruction (in progress)
+
+The first five approved screens are available as **real DOM/CSS prototype views** at [rebuild.html](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/4). Navigate #screen/1 through #screen/5. These remain under visual review and **have not been approved as pixel-identical**. All other screens remain in the original screenshot viewer until individually coded. See [exact reconstruction tracker](docs/EXACT_RECONSTRUCTION.md).
+
 ## Run locally
 
 ```bash
