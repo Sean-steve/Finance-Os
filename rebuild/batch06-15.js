@@ -112,7 +112,7 @@ textInput('time',values.time,'Time')+
 '<label class="b-field b-wide">Description *<input class="b-input" name="desc" data-bdraft="desc" required maxlength="100" value="'+safe(values.desc)+'"></label>'+
 select('account',data().accounts.map(a=>a[0]),values.account,'Account *')+
 textInput('merchant',values.merchant,'Merchant / Payee')+
-textInput('ref',values.ref,'Reference / Transaction ID')+
+'<label class="b-field">Reference / Transaction ID (Optional)<input class="b-input" type="text" name="ref" data-bdraft="ref" value="'+safe(values.ref)+'"></label>'+
 '<label class="b-field b-wide">Notes (Optional)<input class="b-input" name="notes" data-bdraft="notes" value="'+safe(values.notes)+'"></label>'+
 '</div><div class="b-actions"><button type="button" class="b-btn" data-baction="cancelTx">Cancel</button><button class="b-btn primary" type="submit">▣ Save Transaction</button></div></form>')+
 card('Category',tabs(['Popular','All Categories','Recent'],'Popular','categoryMode')+
@@ -229,8 +229,8 @@ switch(name){
  case 'markReconciled':case 'ignoreSelected':case 'adjustRecord':case 'calendarFilter':case 'bulkNote':case 'quick':case 'txselect':case 'reconSelect':view.dialog=(name==='adjustRecord'?'Accounting adjustments require manual review.':name==='markReconciled'?'Choose individual transactions to match them.':name==='ignoreSelected'?'Select an individual record to ignore.':'This action is a guided prototype; no financial-provider operation was performed.');refresh();return true;
  default:view.dialog='This action will be implemented in the linked workflow. No real financial-provider connection is active.';refresh();return true;
 }}
-function handleChange(e){let el=e.target;const key=el.dataset.bchange;if(key==='txType'){view.txType=el.value;ctx.render();return true}if(key==='txCategory'){view.txCategory=el.value;ctx.render();return true}if(key==='editType'){view.txTypeEdit=el.value;ctx.render();return true}if(el.id==='importAccount'){view.importTarget=Number(el.value);return true}return false}
-function handleInput(e){const el=e.target;if(el.dataset.bdraft){view.draft??={};view.draft[el.name]=el.value;return true}if(el.id==='batch-search'){view.txSearch=el.value;const pos=el.selectionStart;ctx.render();let focus=$('#batch-search');if(focus){focus.focus();focus.setSelectionRange(pos,pos)}return true}return false}
+function handleChange(e){let el=e.target;const key=el.dataset.bchange;if(key==='txType'){view.txType=el.value;ctx.render();return true}if(key==='txCategory'){view.txCategory=el.value;ctx.render();return true}if(key==='editType'){view.txTypeEdit=el.value;ctx.render();return true}if(el.closest?.('#batchTxForm')&&el.name){view.draft??={};view.draft[el.name]=el.value;return true}if(el.id==='importAccount'){view.importTarget=Number(el.value);return true}return false}
+function handleInput(e){const el=e.target;if(el.closest?.('#batchTxForm')&&el.name&&el.name!=='type'){view.draft??={};view.draft[el.name]=el.value;return true}if(el.dataset.bdraft){view.draft??={};view.draft[el.name]=el.value;return true}if(el.id==='batch-search'){view.txSearch=el.value;const pos=el.selectionStart;ctx.render();let focus=$('#batch-search');if(focus){focus.focus();focus.setSelectionRange(pos,pos)}return true}return false}
 function handleSubmit(e){const form=e.target;if(!form.dataset.bform)return false;e.preventDefault();const vals=Object.fromEntries(new FormData(form));
 switch(form.dataset.bform){
 case 'transaction':{const amount=Number(vals.amount),sign=view.txTypeEdit==='Income'?1:-1;if(!(amount>0)){refresh('Enter an amount greater than zero.');break}const record=[vals.date||now(),vals.desc||'',view.txCategoryEdit||'Other',vals.account||data().accounts[0][0],sign*amount];if(view.txMode==='edit'){data().transactions[view.tx]=record}else{data().transactions.unshift(record);view.tx=0}view.txMode='add';view.draft=null;refresh('Transaction saved in local demo ledger.');nav(10);break}
