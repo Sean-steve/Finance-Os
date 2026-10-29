@@ -8,7 +8,7 @@
 
 **Fidelity acceptance:** at 1536×1024 desktop (except the authentication design board, whose desktop/tablet/mobile states are separate responsive representations), each component must match approved geometry, typography hierarchy, palette, icon treatment, card placement and all visible controls. Run side-by-side and overlay review. Do not call a route complete on the basis of a green smoke test alone.
 
-## First implementation batch
+## First implementation batch (Screens 01–05)
 
 | Screen | Reference | Coded route | Status |
 |---|---|---|---|
@@ -16,7 +16,8 @@
 | 02 — Financial Onboarding | screen-02.webp | `rebuild.html#screen/2` | **DOM reconstruction / visual review required** |
 | 03 — Financial Profile & Setup | screen-03.webp | `rebuild.html#screen/3` | **DOM reconstruction / visual review required** |
 | 04 — Financial Command Centre | screen-04.webp | `rebuild.html#screen/4` | **DOM reconstruction / visual review required** |
-| 05–21, 23–60 | 56 supplied reference images | `index.html#screen/NN` | **Not yet coded in the exact reconstruction** |
+| 05 — Today: Safe to Spend | screen-05.webp | `rebuild.html#screen/5` | **DOM reconstruction / visual review required** |
+| 06–21, 23–60 | 55 supplied reference images | `index.html#screen/NN` | **Not yet coded in the exact reconstruction** |
 | 22 — Create / Edit Budget | Missing original | Previous prototype | **Design reference missing / not approved** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
@@ -26,6 +27,7 @@ The unchanged approved-design viewer is the source of truth while the rebuilt pa
 - Sign-in is **demo-only** and never authenticates with a real financial provider.
 - Onboarding provider selection opens a **local simulation** rather than a false bank connection.
 - Financial profile fields are editable and stored in browser-local demo state.
+- Safe-to-Spend has native cash-allocation cards, spending charts, pace, bills, transactions, insights and actions following the approved composition.
 - Command Centre has native KPI, account, expense, category, budget, goal, bill, advisor, transaction and forecast components following the approved grid arrangement.
 - Add Transaction creates a demo ledger entry and updates the native Recent Transactions panel.
 - Reference button overlays the exact approved image for visual comparisons.
@@ -57,7 +59,7 @@ git checkout reconstruction/pixel-accurate-components
 python3 -m http.server 8080
 ```
 
-- Coded first batch: `http://localhost:8080/rebuild.html#screen/1`
+- Coded first batch: `http://localhost:8080/rebuild.html#screen/1` through `#screen/5`
 - Approved screenshot reference: `http://localhost:8080/index.html#screen/1`
 - Legacy functional app: `http://localhost:8080/app.html#screen/4`
 
