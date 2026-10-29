@@ -84,5 +84,162 @@ function ledger(){
 const income=data().transactions.filter(x=>x[4]>0).reduce((n,x)=>n+Number(x[4]),0),expense=-data().transactions.filter(x=>x[4]<0).reduce((n,x)=>n+Number(x[4]),0);
 return shell(10,'<div class="b-screen-toolbar">'+tabs(['All Transactions','Income','Expenses','Transfers','Recurring','Pending','Flagged'],view.txTab,'transactions')+'<span></span>'+btn('Export CSV','exportCsv')+link('Add Transaction +',12,'primary')+'</div><div class="b-cols"><div class="b-left">'+card('All Transactions ('+txRows().length+')','<div class="b-filters"><input aria-label="Search transactions" class="b-search" id="batch-search" placeholder="Search transactions, accounts, categories…" value="'+safe(view.txSearch)+'"><select class="b-select" data-bchange="txType"><option>All Types</option><option '+(view.txType==='Income'?'selected':'')+'>Income</option><option '+(view.txType==='Expense'?'selected':'')+'>Expense</option></select><select class="b-select" data-bchange="txCategory">'+['All Categories','Transport','Food & Groceries','Utilities','Subscriptions','Business Income'].map(x=>'<option '+(view.txCategory===x?'selected':'')+'>'+x+'</option>').join('')+'</select>'+btn('Reset','resetTx')+'</div>'+txTable()+'<div class="b-row"><span class="b-muted">Showing '+txRows().length+' transactions</span>'+link('Import statement',13)+'</div>')+'</div><aside class="b-right">'+card('Spending by Category',dough())+card('Cash Flow Trend',bars())+card('Transaction Insights',row('✦','Your spending is up this month','Review recurring services','','Review'))+'</aside></div>'+card('Bulk Actions','<div class="b-actions">'+btn('Categorize','bulkNote')+btn('Add to budget','bulkNote')+btn('Set recurring','bulkNote')+link('Reconcile',15)+'</div>'),[['▣',fmt(data().accounts.reduce((n,a)=>n+a[1],0)),'Total Account Balance','All tracked accounts'],['▤',fmt(expense),'Expenses','Recorded outflows'],['◈',fmt(income),'Income','Recorded inflows'],['▦',String(data().transactions.length),'Transactions','This period']])}
 
-/* PART_TWO */
+
+function transactionDetails(){
+let t=data().transactions[view.tx]||data().transactions[0],amount=Number(t[4]),expense=amount<0;
+return shell(11,'<div class="b-account-banner"><div class="b-detail-title"><span class="b-round">▣</span><div><small>Transactions › Transaction Details</small><h2>'+safe(t[1])+'</h2><small>'+safe(t[3])+' · '+safe(t[2])+'</small></div></div><div class="b-actions"><strong style="font-size:22px">'+(expense?'−':'+')+fmt(amount)+'</strong>'+tag('Completed')+'</div></div>'+
+'<div class="b-cols"><div class="b-left">'+tabs(['Overview','Receipt & Evidence','Category & Rules','Linked Items','History','Related Transactions'],'Overview','txDetails')+
+'<div class="b-cols even">'+card('Transaction Information',[
+['Transaction',t[1]],['Merchant',t[1]],['Date',t[0]],['Category',t[2]],['Account',t[3]],['Type',expense?'Expense':'Income'],['Amount',(expense?'−':'+')+fmt(amount)],['Status','Completed'],['Reference','DEMO-TXN-'+String(view.tx+1).padStart(5,'0')]
+].map(x=>'<div class="b-list-pair"><span>'+safe(x[0])+'</span><strong>'+safe(x[1])+'</strong></div>').join(''))+
+card('Spending Context',bars()+'<div class="b-twostats"><div class="b-account-mini"><small>Category this month</small><b>'+fmt(Math.abs(amount)*12)+'</b></div><div class="b-account-mini"><small>Related transactions</small><b>'+data().transactions.filter(x=>x[2]===t[2]).length+'</b></div></div>')+'</div>'+
+card('Receipt & Evidence','<div class="b-note warning">Receipts and source documents will require authenticated encrypted storage. Local prototype only.</div>')+
+card('Related Transactions',txTable(data().transactions.map((v,i)=>({t:v,i})).filter(x=>x.t[2]===t[2]),7))+'</div>'+
+'<aside class="b-right">'+card('Actions','<div class="b-actions">'+btn('Edit transaction','editTx','primary')+btn('Change category','editTx')+btn('Mark reviewed','markReviewed')+link('View ledger',10)+'</div>')+
+card('Category',select('detailCategory',['Food & Groceries','Transport','Communication','Utilities','Subscriptions','Business Income','Other'],t[2],'Category')+btn('Save category','updateCategory','primary'))+
+card('Notes','<textarea class="b-input" rows="4" id="detailNotes" aria-label="Transaction notes" style="width:100%">'+safe(state().notes?.[view.tx]||'')+'</textarea>'+btn('Save Notes','saveNotes','primary'))+
+card('Audit & Metadata','<p class="b-muted">Created in the local demonstration ledger. No external banking authority verified this record.</p>')+'</aside></div>',[['▣',t[1],'Merchant / Description','Local ledger'],['▤',(expense?'−':'+')+fmt(amount),'Transaction amount','Recorded'],['◆',t[2],'Category','Editable'],['◈','Completed','Status','Demo record']])}
+function transactionEditor(){
+let t=view.txMode==='edit'?(data().transactions[view.tx]||data().transactions[0]):null;
+let draft=view.draft||{};
+let defaults={desc:t?.[1]||'Safaricom Airtime Top Up',amount:t?Math.abs(t[4]):500,date:now(),time:'10:24',account:t?.[3]||'M-Pesa',merchant:t?.[1]||'Safaricom',ref:'',notes:''};
+let values={...defaults,...draft},cat=view.txCategoryEdit,options=[['🛒','Groceries','Food & Groceries'],['🚙','Transport','Transport'],['ϟ','Utilities','Utilities'],['📱','Communication','Communication'],['⌂','Housing','Housing'],['♨','Dining & Entertainment','Dining & Entertainment'],['❤','Health & Medical','Health & Medical'],['▥','Shopping','Shopping'],['▤','Education','Education'],['▣','Subscriptions','Subscriptions'],['✿','Personal Care','Personal Care'],['♜','Financial Services','Financial Services'],['✈','Travel','Travel'],['▥','Income','Business Income'],['⇄','Transfer','Transfer'],['⋯','Other','Other']];
+const editor='<div class="b-cols"><div class="b-left"><div class="b-cols even">'+card('Basic Information','<form id="batchTxForm" data-bform="transaction" class="b-form">'+
+'<div class="b-muted">Transaction Type</div><div class="b-type-options">'+['Expense','Income'].map(x=>'<label><input type="radio" name="type" value="'+x+'" '+(view.txTypeEdit===x?'checked':'')+' data-bchange="editType"><b>'+x+'</b><small>'+ (x==='Income'?'Money in':'Money out')+'</small></label>').join('')+'</div>'+
+'<div class="b-form-grid">'+numberInput('amount',values.amount,'Amount (KES) *')+
+textInput('date',values.date,'Date *')+
+textInput('time',values.time,'Time')+
+'<label class="b-field b-wide">Description *<input class="b-input" name="desc" data-bdraft="desc" required maxlength="100" value="'+safe(values.desc)+'"></label>'+
+select('account',data().accounts.map(a=>a[0]),values.account,'Account *')+
+textInput('merchant',values.merchant,'Merchant / Payee')+
+textInput('ref',values.ref,'Reference / Transaction ID')+
+'<label class="b-field b-wide">Notes (Optional)<input class="b-input" name="notes" data-bdraft="notes" value="'+safe(values.notes)+'"></label>'+
+'</div><div class="b-actions"><button type="button" class="b-btn" data-baction="cancelTx">Cancel</button><button class="b-btn primary" type="submit">▣ Save Transaction</button></div></form>')+
+card('Category',tabs(['Popular','All Categories','Recent'],'Popular','categoryMode')+
+'<input class="b-search" placeholder="Search categories…" aria-label="Find category" id="categorySearch">'+
+'<div class="b-category-grid">'+options.map(([ic,title,value])=>'<button class="b-category-option '+(cat===value?'active':'')+'" data-baction="category:'+safe(value)+'" type="button"><span>'+ic+'</span>'+safe(title)+'</button>').join('')+'</div>'+
+'<div class="b-form-grid" style="margin-top:15px">'+select('subcategory',['Airtime','Groceries','Internet','Rent','Other'],'Airtime','Subcategory')+
+'<label class="b-field">Split Transaction <input type="checkbox" aria-label="Split transaction into multiple categories" disabled></label></div><div class="b-muted">Recurring Transaction (Optional): configure in recurring payments after saving.</div>')+'</div></div>'+
+'<aside class="b-right">'+card('Quick Templates',[
+['Safaricom Airtime',500,'Communication'],['Electricity Bill',8500,'Utilities'],['House Rent',80000,'Housing'],['Internet',3500,'Utilities'],['Fuel',5000,'Transport'],['Groceries',3250,'Food & Groceries']
+].map(x=>row('▣',x[0],x[2],fmt(x[1]),'Add')).join(''))+
+card('Recent Transactions',data().transactions.slice(0,6).map(x=>row('▣',x[1],x[0],(x[4]<0?'−':'+')+fmt(x[4]))).join(''))+
+card('Smart Suggestions', '<div class="b-note">Categorize airtime as Communication. Suggestions remain local and rule-based.</div> '+btn('Apply Suggestion','category:Communication','primary'))+'</aside></div>';
+return shell(12,editor,[['▣',view.txMode==='edit'?'Edit Existing Transaction':'Add Transaction','Record or update','Manual entry'],['♜','15','Categories','Choose one'],['▧',String(data().transactions.length),'Transactions','Recent records'],['◆','Local','Storage','Browser demo']])}
+function importScreen(){
+let available=['KCB Main Account','M-Pesa','Equity Account'].map(x=>data().accounts.find(a=>a[0]===x)).filter(Boolean);
+const steps=['Upload Statement','Verify & Categorize','Review Transactions','Complete Import'];
+const preview=view.importRows.length?'<div class="b-import-result"><b>'+view.importRows.length+' valid CSV rows previewed</b><p class="b-muted">Nothing is added until you confirm. Duplicate entries are ignored.</p>'+btn('Import '+view.importRows.length+' transactions','commitImport','primary')+'</div>':'<div class="b-empty">Select a local CSV file to preview imported rows.</div>';
+return shell(13,'<div class="b-import-steps">'+steps.map((x,i)=>'<div class="b-import-step"><span class="b-round '+(i+1===view.importStep?'':'blue')+'">'+(i+1)+'</span><b>'+x+'</b></div>').join('')+'</div>'+
+'<div class="b-cols" style="margin-top:12px"><div class="b-left">'+card('Upload Statement','<div class="b-note">Import a CSV statement to update the local demo ledger. This page never uploads files to a server.</div><div class="b-drop"><div style="font-size:30px">⇧</div><b>Drag and drop your statement here</b><span class="b-muted">or choose a CSV file from your device</span><input type="file" id="statementFile" accept=".csv,text/csv" aria-label="Choose statement CSV"></div><div class="b-actions">'+btn('Preview Statement','previewImport','primary')+btn('Download sample CSV','sampleCSV')+'</div>'+preview)+
+card('Import Preview ('+view.importRows.length+' transactions)','<div class="b-filters"><span class="b-muted">Preview is local and uncommitted.</span>'+btn('Clear preview','clearImport')+'</div>'+ (view.importRows.length?'<div class="b-tablewrap"><table class="b-table"><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Category</th><th>Account</th></tr></thead><tbody>'+view.importRows.slice(0,35).map(x=>'<tr><td>'+safe(x.date)+'</td><td>'+safe(x.name)+'</td><td>'+fmt(x.amount)+'</td><td>'+safe(x.category)+'</td><td>'+safe(x.account)+'</td></tr>').join('')+'</tbody></table></div>':txTable(txRows(),8)))+
+card('Import Options','<div class="b-cols even"><div>'+tag('Detect duplicate transactions')+' '+tag('Suggest categories')+'</div><div class="b-muted">Bank statement matching is not authoritative until provider integration is implemented.</div></div>')+'</div>'+
+'<aside class="b-right">'+card('Supported Formats',row('▧','CSV file','Comma-separated records','Ready')+row('▥','KCB / M-Pesa CSV','Manual column mapping','Demo')+row('▤','PDF / Excel','Not supported in frontend prototype','Pending'))+
+card('Select Account','<label class="b-field">Statement Account<select id="importAccount" class="b-select">'+available.map((a,i)=>'<option value="'+i+'" '+(i===view.importTarget?'selected':'')+'>'+safe(a[0])+'</option>').join('')+'</select></label><p class="b-muted">Only manually tracked accounts can receive imported transactions.</p>')+
+card('Recent Imports',(state().imports.length?state().imports.slice(-6).reverse().map(x=>row('⇧',x.file,x.date,x.count+' entries')).join(''):'<div class="b-empty">No imports recorded.</div>'))+
+card('Security','<p class="b-muted">CSV parsing happens inside this browser. Do not import real statements to a publicly accessible demo.</p>')+'</aside></div>',[['⇧','1','Upload Statement','Choose a file'],['▧','2','Verify and categorize','Inspect rows'],['✓','3','Review transactions','Confirm changes'],['◈','4','Complete Import','Store locally']])}
+function transfersScreen(){
+const modes=[['⇄','Transfer Money','Internal Transfer'],['▣','Pay a Bill','Pay a Bill'],['➤','Send Money','Send Money'],['⬇','Request Money','Request Money'],['▦','Scheduled Payments','Scheduled Payments']];
+const recipients=state().savedRecipients.map(a=>row('▣',a[0],a[1],'','Select')).join('');
+const transfers=state().transfers.slice(-7).reverse().map(t=>row('⇄',t.from+' → '+t.to,t.date,fmt(t.amount))).join('');
+return shell(14,'<div class="b-transfer-modes">'+modes.map(([ic,title,key])=>'<button class="b-mode '+(view.transferMode===key?'active':'')+'" data-baction="mode:'+safe(key)+'"><span class="b-round">'+ic+'</span><b>'+title+'</b></button>').join('')+'</div><div class="b-cols"><div class="b-left">'+
+card(view.transferMode==='Internal Transfer'?'New Transfer':view.transferMode,'<div class="b-note">This is a local simulation. No bank, M-Pesa or merchant will receive any funds.</div><form id="batchTransferForm" data-bform="transfer" class="b-form" style="margin-top:12px">'+
+'<div class="b-form-grid">'+select('from',data().accounts.map((a,i)=>[String(i),a[0]+' · '+fmt(a[1])]),'0','From Account')+
+select('to',data().accounts.map((a,i)=>[String(i),a[0]+' · '+fmt(a[1])]),'1','To Account / Recipient')+
+numberInput('amount',5000,'Amount (KES) *')+
+textInput('description','Rent payment · October','Description (Optional)')+
+'<label class="b-field">Transfer Type<select class="b-select" name="transferType"><option>Instant</option><option>Scheduled (demo)</option></select></label>'+
+textInput('reference','DEMO-TRANSFER','Reference (Optional)')+
+'</div><div class="b-actions"><button class="b-btn" type="reset">Cancel</button><button class="b-btn primary" type="submit">Review Transfer →</button></div></form>')+
+card('Recent Transfers',transfers||'<div class="b-empty">No simulated transfers yet.</div>')+
+card('Quick Actions', '<div class="b-actions">'+btn('Transfer between accounts','mode:Internal Transfer','primary')+link('Record transaction',12)+link('Reconcile account',15)+'</div>')+'</div><aside class="b-right">'+card('Saved Recipients',recipients)+
+card('Recent Transfers & Payments',transfers||'<div class="b-empty">No transfer history yet.</div>')+
+card('Upcoming Scheduled Payments',data().bills.map(b=>row('▣',b[0],b[1],fmt(b[2]))).join(''))+'</aside></div>',[['⇄','Internal','Account transfers','Demo'],['▤','Bills','Payments & obligations','Not connected'],['➤','Mobile','Send Money','Simulation only'],['⬇','Requests','Record payment requests','Local'],['▦','Scheduled','Upcoming obligations','Manual']])}
+function reconcile(){
+const records=data().transactions.map((t,i)=>({t,i,status:state().reconcile[i]|| (t[1].includes('KPLC')||t[1].includes('Fuel')?'Unmatched':'Matched')}));
+let list=records.filter(x=>view.reconFilter==='All'||x.status===view.reconFilter);
+const matched=records.filter(x=>x.status==='Matched').length,unmatched=records.filter(x=>x.status==='Unmatched').length,exception=records.filter(x=>x.status==='Exception').length;
+const rows='<div class="b-tablewrap"><table class="b-table"><thead><tr><th>✓</th><th>Date</th><th>Description</th><th>Amount (KES)</th><th>Type</th><th>Match Status</th><th>System Record</th><th>Actions</th></tr></thead><tbody>'+list.map(({t,i,status})=>'<tr><td><input type="checkbox" aria-label="Select '+safe(t[1])+'" data-baction="reconSelect:'+i+'"></td><td>'+safe(t[0])+'</td><td>'+safe(t[1])+'</td><td class="'+(t[4]<0?'b-bad':'b-good')+'">'+(t[4]<0?'−':'+')+fmt(t[4])+'</td><td>'+safe(t[4]<0?'Expense':'Income')+'</td><td>'+tag(status,status==='Matched'?'':status==='Exception'?'red':'yellow')+'</td><td>'+ (status==='Matched'?'TXN-'+String(i+1).padStart(6,'0'):'—')+'</td><td>'+btn(status==='Matched'?'Review':'Match','reconMatch:'+i)+'</td></tr>').join('')+'</tbody></table></div>';
+return shell(15,'<div class="b-screen-toolbar">'+tabs(['Reconciliation','Financial Ledger','Adjustments','Journal Entries','Account Mapping','Reconciliation History'],'Reconciliation','reconTabs')+'<span></span>'+btn('Actions','autoReconcile')+link('Upload Statement',13,'primary')+'</div><div class="b-cols"><div class="b-left">'+card('Account Reconciliation','<div class="b-filters">'+select('reconAccount',data().accounts.map(a=>a[0]),data().accounts[0][0],'Account')+'<span class="b-muted">01 Oct 2026 – 14 Oct 2026</span></div>'+
+'<div class="b-reconcile-status">'+[['▣',records.length,'Total transactions'],['✓',matched,'Matched'],['◷',unmatched,'Unmatched'],['! ',exception,'Exceptions'],['－',records.filter(x=>x.status==='Ignored').length,'Ignored'],['▦',state().imports.length,'Imports']].map(([ic,v,caption])=>'<div><span class="b-round">'+ic+'</span><b>'+v+'</b><small>'+caption+'</small></div>').join('')+'</div>'+
+'<div class="b-filters"><input class="b-search" id="reconSearch" placeholder="Search transactions (amount, description, reference)" aria-label="Search reconciliation records" value="'+safe(view.reconSearch||'')+'">'+select('reconStatus',[['All','All Statuses'],['Matched','Matched'],['Unmatched','Unmatched'],['Exception','Exceptions'],['Ignored','Ignored']],view.reconFilter,'Match Status')+btn('Auto-match','autoReconcile')+'</div>'+rows)+
+card('Reconciliation Actions','<div class="b-actions">'+btn('Auto-Match','autoReconcile','primary')+btn('Create Adjustment','adjustRecord')+btn('Mark as Reconciled','markReconciled')+btn('Ignore Transaction','ignoreSelected')+link('View Financial Ledger',10)+'</div>')+
+card('Ledger Summary (KCB Main Account)','<div class="b-reconcile-status">'+[['Opening Balance','KES 480,200'],['Total Credits','KES 650,000'],['Total Debits','KES 609,400'],['Closing Balance',fmt(data().accounts[0][1])]].map(x=>'<div><small>'+x[0]+'</small><b style="font-size:14px">'+x[1]+'</b></div>').join('')+'</div>')+'</div><aside class="b-right">'+card('Reconciliation Progress','<div class="b-account-mini"><b>'+Math.round(matched/Math.max(1,records.length)*100)+'% complete</b><div class="b-progress" style="--c:#14a978"><i style="--p:'+Math.round(matched/Math.max(1,records.length)*100)+'%"></i></div></div>'+dough())+
+card('Unmatched Transactions ('+unmatched+')',records.filter(x=>x.status==='Unmatched').map(({t,i})=>row('ϟ',t[1],t[0],(t[4]<0?'−':'+')+fmt(t[4]),'Match')).join('')||'<div class="b-empty">No unmatched records.</div>')+
+card('Suggested Matches',records.filter(x=>x.status==='Unmatched').slice(0,2).map(({t,i})=>'<div class="b-row"><span class="b-flex"><b>'+safe(t[1])+'</b><small>'+fmt(t[4])+' · Verify against a source statement</small></span>'+btn('Match','reconMatch:'+i)+'</div>').join(''))+'</aside></div>',[['✓',fmt(520450),'Reconciled','Manual'],['◷',fmt(72300),'Unreconciled','To review'],['! ',fmt(12750),'Exceptions','Attention'],['▦',fmt(data().accounts.reduce((n,a)=>n+a[1],0)),'Ledger Balance','Demo accounts']])}
+function modal(){
+if(!view.dialog)return '';
+const d=view.dialog;
+let body='';
+if(d==='account'){body='<form data-bform="addAccount" class="b-form">'+textInput('name','','Account label')+select('type',['Bank Account','Mobile Money','Savings Account','Business Account','Cash Wallet'],view.accountType,'Account type')+numberInput('balance',0,'Opening demo balance (KES)')+'<button class="b-btn primary" type="submit">Save account</button></form>'}
+else if(d==='editAccount'){let a=data().accounts[view.account];body='<form data-bform="editAccount" class="b-form">'+textInput('name',a[0],'Account label')+numberInput('balance',a[1],'Current manual balance (KES)')+'<button class="b-btn primary" type="submit">Save changes</button></form>'}
+else if(d==='goal'){body='<form data-bform="goalFund" class="b-form">'+numberInput('amount',1000,'Simulated goal contribution (KES)')+'<button class="b-btn primary" type="submit">Record contribution</button></form>'}
+else if(d==='transferConfirm'){let tx=view.pendingTransfer;body='<p>Transfer <b>'+fmt(tx.amount)+'</b> from <b>'+safe(data().accounts[tx.from][0])+'</b> to <b>'+safe(data().accounts[tx.to][0])+'</b>?</p><p class="b-note warning">Simulation only; no real bank transfer will occur.</p><div class="b-actions">'+btn('Cancel','closeDialog')+btn('Confirm locally','confirmTransfer','primary')+'</div>'}
+else{body='<p class="b-muted">'+safe(d)+'</p><div class="b-actions">'+btn('Close','closeDialog')+'</div>'}
+return '<div class="b-dialog-backdrop"><div class="b-dialog" role="dialog" aria-modal="true" aria-label="'+safe(d)+'"><div class="b-panel-head"><h2>'+safe(d==='transferConfirm'?'Confirm simulated transfer':d==='account'?'Add Financial Account':d==='editAccount'?'Edit Account':d==='goal'?'Add Goal Funds':'Notice')+'</h2>'+btn('✕','closeDialog')+'</div>'+body+'</div></div>'}
+function render(n){if(!ctx)init({model:window.__unused,save(){},render(){},navigate(){}});switch(n){case 6:return calendar();case 7:return accountsOverview();case 8:return accountDetail();case 9:return connect();case 10:return ledger();case 11:return transactionDetails();case 12:return transactionEditor();case 13:return importScreen();case 14:return transfersScreen();case 15:return reconcile();default:return ''}}
+function download(filename,contents){const blob=new Blob([contents],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=filename;document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),500)}
+function csvExport(){let rows=[['date','description','category','account','amount'],...data().transactions.map(x=>[...x])];download('finance-os-transactions.csv',rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n'))}
+function parseCSV(text){const lines=[];let row=[],field='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i],next=text[i+1];if(c==='"'&&quoted&&next==='"'){field+='"';i++}else if(c==='"')quoted=!quoted;else if(!quoted&&c===','){row.push(field);field=''}else if(!quoted&&(c==='\n'||c==='\r')){if(c==='\r'&&next==='\n')i++;row.push(field);if(row.some(x=>x.trim()))lines.push(row);field='';row=[]}else field+=c}if(quoted)throw Error('CSV contains an unclosed quoted field.');row.push(field);if(row.some(x=>x.trim()))lines.push(row);return lines}
+async function filePreview(){const file=$('#statementFile')?.files?.[0];if(!file){refresh('Select a CSV file first.');return}if(file.size>1024*1024){refresh('CSV must be smaller than 1 MB.');return}
+try{let rows=parseCSV(await file.text());let headers=rows.shift().map(x=>x.trim().toLowerCase()),req=['date','description','amount'],missing=req.filter(x=>!headers.includes(x));if(missing.length)throw Error('Missing CSV headers: '+missing.join(', '));let parsed=[];for(const line of rows.slice(0,200)){const get=k=>(line[headers.indexOf(k)]||'').trim(),amount=Number(get('amount')),date=get('date');if(!Number.isFinite(amount)||!date||!get('description'))continue;parsed.push({date,name:get('description'),amount,category:headers.includes('category')?get('category')||'Other':'Other',account:headers.includes('account')?get('account')||data().accounts[view.importTarget][0]:data().accounts[view.importTarget][0]})}view.importRows=parsed;view.importFile=file.name;view.importStep=2;refresh('CSV preview ready: '+parsed.length+' valid rows. Confirm to import locally.')}catch(e){refresh('Unable to parse CSV: '+e.message)}}
+function importCommit(){let inserted=0,duplicates=0;for(const r of view.importRows){let date=r.date,name=r.name,amount=r.amount;let exists=data().transactions.some(t=>t[0]===date&&t[1]===name&&Number(t[4])===amount);if(exists){duplicates++;continue}data().transactions.unshift([date,name,r.category,r.account,amount]);inserted++}
+state().imports.push({file:view.importFile||'CSV',date:now(),count:inserted});view.importStep=4;view.importRows=[];refresh('Imported '+inserted+' local records; skipped '+duplicates+' duplicates.')}
+function handleClick(e){const element=e.target.closest('[data-bnav],[data-baction]');if(!element)return false;
+if(element.dataset.bnav){e.preventDefault();nav(element.dataset.bnav);return true}
+const raw=element.dataset.baction,parts=raw.split(':'),name=parts[0],arg=parts.slice(1).join(':');
+view.notice='';
+switch(name){
+ case 'reference': location.href='index.html#screen/'+ctx.screen();return true;
+ case 'account':view.account=Number(arg);nav(8);return true;
+ case 'openTx':view.tx=Number(arg);nav(11);return true;
+ case 'editTx':view.txMode='edit';view.txCategoryEdit=data().transactions[view.tx][2];view.txTypeEdit=data().transactions[view.tx][4]>=0?'Income':'Expense';view.draft=null;nav(12);return true;
+ case 'newTx':view.txMode='add';view.draft=null;nav(12);return true;
+ case 'accountTransactions':view.accountTab='Transactions';refresh();return true;
+ case 'goAccounts':nav(7);return true;
+ case 'transferFromDetail':case 'billFromDetail':nav(14);return true;
+ case 'importFromDetail':nav(13);return true;
+ case 'editAccount':view.dialog='editAccount';refresh();return true;
+ case 'addAccount':view.dialog='account';refresh();return true;
+ case 'closeDialog':view.dialog=null;refresh();return true;
+ case 'goalFund':view.goalIdx=Number(arg);view.dialog='goal';refresh();return true;
+ case 'monthPrev':view.month--;if(view.month<0){view.month=11;view.year--}refresh();return true;
+ case 'monthNext':view.month++;if(view.month>11){view.month=0;view.year++}refresh();return true;
+ case 'calendarToday':view.month=9;view.year=2026;view.day=14;refresh();return true;
+ case 'day':view.day=Number(arg);refresh('Selected '+arg+' October 2026.');return true;
+ case 'calMode':view.calendarMode=arg;refresh();return true;
+ case 'mode':view.transferMode=arg;refresh();return true;
+ case 'acctType':view.accountType=arg;refresh();return true;
+ case 'provider':view.provider=arg;refresh('Selected '+arg+'. Automated linking is unavailable; create a manual account instead.');return true;
+ case 'tab':{let [key,...rest]=arg.split(':');let value=rest.join(':');if(key==='accountDetail')view.accountTab=value;if(key==='transactions'){view.txTab=value;view.txType=value==='Income'?'Income':value==='Expenses'?'Expense':'All Types'}refresh();return true}
+ case 'category':view.txCategoryEdit=arg;refresh();return true;
+ case 'cancelTx':nav(10);return true;
+ case 'exportCsv':csvExport();refresh('CSV export generated.');return true;
+ case 'resetTx':view.txSearch='';view.txType='All Types';view.txCategory='All Categories';refresh();return true;
+ case 'previewImport':filePreview();return true;
+ case 'commitImport':importCommit();return true;
+ case 'clearImport':view.importRows=[];view.importFile='';view.importStep=1;refresh();return true;
+ case 'sampleCSV':download('finance-os-sample.csv','date,description,amount,category,account\n2026-10-10,Groceries,-1800,Food & Groceries,KCB Main Account\n2026-10-12,Client Invoice,25000,Business Income,KCB Main Account');return true;
+ case 'confirmTransfer':{let t=view.pendingTransfer;if(!t)return true;let from=data().accounts[t.from],to=data().accounts[t.to];from[1]-=t.amount;to[1]+=t.amount;state().transfers.push({...t,from:from[0],to:to[0],date:now()});view.pendingTransfer=null;view.dialog=null;refresh('Simulated transfer recorded. No real money moved.');return true}
+ case 'reconMatch':state().reconcile[Number(arg)]='Matched';refresh('Locally marked as matched. Verify against an authoritative bank statement before relying on this.');return true;
+ case 'autoReconcile':{let changed=0;data().transactions.forEach((t,i)=>{if(!state().reconcile[i]&&t[1]!=='House Rent'){state().reconcile[i]='Matched';changed++}});refresh('Local heuristic suggested '+changed+' matches. No bank reconciliation performed.');return true}
+ case 'markReviewed':state().notes??={};state().notes[view.tx]='Reviewed in the prototype';refresh('Transaction marked reviewed locally.');return true;
+ case 'updateCategory':{let c=$('.b-select[name="detailCategory"]')?.value||'Other';data().transactions[view.tx][2]=c;refresh('Category updated.');return true}
+ case 'saveNotes':{state().notes??={};state().notes[view.tx]=$('#detailNotes')?.value||'';refresh('Local notes saved.');return true}
+ case 'markReconciled':case 'ignoreSelected':case 'adjustRecord':case 'calendarFilter':case 'bulkNote':case 'quick':case 'txselect':case 'reconSelect':view.dialog=(name==='adjustRecord'?'Accounting adjustments require manual review.':name==='markReconciled'?'Choose individual transactions to match them.':name==='ignoreSelected'?'Select an individual record to ignore.':'This action is a guided prototype; no financial-provider operation was performed.');refresh();return true;
+ default:view.dialog='This action will be implemented in the linked workflow. No real financial-provider connection is active.';refresh();return true;
+}}
+function handleChange(e){let el=e.target;const key=el.dataset.bchange;if(key==='txType'){view.txType=el.value;ctx.render();return true}if(key==='txCategory'){view.txCategory=el.value;ctx.render();return true}if(key==='editType'){view.txTypeEdit=el.value;ctx.render();return true}if(el.id==='importAccount'){view.importTarget=Number(el.value);return true}return false}
+function handleInput(e){const el=e.target;if(el.dataset.bdraft){view.draft??={};view.draft[el.name]=el.value;return true}if(el.id==='batch-search'){view.txSearch=el.value;const pos=el.selectionStart;ctx.render();let focus=$('#batch-search');if(focus){focus.focus();focus.setSelectionRange(pos,pos)}return true}return false}
+function handleSubmit(e){const form=e.target;if(!form.dataset.bform)return false;e.preventDefault();const vals=Object.fromEntries(new FormData(form));
+switch(form.dataset.bform){
+case 'transaction':{const amount=Number(vals.amount),sign=view.txTypeEdit==='Income'?1:-1;if(!(amount>0)){refresh('Enter an amount greater than zero.');break}const record=[vals.date||now(),vals.desc||'',view.txCategoryEdit||'Other',vals.account||data().accounts[0][0],sign*amount];if(view.txMode==='edit'){data().transactions[view.tx]=record}else{data().transactions.unshift(record);view.tx=0}view.txMode='add';view.draft=null;refresh('Transaction saved in local demo ledger.');nav(10);break}
+case 'transfer':{let from=Number(vals.from),to=Number(vals.to),amount=Number(vals.amount);if(from===to||amount<=0||!Number.isFinite(amount)||amount>Number(data().accounts[from]?.[1])){refresh('Choose distinct accounts and an amount within available demo funds.');break}view.pendingTransfer={from,to,amount,description:vals.description,reference:vals.reference,type:vals.transferType};view.dialog='transferConfirm';refresh();break}
+case 'addAccount':{let name=(vals.name||'').trim();if(!name){refresh('Account name is required.');break}data().accounts.push([name,Number(vals.balance||0),vals.type||'Manual']);view.account=data().accounts.length-1;view.dialog=null;refresh('Manual demo account created.');nav(7);break}
+case 'editAccount':{let a=data().accounts[view.account];a[0]=vals.name;a[1]=Number(vals.balance||0);view.dialog=null;refresh('Manual account updated.');break}
+case 'goalFund':{const g=data().goals[view.goalIdx],amount=Number(vals.amount);if(amount>0&&g){g[1]+=amount;view.dialog=null;refresh('Goal contribution recorded locally.')}break}
+}
+return true}
+window.FinanceBatch={init,render,handleClick,handleChange,handleInput,handleSubmit};
+
 })();
