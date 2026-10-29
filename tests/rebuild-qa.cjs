@@ -71,6 +71,15 @@ async function go(){
     await page.locator('[data-nav="21"]').first().click();
     assert.ok(page.url().includes('index.html#screen/21'));
   });
+  await check('Screen 05 Safe-to-Spend matches reference panel structure',async()=>{
+   await page.goto(base+'/rebuild.html#screen/5');
+   for(const t of ['Today’s Spending','Daily Spending Trend','Spending Pace','Upcoming Obligations (Next 14 Days)','Recent Transactions','AI Financial Insights','Quick Actions']){
+    assert.equal(await page.getByRole('heading',{name:t,exact:true}).count(),1,'Missing '+t);
+   }
+   assert.ok(await page.locator('.safe-main').count()===1);
+   assert.equal(await page.locator('.safe-summary .safe-mini').count(),4);
+   await page.screenshot({path:path.join(art,'05-safe-to-spend-desktop.png'),fullPage:true});
+  });
   await check('Mobile auth uses responsive editable UI',async()=>{
     await page.setViewportSize({width:390,height:844});
     await page.goto(base+'/rebuild.html#screen/1');
@@ -88,6 +97,10 @@ async function go(){
       const nums=await page.evaluate(()=>[document.documentElement.scrollWidth,innerWidth]);
       assert.ok(nums[0]<=nums[1]+2,w+' overflow '+nums+' offending '+JSON.stringify(await page.evaluate(()=>Array.from(document.querySelectorAll('body *')).map(e=>({selector:e.className||e.tagName,right:Math.round(e.getBoundingClientRect().right)})).filter(x=>x.right>innerWidth+3).slice(0,12))));
       if(w===390)await page.screenshot({path:path.join(art,'04-command-mobile.png'),fullPage:true});
+      await page.goto(base+'/rebuild.html#screen/5');
+      const safeDimensions=await page.evaluate(()=>[document.documentElement.scrollWidth,innerWidth]);
+      assert.ok(safeDimensions[0]<=safeDimensions[1]+2,'Safe-to-Spend overflow at '+w+' px '+safeDimensions);
+      if(w===390)await page.screenshot({path:path.join(art,'05-safe-to-spend-mobile.png'),fullPage:true});
     }
   });
   assert.deepEqual(errors,[],'Unexpected JS errors '+errors.join('; '));
