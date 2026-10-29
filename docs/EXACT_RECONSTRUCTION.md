@@ -17,7 +17,7 @@
 | 03 — Financial Profile & Setup | screen-03.webp | `rebuild.html#screen/3` | **DOM reconstruction / visual review required** |
 | 04 — Financial Command Centre | screen-04.webp | `rebuild.html#screen/4` | **DOM reconstruction / visual review required** |
 | 05 — Today: Safe to Spend | screen-05.webp | `rebuild.html#screen/5` | **DOM reconstruction / visual review required** |
-| 06–21, 23–60 | 55 supplied reference images | `index.html#screen/NN` | **Not yet coded in the exact reconstruction** |
+| 06–21, 23–60 | 54 supplied reference images | `index.html#screen/NN` | **Not yet coded in the exact reconstruction** |
 | 22 — Create / Edit Budget | Missing original | Previous prototype | **Design reference missing / not approved** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
