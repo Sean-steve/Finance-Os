@@ -36,11 +36,17 @@ jobs:
         run: |
           python3 -m pip install --break-system-packages Pillow
           python3 tests/measure-budget-parity.py
+      - name: Capture all 60 coded views at approved desktop viewport
+        run: node tests/capture-full-visual-parity.cjs
+      - name: Compute ranked reference-to-code differences for all available images
+        run: python3 tests/measure-full-visual-parity.py
       - name: Attach screenshot comparisons and metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: finance-os-budget-visual-parity
-          path: qa-artifacts/budget-visual-reconciliation
+          path: |
+            qa-artifacts/budget-visual-reconciliation
+            qa-artifacts/full-visual-parity
           if-no-files-found: ignore
           retention-days: 14
