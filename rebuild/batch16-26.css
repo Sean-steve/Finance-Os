@@ -51,3 +51,31 @@
 @media(max-width:850px){.sp-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-grid,.sp-grid.double{grid-template-columns:1fr}.sp-grid.six{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-col2,.sp-col3,.sp-col4{grid-column:span 1}.sp-budget-form .sp-right{grid-template-columns:1fr}}
 @media(max-width:600px){.spend-inner{padding:0 3px}.sp-kpi{padding:8px;gap:7px;min-height:68px}.sp-kpi .sp-ico{width:31px;height:32px;flex:0 0 31px;font-size:17px}.sp-kpi b{font-size:13px;white-space:normal}.sp-kpi small{font-size:9px}.sp-panel{padding:10px}.sp-donut-wrap{flex-wrap:wrap}.sp-donut{width:130px;height:130px;flex-basis:130px}.sp-donut-hole{width:94px;height:94px}.sp-tiny-card-grid{grid-template-columns:repeat(2,1fr)}.sp-fields{grid-template-columns:1fr}.sp-stepper{overflow:auto}.sp-step{flex:0 0 145px}.sp-budget-line{grid-template-columns:19px 70px 70px 36px minmax(46px,1fr) 34px;gap:3px;padding:4px 0}.sp-budget-line .sp-monthly{display:none}.sp-budget-line input[type=number]{padding:5px 2px;font-size:10px}.sp-budget-line .sp-pillbar{min-width:0}.sp-budget-line label{font-size:9px}.sp-allowance{grid-template-columns:1fr}.sp-budget-form{display:block}.sp-budget-form>.sp-right{margin-top:10px}.sp-plan-item{grid-template-columns:25px minmax(0,1fr) 75px}.sp-plan-item .sp-btn{padding:6px}.sp-filters{padding:7px}.sp-btn{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.sp-switch:before{transition:none}}
+
+/* Reference alignment and mobile min-content containment */
+.sp-grid>*{min-width:0;max-width:100%}
+.sp-grid .sp-col2,.sp-grid .sp-col3,.sp-grid .sp-col4{min-width:0;max-width:100%}
+@media(max-width:850px){
+ .sp-grid,.sp-grid.double{grid-template-columns:minmax(0,1fr)}
+ .sp-grid.six{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sp-table-wrap{min-width:0;max-width:100%;overflow-x:auto}
+ .sp-action-tabs{min-width:0;max-width:100%}
+}
+@media(min-width:1250px){
+ .sp-panel{padding:9px 10px}
+ .sp-stat-row{padding:4px 0}
+ .sp-bars{height:153px}
+ .sp-line{height:112px}
+ .sp-donut{width:145px;height:145px;flex-basis:145px}
+ .sp-donut-hole{width:101px;height:101px}
+ .sp-tiny-card{padding:7px 4px}
+ .sp-legend{gap:4px}
+}
+@media(min-width:850px){
+ .spend-page~.rebuild-toolbar{position:relative}
+ .app-shell:has(.spend-page) .side-link{min-height:29px;padding:5px 8px;font-size:11px}
+ .app-shell:has(.spend-page) .side-link>span{font-size:16px;min-width:18px}
+ .app-shell:has(.spend-page) .sidebar nav{gap:0}
+ .app-shell:has(.spend-page) .quick-list button{min-height:27px;padding:5px}
+ .app-shell:has(.spend-page) .upgrade{min-height:126px;padding:10px 7px}
+}
