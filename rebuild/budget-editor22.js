@@ -1,7 +1,7 @@
 
 (()=>{
 'use strict';
-let ctx,draft=null,notice='',step=0;
+let ctx,draft=null,notice='',step=0,observed='';
 const items=[['Housing','⌂','#fa637d',120000],['Food & Dining','♜','#2b9cec',45000],['Transport','▣','#35bc94',30000],['Utilities','ϟ','#ffc260',24000],['Shopping','▥','#b56ee6',18000],['Health & Medical','♥','#fa80a0',15000],['Subscriptions','◉','#3a96e7',12000],['Entertainment','♫','#ba69e0',12000],['Education','▥','#29b886',9000],['Others','···','#9ba5bb',15000]];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>'KES '+Math.round(Number(n)||0).toLocaleString('en-KE');
@@ -9,7 +9,8 @@ const sum=()=>items.reduce((n,x)=>n+Number(draft.categories[x[0]]||0),0);
 const act=(name,key,cl='')=>'<button type="button" data-be22="'+esc(key)+'" class="be22-btn '+cl+'">'+esc(name)+'</button>';
 const store=()=>ctx.model.spendV2;
 function init(bridge){ctx=bridge}
-function prepare(){if(draft)return;const s=store();draft={name:s.budgetName||'October 2026 Budget',month:s.budgetMonth||'October 2026',period:s.budgetPeriod||'Monthly',limit:Number(s.budgetLimit||300000),categories:{...Object.fromEntries(items.map(x=>[x[0],x[3]])),...s.categories},rollover:{...s.rollover},rules:{alertThreshold:80,weeklyDigest:true,unusual:true,paused:false,...s.rules}}}
+function snapshot(){const s=store();return JSON.stringify([s.budgetName,s.budgetMonth,s.budgetPeriod,s.budgetLimit,s.categories,s.rollover,s.rules])}
+function prepare(){const stateSignature=snapshot();if(draft&&observed===stateSignature)return;const s=store();observed=stateSignature;draft={name:s.budgetName||'October 2026 Budget',month:s.budgetMonth||'October 2026',period:s.budgetPeriod||'Monthly',limit:Number(s.budgetLimit||300000),categories:{...Object.fromEntries(items.map(x=>[x[0],x[3]])),...s.categories},rollover:{...s.rollover},rules:{alertThreshold:80,weeklyDigest:true,unusual:true,paused:false,...s.rules}}}
 function pie(){const total=sum();let v=0;const stops=items.map(x=>{const old=v;v+=Number(draft.categories[x[0]]||0)/Math.max(1,total)*100;return x[2]+' '+old.toFixed(2)+'% '+v.toFixed(2)+'%'}).join(',');
 return '<div class="be22-pie-wrap"><div class="be22-pie" style="background:conic-gradient('+stops+')"><div><b>'+fmt(total)+'</b><small>Total Budget</small></div></div><div class="be22-legend">'+items.map(x=>'<div><i style="background:'+x[2]+'"></i><span>'+esc(x[0])+'</span><em>'+Math.round(100*Number(draft.categories[x[0]]||0)/Math.max(1,total))+'%</em><strong>'+fmt(draft.categories[x[0]])+'</strong></div>').join('')+'</div></div>'}
 function budgetTable(){const total=sum();return '<div class="be22-table-box"><table class="be22-table"><thead><tr><th></th><th>Category</th><th>Allocation (KES)</th><th>% of Budget</th><th>Share</th><th>Monthly Limit</th><th>Rollover</th><th>Actions</th></tr></thead><tbody>'+
@@ -67,7 +68,7 @@ if(!draft.name){notice='A budget name is required.';break}
 if(draft.limit<=0||!Number.isFinite(draft.limit)){notice='Enter a positive budget limit.';break}
 if(Math.abs(sum()-draft.limit)>.01){notice='Category allocations must equal the total target before saving. Difference: '+fmt(draft.limit-sum())+'.';break}
 const data=store();data.budgetName=draft.name;data.budgetMonth=draft.month;data.budgetPeriod=draft.period;data.budgetLimit=draft.limit;data.categories={...draft.categories};data.rollover={...draft.rollover};data.rules={...draft.rules};
-ctx.save();notice='Budget saved to the shared Finance OS planning records. No real funds have moved.';step=3;break}
+ctx.save();observed=snapshot();notice='Budget saved to the shared Finance OS planning records. No real funds have moved.';step=3;break}
 default:notice='Local prototype action; no bank or external service contacted.';break
 }
 ctx.render();return true}
