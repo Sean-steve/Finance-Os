@@ -4,8 +4,8 @@
 let ctx;
 const $=s=>document.querySelector(s);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=x=>'KES '+Math.round(Math.abs(Number(x)||0)).toLocaleString('en-KE');
-const signed=x=>(Number(x)<0?'−':'+')+money(x);
+const money=x=>(Number(x)<0?'−':'')+'KES '+Math.round(Math.abs(Number(x)||0)).toLocaleString('en-KE');
+const signed=x=>(Number(x)<0?'−':'+')+money(Math.abs(Number(x)||0));
 const fnum=x=>Number(x||0).toLocaleString('en-KE',{maximumFractionDigits:2});
 const pct=(a,b)=>Math.round(Number(a||0)*100/Math.max(1,Number(b||0)));
 const palette=['#14b98b','#2fa4e1','#9865d0','#f1b252','#ef788f','#8baab6','#6e93d0'];
@@ -253,7 +253,7 @@ if(ui.modal==='asset'){
  form='<form data-weform="trade" class="we-form">'+note('No broker orders, settlements, or real payments. This moves value between the selected local cash account and investment position.',true)+
  '<div class="we-fields"><div class="we-field">Side<strong>'+esc(ui.tradeSide.toUpperCase())+'</strong></div>'+
  field('Quantity','shares',10,'number','min="0.0001" step="0.0001" required')+
- field('Illustrative Price (KES)','price',h?.price||0,'number','min="0.01" step=".01" required')+
+ field('Illustrative Price (KES)','price',h?.price||0,'number','min="0.01" step=".01" readonly required')+
  options('Local Cash Account','account',availableAccounts.map(x=>x[0]),availableAccounts[0]?.[0]||'')+'</div>'+
  '<button class="we-btn primary" type="submit">Confirm Local Simulation</button></form>';
 }else if(ui.modal==='dividend'){
@@ -282,7 +282,7 @@ ui.alert='';
 switch(cmd){
  case 'reference':location.href='index.html#screen/'+ctx.screen();break;
  case 'tab':{const i=arg.indexOf(':'),key=arg.slice(0,i),value=arg.slice(i+1);ui.tab[key]=value;if(key==='520')ui.assetFilter=value;save();break}
- case 'asset':ui.asset=arg;save();break;
+ case 'asset':ui.asset=arg;if(ctx.screen()===52)save();else go(52);break;
  case 'holding':ui.holding=arg;go(54);break;
  case 'category':go(51);break;
  case 'portfolio':go(53);break;
@@ -342,6 +342,7 @@ switch(form.dataset.weform){
  case 'trade':{
  const h=selHolding(),shares=Number(d.shares),price=Number(d.price),account=ctx.model.accounts.find(x=>x[0]===d.account),cost=Math.round(shares*price*100)/100;
  if(!h||!account||!Number.isFinite(shares)||!Number.isFinite(price)||shares<=0||price<=0||!Number.isFinite(cost)){save('Enter valid units, price and account.');break}
+ if(Math.abs(price-h.price)>0.001){save('Simulated orders must use the displayed demo market price to preserve cash and holdings; no trade recorded.');break}
  if(ui.tradeSide==='buy'){
  if(account[1]<cost){save('Insufficient local demo cash balance; no simulated trade was recorded.');break}
  const oldUnits=h.shares;h.avg=(h.avg*oldUnits+price*shares)/(oldUnits+shares);h.shares=oldUnits+shares;account[1]=Math.round((account[1]-cost)*100)/100;
