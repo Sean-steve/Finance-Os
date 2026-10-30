@@ -40,6 +40,8 @@ jobs:
         run: node tests/rebuild-batch06-15.cjs
       - name: Validate coded spending and budgeting screens 16–26
         run: node tests/rebuild-batch16-26.cjs
+      - name: Test income, bills and cash flow reconstruction screens 27–34
+        run: node tests/rebuild-batch27-34.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs
