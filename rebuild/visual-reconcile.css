@@ -101,3 +101,28 @@ body{color:var(--fo-ink);background:#f9fbfa}
 .bpage:has(.b-account-banner) .b-panel{padding:11px}
 @media(max-width:960px){.header .logo{width:180px}.app-shell{grid-template-columns:182px minmax(0,1fr)}}
 @media(max-width:720px){.header .logo{width:auto}.app-shell{grid-template-columns:minmax(0,1fr)}.main{padding:0 6px}}
+
+
+/* 11 — approved design: scenic page header, white merchant summary, six-slot context ribbon. */
+.bpage:has(.b-detail-title) .b-account-banner{
+  background:#fff!important;color:#102b3b!important;min-height:100px;
+  margin-top:-26px;position:relative;z-index:2;
+  border:1px solid #e7eee8;box-shadow:0 2px 9px #0b39290c;
+  padding:18px 18px;
+}
+.bpage:has(.b-detail-title) .b-account-banner h2{color:#102b3b;font-size:19px}
+.bpage:has(.b-detail-title) .b-account-banner small{color:#5b7180;opacity:1}
+.bpage:has(.b-detail-title) .b-account-banner .b-round{width:69px;height:68px;font-size:29px;color:white;background:linear-gradient(135deg,#008d39,#02b245);border-radius:9px}
+.bpage:has(.b-detail-title) .b-account-banner .b-actions strong{color:#db3249;font-size:23px}
+.bpage:has(.b-detail-title) .b-account-banner .b-actions{justify-content:flex-end;align-items:center}
+.b11-meta{background:#fff;border:1px solid #eff1ef;border-radius:7px;margin:7px 0 10px;
+ display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:12px 9px}
+.b11-meta>div{display:flex;gap:8px;min-width:0;align-items:center;border-right:1px solid #eef2ef;padding:2px 5px}
+.b11-meta>div:last-child{border-right:0}
+.b11-meta-icon{display:grid;place-items:center;flex:none;width:28px;height:29px;background:#eff6f9;border-radius:6px;color:#087956;font-size:17px}
+.b11-meta small{display:block;font-size:9px;color:#718491}
+.b11-meta b{display:block;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.bpage:has(.b-detail-title) .b-tabs{margin-top:0;background:white;border-radius:8px;padding:6px 9px;border:1px solid #edf1ee}
+.bpage:has(.b-detail-title) .b-list-pair{padding:7px 0}
+@media(max-width:1040px){.b11-meta{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.b11-meta{grid-template-columns:repeat(2,minmax(0,1fr));padding:6px}.b11-meta b{max-width:100px}}
