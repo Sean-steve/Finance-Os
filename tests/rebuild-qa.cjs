@@ -65,11 +65,11 @@ async function go(){
     await page.locator('#transaction-form button[type="submit"]').click();
     assert.ok(await page.getByText('QA Groceries').count()>=1);
   });
-  await check('Uncoded screen links explicitly return to approved visual reference',async()=>{
+  await check('Reconstructed budget navigation opens the coded Screen 21',async()=>{
     const nav=await page.locator('[data-nav="21"]').first().count();
     assert.equal(nav,1);
     await page.locator('[data-nav="21"]').first().click();
-    assert.ok(page.url().includes('index.html#screen/21'));
+    assert.ok(page.url().includes('rebuild.html#screen/21'));assert.equal(await page.locator('.spend-page').count(),1);
   });
   await check('Screen 05 Safe-to-Spend matches reference panel structure',async()=>{
    await page.goto(base+'/rebuild.html#screen/5');
