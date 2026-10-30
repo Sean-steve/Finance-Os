@@ -301,6 +301,22 @@ const pos=el.selectionStart;ctx.render();
 const found=$('[data-cfsearch="'+key+'"]');if(found){found.focus();found.setSelectionRange(pos,pos)}
 return true;
 }
+
+function mirrorLegacyIncome(record,formerName){
+ const entries=ctx.model.incomes;
+ if(!Array.isArray(entries))return;
+ let prior=entries.find(x=>x[0]===formerName||x[0]===record.name);
+ if(prior){prior[0]=record.name;prior[1]=record.amount}
+ else entries.push([record.name,record.amount]);
+}
+function mirrorLegacyBill(record,formerName){
+ const entries=ctx.model.bills;
+ if(!Array.isArray(entries))return;
+ let prior=entries.find(x=>x[0]===formerName||x[0]===record.name);
+ if(prior){prior[0]=record.name;prior[1]=record.due;prior[2]=record.amount;prior[3]=record.status}
+ else entries.push([record.name,record.due,record.amount,record.status]);
+}
+
 function submit(e){
 const form=e.target;if(!form.dataset?.cfform)return false;
 e.preventDefault();
@@ -310,20 +326,25 @@ switch(form.dataset.cfform){
   const amount=Number(d.amount),name=String(d.name||'').trim();if(!name||!Number.isFinite(amount)||amount<0){save('Provide a valid income amount and source.');break}
   const exists=state().incomes.find(x=>x.id===v.incomeDetail);
   const record={name,amount,category:d.category,frequency:d.frequency,expected:d.expected,account:'KCB Main Account',status:'Active'};
+  const formerName=exists?.name;
   if(exists)Object.assign(exists,record);
   else state().incomes.push({id:'inc-'+Date.now(),previous:0,growth:0,...record});
+  mirrorLegacyIncome(record,formerName);
   v.modal=null;save('Income source saved to local financial planning records.');break}
  case 'bill':{
   let amount=Number(d.amount),name=String(d.name||'').trim();if(!name||!Number.isFinite(amount)||amount<0){save('Provide a valid bill and amount.');break}
   let exists=state().bills.find(x=>x.id===v.editBillId);
   const record={name,amount,due:d.due,category:d.category,account:d.account,status:exists?.status||'Upcoming',customer:exists?.customer||'MANUAL',period:'Manual',previous:exists?.previous||amount,reminder:exists?.reminder??false,autopay:exists?.autopay??false};
+  const formerName=exists?.name;
   if(exists)Object.assign(exists,record);else state().bills.push({id:'bill-'+Date.now(),...record});
+  mirrorLegacyBill(record,formerName);
   v.modal=null;save('Bill saved to local demonstration obligations.');break}
  case 'payBill':{
   const b=bill(),amount=Number(d.amount),destination=String(d.destination||'').trim();
   if(!(amount>0)||amount>b.amount||!destination||b.status==='Paid'){save('Enter a valid payment amount for an unpaid bill.');break}
   state().paymentHistory.push({id:'payment-'+Date.now(),billId:b.id,date:'2026-10-30',amount,method:v.paymentMode,reference:'DEMO-ONLY'});
   b.amount=Math.max(0,b.amount-amount);if(b.amount===0)b.status='Paid';
+  mirrorLegacyBill(b,b.name);
   // Do not debit cash or assert provider settlement without an authorized payment allocation.
   save('Simulated payment recorded locally. This is NOT a completed bank or M-Pesa payment.');break}
  case 'scenario':{
