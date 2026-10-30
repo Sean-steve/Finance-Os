@@ -408,5 +408,219 @@ function screen42(){
  '</div>');
 }
 
-/* APPEND_HANDLERS */
+
+function dialog(){
+ const type=ui.modal;
+ if(!type)return '';
+ let title=String(type),body='';
+ const gs=goal(),bucket=state().buckets.find(x=>x.id===ui.bucket),rule=state().rules.find(x=>x.id===ui.rule),req=state().requests.find(x=>x.id===ui.request);
+ if(type==='goal'||type==='editGoal'){
+  const current=type==='editGoal'?gs:null;title=current?'Edit Savings Goal':'Create Savings Goal';
+  body='<form class="cap-form" data-capform="goal">'+label('Goal Name','name',current?.name||'','text','required maxlength="80"')+
+  '<div class="cap-formgrid">'+label('Target Amount (KES)','target',current?.target||500000,'number','min="1" required')+
+  label('Current Savings (KES)','saved',current?.saved||0,'number','min="0" required')+
+  label('Monthly Contribution (KES)','monthly',current?.monthly||10000,'number','min="0" required')+
+  label('Target Date','deadline',current?.deadline||'2028-12-01','date','required')+'</div>'+
+  '<button class="cap-btn primary" type="submit">Save Goal</button></form>';
+ }else if(type==='bucket'||type==='editBucket'){
+  const x=type==='editBucket'?bucket:null;title=x?'Edit Money Bucket':'Create Money Bucket';
+  body='<form class="cap-form" data-capform="bucket">'+label('Bucket Name','name',x?.name||'','text','required')+
+  '<div class="cap-formgrid">'+label('Allocation Share (%)','share',x?.share||10,'number','min="0" max="100" required')+
+  label('Target (KES)','goal',x?.goal||40000,'number','min="0" required')+
+  label('Current Planned (KES)','amount',x?.amount||0,'number','min="0" required')+
+  sel('Bucket Purpose','kind',['Living','Growth','Protection','Saving','Obligations','Discretionary','Giving','Other'],x?.kind||'Other')+'</div>'+
+  '<button class="cap-btn primary" type="submit">Save Money Bucket</button></form>';
+ }else if(type==='rule'||type==='editRule'){
+  const x=type==='editRule'?rule:null;title=x?'Edit Allocation Rule':'Create Allocation Rule';
+  body='<form class="cap-form" data-capform="rule">'+label('Rule name','name',x?.name||'','text','required')+
+  sel('Destination bucket','bucket',state().buckets.map(b=>b.name),x?.bucket||state().buckets[0].name)+
+  '<div class="cap-formgrid">'+label('Allocation (%)','share',x?.share||10,'number','min="0" max="100" required')+
+  sel('Trigger','trigger',['When income received','When amount > KES 100,000','Monthly','Manual'],x?.trigger||'When income received')+'</div>'+
+  '<button class="cap-btn primary" type="submit">Save Rule</button></form>';
+ }else if(type==='fund'||type==='fundEmergency'||type==='withdrawEmergency'){
+  const isEmergency=type!=='fund',withdraw=type==='withdrawEmergency';
+  title=withdraw?'Simulate Emergency Withdrawal':isEmergency?'Fund Emergency Reserve':'Fund Savings Goal';
+  body='<form class="cap-form" data-capform="'+type+'">'+
+  '<div class="cap-note">This is an internal browser-demo allocation. It changes local account and goal balances only; no bank transfer.</div>'+
+  label('Amount (KES)','amount',10000,'number','min="1" required')+
+  sel(withdraw?'Destination Account':'Funding Account','account',ctx.model.accounts.slice(0,3).map(a=>a[0]),ctx.model.accounts[0][0])+
+  '<button class="cap-btn primary" type="submit">Confirm Local Transfer</button></form>';
+ }else if(type==='emergencySettings'){
+  title='Emergency Fund Settings';const e=state().emergency;
+  body='<form class="cap-form" data-capform="emergencySettings">'+
+  label('Emergency Reserve Target (KES)','target',e.target,'number','min="1" required')+
+  label('Monthly Contribution Plan (KES)','monthly',e.monthly,'number','min="0" required')+
+  '<button class="cap-btn primary" type="submit">Save Reserve Plan</button></form>';
+ }else if(type==='request'||type==='reviewRequest'){
+  const x=type==='reviewRequest'?req:null;title=x?'Funding Request Review':'New Funding Request';
+  body=x?'<div class="cap-note">Approval is an administrative status only; no money moves or is reserved automatically.</div>'+
+  row('▦',x.title,x.justification,cash(x.amount))+row('♙','Request Owner',x.owner,pill(x.status,x.status==='Pending'?'warn':''))+
+  (x.status==='Pending'?'<div class="cap-actions">'+act('Approve Request','approveRequest','primary')+act('Reject Request','rejectRequest')+'</div>':'<div class="cap-muted">This request has already been reviewed.</div>'):
+  '<form class="cap-form" data-capform="request">'+
+  label('Request Title','title','','text','required')+
+  '<div class="cap-formgrid">'+label('Amount (KES)','amount',50000,'number','min="1" required')+
+  sel('Category','category',['Business','Housing','Education','Travel','Health','Other'],'Business')+'</div>'+
+  '<label class="cap-field">Justification<textarea class="cap-input" name="justification" rows="3" required></textarea></label>'+
+  '<button class="cap-btn primary" type="submit">Submit Funding Request</button></form>';
+ }else if(type==='strategy'){
+  title='Strategic Allocation';const a=state().capitalStrategy;
+  body='<form class="cap-form" data-capform="strategy">'+
+  '<div class="cap-formgrid">'+label('Growth (%)','growth',a.growth,'number','min="0" max="100" required')+
+  label('Stability (%)','stability',a.stability,'number','min="0" max="100" required')+
+  label('Opportunity (%)','opportunity',a.opportunity,'number','min="0" max="100" required')+'</div>'+
+  '<p class="cap-muted">Shares must add to 100%. Changes are planning preferences only.</p>'+
+  '<button class="cap-btn primary" type="submit">Save Strategy</button></form>';
+ }else{title=String(type);body='<div class="cap-note warn">This is a guided demonstration. No external provider transaction or authorization is available.</div>'}
+ return '<div class="cap-dialog-wrap"><div class="cap-dialog" role="dialog" aria-modal="true" aria-label="'+safe(title)+'">'+
+ '<div class="cap-panel-head"><h2>'+safe(title)+'</h2>'+act('Close','closeModal')+'</div>'+body+'</div></div>';
+}
+function download(file,heading,rows){
+ const csv=[heading,...rows].map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ const link=document.createElement('a'),object=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ link.href=object;link.download=file;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(object),500);
+}
+function render(n){switch(Number(n)){
+ case 35:return screen35();case 36:return screen36();case 37:return screen37();case 38:return screen38();
+ case 39:return screen39();case 40:return screen40();case 41:return screen41();case 42:return screen42();default:return ''}}
+function actClick(e){
+ const node=e.target.closest?.('[data-cap],[data-capnav]');if(!node)return false;
+ if(node.dataset.capnav){e.preventDefault();navigate(node.dataset.capnav);return true}
+ const raw=node.dataset.cap,name=raw.split(':')[0],arg=raw.slice(name.length+1);ui.notice='';
+ switch(name){
+ case 'reference':location.href='index.html#screen/'+ctx.screen();break;
+ case 'tab':{const split=arg.indexOf(':'),id=Number(arg.slice(0,split)),value=arg.slice(split+1);ui.tab[id]=value;store();break}
+ case 'newBucket':ui.bucket='';ui.modal='bucket';store();break;
+ case 'editBucket':ui.bucket=arg;ui.modal='editBucket';store();break;
+ case 'adjustBuckets':ui.modal='Edit individual money buckets to adjust their allocations. Automatic transfers are not connected.';store();break;
+ case 'newRule':ui.rule='';ui.modal='rule';store();break;
+ case 'editRule':ui.rule=arg;ui.modal='editRule';store();break;
+ case 'pauseAutomation':state().automationPaused=!state().automationPaused;store('Automation '+(state().automationPaused?'paused':'enabled')+' in demo preferences; no background transfer service exists.');break;
+ case 'runAllocation':state().allocationHistory.push({date:'2026-10-30',source:'Allocation Preview',amount:state().buckets.reduce((n,b)=>n+b.amount,0),status:'Preview'});
+   store('Allocation preview saved. No funds were moved from any account.');break;
+ case 'nextAllocation':ui.modal='Next proposed allocation: November 2026. No recurring financial automation is active.';store();break;
+ case 'template':{const n=Number(arg);if(n===0){const shares=[50,20,20,5,5,0,0,0];state().buckets.forEach((b,i)=>b.share=shares[i]||0)}
+   else if(n===1){state().buckets[1].share=30;state().buckets[2].share=20}
+   else if(n===2){state().buckets[4].share=30}
+   else{ui.modal='Create your own custom allocation rule.';store();break}
+   store('Template applied to planned shares. Review the percentages before use.');break}
+ case 'rebalance':ui.modal='Portfolio rebalancing is a financial-provider action; this coded prototype only previews an allocation plan.';store();break;
+ case 'editStrategy':ui.modal='strategy';store();break;
+ case 'emergency':navigate(39);break;
+ case 'addInvestment':navigate(36);break;
+ case 'businessCapital':navigate(41);break;
+ case 'buckets':navigate(36);break;
+ case 'scenario':navigate(42);break;
+ case 'newGoal':ui.modal='goal';store();break;
+ case 'goal':ui.goal=arg;state().selectedGoal=arg;ctx.save();navigate(38);break;
+ case 'fundGoal':ui.modal='fund';store();break;
+ case 'fundEmergency':ui.modal='fundEmergency';store();break;
+ case 'withdrawEmergency':ui.modal='withdrawEmergency';store();break;
+ case 'editEmergency':ui.modal='emergencySettings';store();break;
+ case 'pauseEmergency':state().emergency.monthly=0;store('Monthly emergency contribution plan paused locally.');break;
+ case 'toggleProtection':state().emergency.isProtected=!state().emergency.isProtected;store('Protection reminder preference saved locally.');break;
+ case 'editGoal':ui.modal='editGoal';store();break;
+ case 'autoSave':navigate(36);break;
+ case 'pauseGoal':ui.modal='Goal contributions are manually recorded. No automatic funding is running.';store();break;
+ case 'simulator':navigate(40);break;
+ case 'purchaseType':state().purchase.type=arg;store('Purchase category updated.');break;
+ case 'savePurchase':state().purchaseSaved.push({id:'sim-'+Date.now(),...state().purchase,created:'2026-10-30'});store('Illustrative purchase simulation saved locally.');break;
+ case 'purchaseCompare':ui.tab[40]='Compare Options';store('Compare the three illustrative options below.');break;
+ case 'resetPurchase':state().purchase=structuredClone(initial().purchase);store('Restored initial purchase assumptions.');break;
+ case 'option':{const k=[.65,1,1.35][Number(arg)]||1;state().purchase.price=Math.round(state().purchase.price*k);store('Selected illustrative purchase price. Recalculate to review the impact.');break}
+ case 'newRequest':ui.request='';ui.modal='request';store();break;
+ case 'request':ui.request=arg;ui.modal='reviewRequest';store();break;
+ case 'pending':ui.tab[41]='Pending Approvals';store('Pending requests are shown in the review panel.');break;
+ case 'approveRequest':case 'rejectRequest':{
+   const r=state().requests.find(x=>x.id===ui.request);if(r&&r.status==='Pending'){r.status=name==='approveRequest'?'Approved':'Rejected';
+    state().requestHistory.push({id:r.id,status:r.status,at:'2026-10-30'});ui.modal=null;store('Funding request '+r.status.toLowerCase()+' locally. No funds were disbursed.')}break}
+ case 'approvalRules':ui.modal='Approval rules and multi-party authorization are not connected; review remains local in this prototype.';store();break;
+ case 'preset':{const presets=[[8,3,8],[12,3,8],[-5,12,0],[-10,6,-6]],p=presets[Number(arg)]||[5,3,8];
+    state().scenario.incomeGrowth=p[0];state().scenario.expenseGrowth=p[1];state().scenario.investmentReturn=p[2];state().scenario.scenario='Custom';store('Applied a what-if financial planning assumption.');break}
+ case 'saveScenario':state().savedScenarios.push({id:'scenario-'+Date.now(),...state().scenario,created:'2026-10-30',projected:simulateScenario().end});store('Financial scenario saved locally.');break;
+ case 'viewSaved':ui.modal='Saved scenarios: '+state().savedScenarios.length+'. Open Scenario Builder to change assumptions.';store();break;
+ case 'exportScenario':download('finance-os-scenario-model.csv',['Month','Income','Expenses','Cash','Savings'],simulateScenario().rows.map(x=>[x.month,x.income,x.expense,x.cash,x.savings]));store('Illustrative scenario CSV exported.');break;
+ case 'closeModal':ui.modal=null;store();break;
+ default:ui.modal='Feature not connected to a live provider. This is a working UI prototype.';store();break;
+ }
+ return true
+}
+function actChange(e){
+ const el=e.target;
+ if(el.matches?.('[data-caprange]')){
+   const k=el.dataset.caprange;const value=Number(el.value);
+   if(k==='down')state().purchase.down=Math.min(value,state().purchase.price);
+   if(k==='price'){state().purchase.price=value;state().purchase.down=Math.min(state().purchase.down,value)}
+   store('Purchase slider updated.');return true;
+ }
+ return false;
+}
+function actSubmit(e){
+ const form=e.target;if(!form.dataset?.capform)return false;
+ e.preventDefault();const d=Object.fromEntries(new FormData(form));
+ switch(form.dataset.capform){
+ case 'goal':{
+   const target=Number(d.target),saved=Number(d.saved),monthly=Number(d.monthly),name=String(d.name||'').trim();
+   if(!name||!(target>0)||saved<0||monthly<0){store('Enter valid goal amounts.');break}
+   const record={name,target,saved,monthly,deadline:d.deadline,category:'Personal',icon:'◎'};
+   const old=state().goals.find(x=>x.id===ui.goal);
+   if(ui.modal==='editGoal'&&old)Object.assign(old,record);else{record.id='g-'+Date.now();state().goals.push(record);ui.goal=record.id}
+   state().selectedGoal=ui.goal;syncGoals();ui.modal=null;store('Goal saved in both the goals workspace and shared financial demo state.');navigate(37);break}
+ case 'bucket':{
+   const share=Number(d.share),goal=Number(d.goal),amount=Number(d.amount),name=String(d.name||'').trim();
+   if(!name||share<0||share>100||goal<0||amount<0){store('Provide valid allocation inputs.');break}
+   const record={name,share,goal,amount,kind:d.kind,icon:'▥',active:true};
+   const old=state().buckets.find(x=>x.id===ui.bucket);
+   if(ui.modal==='editBucket'&&old)Object.assign(old,record);else state().buckets.push({id:'bucket-'+Date.now(),...record});
+   ui.modal=null;store('Money bucket plan updated locally. No cash moved.');break}
+ case 'rule':{
+   const share=Number(d.share),name=String(d.name||'').trim();
+   if(!name||share<0||share>100){store('Enter a valid rule and percentage.');break}
+   const record={name,share,trigger:d.trigger,bucket:d.bucket,active:true};
+   const old=state().rules.find(x=>x.id===ui.rule);
+   if(ui.modal==='editRule'&&old)Object.assign(old,record);else state().rules.push({id:'r-'+Date.now(),...record});
+   ui.modal=null;store('Allocation rule updated as a local demonstration.');break}
+ case 'fund':case 'fundEmergency':case 'withdrawEmergency':{
+   const amount=Number(d.amount),withdraw=form.dataset.capform==='withdrawEmergency';
+   const eg=emergency();const g=form.dataset.capform==='fund'?goal():eg;
+   const account=ctx.model.accounts.find(x=>x[0]===d.account);
+   if(!g||!account||!Number.isFinite(amount)||amount<=0){store('Select an account and positive amount.');break}
+   if(withdraw){if(amount>g.saved){store('Insufficient emergency savings for this simulated withdrawal.');break}g.saved-=amount;account[1]+=amount}
+   else{if(amount>Number(account[1])){store('Insufficient demo account balance for this contribution.');break}account[1]-=amount;g.saved+=amount}
+   const record={date:'2026-10-30',amount,account:account[0],goalId:g.id};
+   if(withdraw)state().emergency.withdrawals.push(record);
+   else if(g===eg)state().emergency.contributions.push(record);
+   state().goalFunding.push({...record,type:withdraw?'Withdrawal':'Contribution'});
+   syncGoals();ui.modal=null;
+   store('Local '+(withdraw?'withdrawal':'funding')+' recorded with matching demo balances. No real transfer occurred.');break}
+ case 'emergencySettings':{
+   const target=Number(d.target),monthly=Number(d.monthly);
+   if(!(target>0)||monthly<0){store('Set a valid target and monthly savings amount.');break}
+   state().emergency.target=target;state().emergency.monthly=monthly;
+   const eg=emergency();if(eg){eg.target=target;eg.monthly=monthly;syncGoals()}
+   ui.modal=null;store('Emergency reserve settings saved locally.');break}
+ case 'purchase':{
+   const price=Number(d.price),down=Number(d.down),interest=Number(d.interest),term=Number(d.term),costs=Number(d.costs);
+   if(!(price>0)||down<0||down>price||interest<0||term<1||costs<0){store('Purchase assumptions are invalid. Ensure down payment does not exceed price.');break}
+   state().purchase={...state().purchase,price,down,interest,term,costs};
+   store('Affordability recalculated from local assumptions only, not lender approval.');break}
+ case 'request':{
+   const amount=Number(d.amount),title=String(d.title||'').trim(),why=String(d.justification||'').trim();
+   if(!title||!why||!(amount>0)){store('Enter a title, justification and positive amount.');break}
+   const request={id:'q-'+Date.now(),title,justification:why,category:d.category,amount,date:'2026-10-30',owner:'Personal Finance Owner',status:'Pending'};
+   state().requests.push(request);ui.modal=null;store('Funding request recorded locally. No balance reserved.');break}
+ case 'strategy':{
+   const a=Number(d.growth),b=Number(d.stability),c=Number(d.opportunity);
+   if([a,b,c].some(x=>x<0||x>100)||a+b+c!==100){store('Strategy percentages must total exactly 100%.');break}
+   state().capitalStrategy={growth:a,stability:b,opportunity:c};ui.modal=null;store('Strategic allocation targets saved locally.');break}
+ case 'scenario':{
+   const keys=['incomeGrowth','expenseGrowth','investmentReturn','savingsRate','horizon'];
+   const values=keys.map(x=>Number(d[x]));
+   if(values.some(x=>!Number.isFinite(x))||values[3]<0||values[3]>100||values[4]<1||values[4]>60){store('Invalid scenario assumptions.');break}
+   keys.forEach((x,i)=>state().scenario[x]=values[i]);state().scenario.scenario=d.scenario;
+   store('Financial scenario recalculated from your assumptions. These are not guaranteed returns.');break}
+ }
+ return true;
+}
+window.FinanceCapital={init,render,actClick,actChange,actSubmit};
+
 })();
