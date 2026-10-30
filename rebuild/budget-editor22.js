@@ -9,8 +9,8 @@ const sum=()=>items.reduce((n,x)=>n+Number(draft.categories[x[0]]||0),0);
 const act=(name,key,cl='')=>'<button type="button" data-be22="'+esc(key)+'" class="be22-btn '+cl+'">'+esc(name)+'</button>';
 const store=()=>ctx.model.spendV2;
 function init(bridge){ctx=bridge}
-function snapshot(){const s=store();return JSON.stringify([s.budgetName,s.budgetMonth,s.budgetPeriod,s.budgetLimit,s.categories,s.rollover,s.rules])}
-function prepare(){const stateSignature=snapshot();if(draft&&observed===stateSignature)return;const s=store();observed=stateSignature;draft={name:s.budgetName||'October 2026 Budget',month:s.budgetMonth||'October 2026',period:s.budgetPeriod||'Monthly',limit:Number(s.budgetLimit||300000),categories:{...Object.fromEntries(items.map(x=>[x[0],x[3]])),...s.categories},rollover:{...s.rollover},rules:{alertThreshold:80,weeklyDigest:true,unusual:true,paused:false,...s.rules}}}
+function snapshot(){const s=store();return JSON.stringify([s.budgetName,s.budgetMonth,s.budgetPeriod,s.budgetLimit,s.categories,s.budgetRollover||s.rollover,s.rules])}
+function prepare(){const stateSignature=snapshot();if(draft&&observed===stateSignature)return;const s=store();observed=stateSignature;draft={name:s.budgetName||'October 2026 Budget',month:s.budgetMonth||'October 2026',period:s.budgetPeriod||'Monthly',limit:Number(s.budgetLimit||300000),categories:{...Object.fromEntries(items.map(x=>[x[0],x[3]])),...s.categories},rollover:{...(s.rollover||{}),...(s.budgetRollover||{})},rules:{alertThreshold:80,weeklyDigest:true,unusual:true,paused:false,...s.rules}}}
 function pie(){const total=sum();let v=0;const stops=items.map(x=>{const old=v;v+=Number(draft.categories[x[0]]||0)/Math.max(1,total)*100;return x[2]+' '+old.toFixed(2)+'% '+v.toFixed(2)+'%'}).join(',');
 return '<div class="be22-pie-wrap"><div class="be22-pie" style="background:conic-gradient('+stops+')"><div><b>'+fmt(total)+'</b><small>Total Budget</small></div></div><div class="be22-legend">'+items.map(x=>'<div><i style="background:'+x[2]+'"></i><span>'+esc(x[0])+'</span><em>'+Math.round(100*Number(draft.categories[x[0]]||0)/Math.max(1,total))+'%</em><strong>'+fmt(draft.categories[x[0]])+'</strong></div>').join('')+'</div></div>'}
 function budgetTable(){const total=sum();return '<div class="be22-table-box"><table class="be22-table"><thead><tr><th></th><th>Category</th><th>Allocation (KES)</th><th>% of Budget</th><th>Share</th><th>Monthly Limit</th><th>Rollover</th><th>Actions</th></tr></thead><tbody>'+
@@ -31,7 +31,7 @@ return '<div class="be22"><div class="be22-hero"><div><small>Budgets　›　Cre
 '<section class="be22-card"><header><h2>Budget Rules & Alerts</h2>'+act('Edit','step:2')+'</header><div class="be22-rules"><label><span>♧</span>Alert when category spending reaches<select data-be22-threshold>'+[60,70,80,90,100].map(n=>'<option value="'+n+'" '+(draft.rules.alertThreshold===n?'selected':'')+'>'+n+'%</option>').join('')+'</select><input type="checkbox" data-be22-rule="limitEnabled" class="be22-switch" '+(draft.rules.limitEnabled!==false?'checked':'')+'></label>'+
 [['weeklyDigest','✉','Send weekly budget summary'],['unusual','⚠','Alert me on unusual spending'],['paused','⌘','Pause alerts for this budget']].map(([k,i,t])=>'<label><span>'+i+'</span>'+t+'<input type="checkbox" class="be22-switch" data-be22-rule="'+k+'" '+(draft.rules[k]?'checked':'')+'></label>').join('')+'</div><small>Preferences only; no notification service connected.</small></section>'+
 '<section class="be22-card"><header><h2>Budget Goals</h2>'+act('Link Goal','goals')+'</header><div class="be22-goals">◎ <div><b>Stay within budget</b><small>Keep spending under '+fmt(draft.limit)+'</small><div class="be22-bar large"><i style="width:'+Math.min(100,projected/Math.max(1,draft.limit)*100)+'%"></i></div><small>'+fmt(draft.limit-projected)+' left</small></div></div></section></aside></div>'+
-'<p class="be22-caption">Screen 22 follows the approved Screen 21 Finance OS editor layout; no separate Screen 22 screenshot was supplied.</p></div>';
+'<p class="be22-caption">Screen 22 recreated using the approved Create / Edit Budget visual language provided for Screen 21. No standalone Screen 22 screenshot was supplied.</p></div>';
 }
 
 
@@ -59,7 +59,7 @@ if(arg==='lastMonth')draft.name='Copied from Previous Month Budget';
 if(arg==='template')items.forEach(c=>draft.categories[c[0]]=c[3]);
 if(arg==='suggested'){const fractions=[.4,.15,.10,.08,.06,.05,.04,.04,.03,.05];items.forEach((c,i)=>draft.categories[c[0]]=Math.round(fractions[i]*draft.limit))}
 notice='Preset added to your draft. Review amounts before saving.';break}
-case 'template':notice='Budget template retained in this browser draft. Save Budget to apply it.';break;
+case 'template':{const data=store();data.budgetTemplates??=[];data.budgetTemplates.push({id:'budget-template-'+Date.now(),name:draft.name+' Template',limit:draft.limit,period:draft.period,categories:{...draft.categories},rollover:{...draft.rollover},rules:{...draft.rules}});ctx.save();observed=snapshot();notice='Budget template saved to local planning records; it does not move money.';break}
 case 'category':notice='Edit the '+arg+' allocation directly in the row.';break;
 case 'goals':ctx.navigate(37);return true;
 case 'cancel':draft=null;ctx.navigate(21);return true;
@@ -67,7 +67,7 @@ case 'save':{
 if(!draft.name){notice='A budget name is required.';break}
 if(draft.limit<=0||!Number.isFinite(draft.limit)){notice='Enter a positive budget limit.';break}
 if(Math.abs(sum()-draft.limit)>.01){notice='Category allocations must equal the total target before saving. Difference: '+fmt(draft.limit-sum())+'.';break}
-const data=store();data.budgetName=draft.name;data.budgetMonth=draft.month;data.budgetPeriod=draft.period;data.budgetLimit=draft.limit;data.categories={...draft.categories};data.rollover={...draft.rollover};data.rules={...draft.rules};
+const data=store();data.budgetName=draft.name;data.budgetMonth=draft.month;data.budgetPeriod=draft.period;data.budgetLimit=draft.limit;data.categories={...draft.categories};data.rollover={...draft.rollover};data.budgetRollover={...draft.rollover};data.rules={...draft.rules};
 ctx.save();observed=snapshot();notice='Budget saved to the shared Finance OS planning records. No real funds have moved.';step=3;break}
 default:notice='Local prototype action; no bank or external service contacted.';break
 }
