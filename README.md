@@ -98,3 +98,9 @@ Eleven distinct screen layouts are coded with local demo workflows, charts, filt
 [Income Dashboard](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/27) · [Income Sources](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/28) · [Bills](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/30) · [Bill Details](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/31) · [Cash Flow Forecast](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/33) · [Shortfall Recovery](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/34)
 
 Eight real coded views with local-demo income and bill edits, simulated payment records, scenario forecasting and recovery actions. Visual screenshot acceptance pending. No live banking or mobile money payment integrations.
+
+## Screens 35–42 — Capital, Goals and Financial Scenarios
+
+[Capital Allocation](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/35) · [Money Buckets](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/36) · [Savings & Goals](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/37) · [Goal Details & Funding](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/38) · [Emergency Fund](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/39) · [Affordability Simulator](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/40) · [Funding Approvals](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/41) · [Financial Scenarios](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/42).
+
+Eight real HTML/CSS screens with connected local demo workflows, separate from the original screenshot reference viewer. **Pixel-perfect design approval pending.** Goal contributions conserve demo values between cash and goal ledgers. Approvals, allocations, estimates and simulations do not move actual money or imply provider connections.
