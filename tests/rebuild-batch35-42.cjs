@@ -91,7 +91,7 @@ async function main(){
    await page.locator('[data-capform="request"] [name="justification"]').fill('Professional development budget');
    await page.locator('[data-capform="request"] button[type="submit"]').click();
    let d=await data(),req=d.capitalV2.requests.find(x=>x.title==='QA Training Budget');assert.equal(req.status,'Pending');
-   await page.locator('[data-cap="request:'+req.id+'"]').click();
+   await page.locator('[data-cap="request:'+req.id+'"]').first().click();
    await page.locator('[data-cap="approveRequest"]').click();
    d=await data();assert.equal(d.capitalV2.requests.find(x=>x.id===req.id).status,'Approved');
    assert.equal(d.accounts.reduce((n,x)=>n+x[1],0),before);
