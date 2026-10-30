@@ -121,5 +121,129 @@ const liquid=()=>ctx.model.accounts.filter((x,i)=>i<=2).reduce((sum,x)=>sum+Numb
 const goal=()=>state().goals.find(x=>x.id===ui.goal)||state().goals.find(x=>x.id==='g-house')||state().goals[0];
 const emergency=()=>state().goals.find(x=>x.name==='Emergency Fund');
 
-/* APPEND_SCREENS */
+
+function screen35(){
+ const cap=state().capitalSectors||[
+ {name:'Investments',value:810000,target:40},{name:'Business Growth',value:470000,target:20},
+ {name:'Emergency Fund',value:300000,target:15},{name:'Major Purchases',value:220000,target:10},
+ {name:'Debt Repayment',value:170000,target:10},{name:'Cash Reserve',value:160000,target:5}
+ ];
+ const allocated=cap.reduce((a,x)=>a+x.value,0),total=2480000;
+ const allocationRows=[
+ ['Equity Portfolio','Investment',450000,20],['Money Market Fund','Investment',180000,10],
+ ['SACCO','Savings',220000,10],['Business Capital','Business',470000,20],
+ ['Emergency Fund','Savings',300000,15],['Car Purchase Fund','Goal',150000,8],
+ ['House Fund','Goal',70000,2],['Cash Wallet','Cash',160000,5]
+ ];
+ const tabsHtml=tabs(35,['Overview','Allocation','Investments','Debt Allocation','Goals Funding','Liquidity','Scenarios','Optimization','Rules & Policies'],tabValue(35,'Overview'));
+ return shell(35,metrics([['🪙','Total Investable Capital',cash(total),'↑ 12% vs last month'],['◕','Allocated Capital',cash(allocated),percent(allocated,total)+'% of investable capital'],['▣','Cash Reserve (Liquidity)',cash(350000),'↑ 14% of total capital'],['▥','Projected Annual Returns',cash(326000),'Illustrative blended return']])+tabsHtml+
+ '<div class="cap-grid">'+panel('Capital Allocation Overview',donut(cap,allocated))+
+ panel('Allocation vs Target',cap.map((x,i)=>'<div class="cap-row"><span class="grow">'+safe(x.name)+'</span>'+progress(percent(x.value,allocated),x.target,swatches[i%8])+'<small>'+percent(x.value,allocated)+'% / '+x.target+'%</small></div>').join(''))+
+ panel('Strategic Allocation',[
+ ['◎','Growth','Build long-term wealth through investments and business growth.','40%'],
+ ['◆','Stability','Maintain emergency funds and manage debt responsibly.','35%'],
+ ['ϟ','Opportunity','Keep liquidity for opportunities and major life goals.','25%']
+ ].map(([ic,n,d,p])=>row(ic,n,d,p)).join(''),act('Edit Strategy','editStrategy','tiny'))+
+ panel('Capital Allocation by Account',table(['Account','Type','Balance (KES)','Allocation','Target','Status'],allocationRows.map((a,i)=>'<tr><td>'+safe(a[0])+'</td><td>'+safe(a[1])+'</td><td>'+cash(a[2])+'</td><td>'+percent(a[2],allocated)+'%</td><td>'+a[3]+'%</td><td>'+pill(Math.abs(percent(a[2],allocated)-a[3])>2?'Review':'On Track',Math.abs(percent(a[2],allocated)-a[3])>2?'warn':'')+'</td></tr>')),goto('View Accounts',7,'tiny'))+
+ panel('Expected Returns (Annual)',barGraph([162,85,28,36,15].map((v,i)=>({name:['Invest','Business','Money','SACCO','Other'][i],value:v/2})))+info())+
+ panel('Capital Allocation Actions',[
+ ['◎','Rebalance Portfolio','Realign to target allocation','rebalance'],
+ ['◆','Fund Emergency Reserve','Top up to 6 months of expenses','emergency'],
+ ['↑','Increase Investment Allocation','Move planning share from cash reserve','addInvestment'],
+ ['♙','Review Business Capital Needs','Assess upcoming allocations','businessCapital'],
+ ['◷','Set Up Automatic Allocation','Review scheduled money buckets','buckets']
+ ].map(a=>row(a[0],a[1],a[2],'',a[3])).join(''))+
+ panel('Capital Allocation Trend',barGraph(Array.from({length:10},(_,i)=>({name:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'][i],value:34+i*5})))+
+ '<div class="cap-muted">Growth　Investments　Emergency fund　Debt repayment　Cash reserve</div>')+
+ panel('Scenario Modelling',[
+ ['Conservative','Lower risk, steady growth',cash(178000)],['Balanced','Current strategy',cash(326000)],['Aggressive','Higher risk, higher growth',cash(542000)]
+ ].map(x=>row('▥',x[0],x[1],x[2],'scenario')).join(''),goto('View Scenarios',42))+
+ panel('AI Insights & Recommendations',[
+ ['Increase investment capital','Review whether investing KES 50,000 more fits your goals.'],
+ ['Emergency fund buffer','Your reserve target may need another review.'],
+ ['Consider market risk','Returns can be negative and are never guaranteed.']
+ ].map(x=>row('✦',x[0],x[1])).join(''))+
+ '</div>');
+}
+function screen36(){
+ const bs=state().buckets,total=bs.reduce((n,b)=>n+b.amount,0),income=monthlyIncome();
+ const targets=bs.map((b,i)=>'<div class="cap-row">'+icon(b.icon)+'<span class="grow"><b>'+safe(b.name)+'</b><small>'+cash(b.amount)+' / '+cash(b.goal)+'</small>'+progress(b.amount,b.goal,swatches[i%8])+'</span><b>'+percent(b.amount,b.goal)+'%</b></div>').join('');
+ return shell(36,metrics([['▣','Total Monthly Income',cash(income),'From tracked income sources'],['🪙','Auto-Allocated (Plan)',cash(total),percent(total,income)+'% of income'],['◎','Available to Allocate',cash(Math.max(0,income-total)),'Unallocated planning amount'],['🏆','Active Buckets',String(bs.filter(x=>x.active).length),'Tracked']])+
+ tabs(36,['Overview','Allocation Rules','Money Buckets','Automation','Transfers','Exceptions','History','Settings'],tabValue(36,'Overview'))+
+ '<div class="cap-grid">'+
+ panel('Money Bucket Allocation',donut(bs.map(b=>({name:b.name,value:b.amount})),total))+
+ panel('Bucket Targets vs Current',targets)+
+ panel('Quick Actions',[
+ ['⊕','Create New Money Bucket','newBucket'],['⚙','Set Up Allocation Rule','newRule'],
+ ['⇄','Adjust Allocations','adjustBuckets'],['⏸','Pause Automation','pauseAutomation'],
+ ['▶','Run Allocation Now','runAllocation'],['▦','View Next Allocation','nextAllocation']
+ ].map(([ic,t,cmd])=>row(ic,t,'','',cmd)).join(''))+
+ panel('Active Allocation Rules',table(['#','Rule Name','Trigger','Allocation','To Bucket','Status','Action'],state().rules.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+safe(r.name)+'</td><td>'+safe(r.trigger)+'</td><td>'+r.share+'%</td><td>'+safe(r.bucket)+'</td><td>'+pill(r.active?'Active':'Paused',r.active?'':'warn')+'</td><td>'+act('Edit','editRule:'+r.id,'tiny')+'</td></tr>')))+
+ panel('Money Buckets',targets,goto('View all',36,'tiny'))+
+ panel('Rule Templates',[
+ ['50/30/20 Rule','Needs 50%, Wants 30%, Save 20%'],
+ ['Wealth Builder','Invest 30%, Emergency 20%, Rest 50%'],
+ ['Debt Freedom','Prioritize debt repayment'],
+ ['Freelancer Income','Split variable income efficiently']
+ ].map((x,i)=>row('⚙',x[0],x[1],'','template:'+i)).join(''))+
+ panel('Allocation History',table(['Date','Income Source','Amount','Status'],state().allocationHistory.slice(-5).reverse().map(x=>'<tr><td>'+safe(x.date)+'</td><td>'+safe(x.source)+'</td><td>'+cash(x.amount)+'</td><td>'+pill(x.status,x.status==='Allocated'?'':'warn')+'</td></tr>')))+
+ panel('Upcoming Allocations',state().incomes?.slice?.(0,5).map(x=>row('▣',x.name,x.expected,cash(x.amount)))?.join('')||
+ (ctx.model.incomeFlowV2?.incomes||[]).slice(0,5).map(x=>row('▣',x.name,x.expected,cash(x.amount))).join(''))+
+ panel('AI Insights & Recommendations',[
+ ['Increase investment allocation','Your investment bucket is slightly below target.'],
+ ['Goals funding','Small adjustments can improve goal progress.'],
+ ['Automatic allocation','Simulation paused: '+(state().automationPaused?'Yes':'No')]
+ ].map(x=>row('✦',x[0],x[1])).join(''))+'</div>');
+}
+function screen37(){
+ const gs=state().goals,goalSum=gs.reduce((a,g)=>a+g.saved,0),target=gs.reduce((a,g)=>a+g.target,0);
+ return shell(37,metrics([['◎','Total Savings',cash(goalSum),'Across all tracked goals'],['⚑','Active Goals',String(gs.length),'Savings and milestones'],['🪙','Monthly Savings',cash(gs.reduce((a,g)=>a+g.monthly,0)),'Planned contributions'],['🏆','Goals Achieved',String(gs.filter(g=>g.saved>=g.target).length),'Completed goals']])+
+ tabs(37,['Overview','My Goals','Savings Accounts','Milestones','Goal Planning','Auto Save','Insights'],tabValue(37,'Overview'))+
+ '<div class="cap-grid">'+panel('Savings Growth',barGraph(Array.from({length:10},(_,i)=>({name:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'][i],value:28+i*5}))))+
+ panel('Goal Allocation',donut(gs.slice(0,6).map(g=>({name:g.name,value:g.saved})),goalSum))+
+ panel('Quick Actions',[
+ ['⊕','Set a New Goal','newGoal'],['▥','Automate Monthly Savings','autoSave'],
+ ['⊕','Top Up a Goal','fundGoal'],['▣','Adjust Goal Target','editGoal'],
+ ['↧','Pause Goal','pauseGoal'],['◷','View Goal Simulator','simulator']
+ ].map(x=>row(x[0],x[1],'','',x[2])).join(''))+
+ '<section class="cap-panel cap-span3"><div class="cap-panel-head"><h2>My Financial Goals</h2>'+act('+ Create Goal','newGoal','primary')+'</div><div class="cap-goal-cards">'+gs.slice(0,8).map((g,i)=>'<button class="cap-goal-card" type="button" data-cap="goal:'+g.id+'"><div class="art">'+safe(g.icon||'◎')+'</div><b>'+safe(g.name)+'</b><small>'+cash(g.saved)+' / '+cash(g.target)+'</small>'+progress(g.saved,g.target,swatches[i%8])+'<small>'+percent(g.saved,g.target)+'% complete</small></button>').join('')+'</div></section>'+
+ panel('Upcoming Contributions',gs.slice(0,6).map(g=>row(g.icon||'◎',g.name,'Next planned contribution',cash(g.monthly))).join(''))+
+ panel('Savings Milestones',gs.slice(0,6).map(g=>row('✓',g.name,percent(g.saved,g.target)+'% of goal','')).join(''))+
+ panel('AI Insights & Recommendations',[
+ ['Automate savings','Small monthly transfers can accelerate milestones.'],
+ ['Protect emergency savings','Prioritize cash reserves before major commitments.'],
+ ['Review goal deadlines','Check contribution feasibility before committing.']
+ ].map(x=>row('✦',x[0],x[1])).join(''))+'</div>');
+}
+function screen38(){
+ const g=goal(),percentage=percent(g.saved,g.target),remaining=Math.max(0,g.target-g.saved),contrib=Number(g.monthly||0);
+ const projection=remaining/Math.max(1,contrib);
+ const selected=tabValue(38,'Overview');
+ return shell(38,'<div class="cap-panel" style="margin-bottom:10px;display:flex;align-items:center;gap:15px;flex-wrap:wrap">'+
+ icon(g.icon||'◎')+'<div style="flex:1"><b style="font-size:15px">'+safe(g.name)+'</b><small style="display:block;color:#70838d">Personal Goal　·　'+safe(g.deadline||'2028-12-01')+'</small></div>'+
+ '<div><small>Target Amount</small><strong style="display:block">'+cash(g.target)+'</strong></div>'+
+ '<div><small>Current Saved</small><strong style="display:block">'+cash(g.saved)+'</strong></div>'+
+ '<div><small>Remaining Amount</small><strong style="display:block">'+cash(remaining)+'</strong></div></div>'+
+ tabs(38,['Overview','Funding','Milestones','Projections','Linked Accounts','Notes & Documents','Settings'],selected)+
+ '<div class="cap-grid">'+panel('Progress Overview','<div class="cap-columns"><div class="cap-gauge" style="--p:'+percentage+'%"><div class="inner"><strong>'+percentage+'%</strong><small>'+cash(g.saved)+' saved</small></div></div><div>'+[
+ ['Target Amount',g.target],['Current Savings',g.saved],['Remaining',remaining],['Monthly Target',contrib]
+ ].map(x=>row('▥',x[0],'',cash(x[1]))).join('')+'</div></div>')+
+ panel('Funding Progress',lineGraph(10)+row('↑','Projected Completion',Math.ceil(projection)+' months at current contribution',cash(g.target)))+
+ panel('Quick Funding Actions','<form class="cap-form" data-capform="fundGoal">'+
+ label('Funding amount (KES)','amount',Math.min(10000,remaining),'number','min="1" required')+
+ sel('Funding account','account',ctx.model.accounts.slice(0,3).map(a=>a[0]),ctx.model.accounts[0][0])+
+ '<button class="cap-btn primary" type="submit">Simulate Goal Contribution</button></form>'+
+ '<div class="cap-note">Simulated internal transfer. Account cash decreases; goal savings increase. No bank transfer occurs.</div>')+
+ panel('Milestones',[
+ [25,'First Quarter'],[50,'Halfway There'],[75,'Three Quarters'],[100,'Goal Complete']
+ ].map(([p,n])=>'<div class="cap-row">'+icon(percentage>=p?'✓':'◷')+'<span class="grow"><b>'+n+'</b><small>Milestone '+p+'% of target</small></span>'+pill(percentage>=p?'Completed':'Upcoming',percentage>=p?'':'warn')+'</div>').join(''))+
+ panel('Funding Breakdown',donut([{name:'Accumulated',value:g.saved},{name:'Remaining',value:remaining}],g.target))+
+ panel('Goal Insights',row('◆','Keep saving consistently','Monthly plan '+cash(contrib))+row('◷','Estimated timeline','Rough estimate: '+Math.ceil(projection)+' months')+row('◎','Protect essential reserves','Do not fund from money needed for near-term bills.'))+
+ panel('Recent Contributions',table(['Date','Amount','Source','Type'],state().goalFunding.filter(x=>x.goalId===g.id).slice(-6).reverse().map(x=>'<tr><td>'+safe(x.date)+'</td><td>'+cash(x.amount)+'</td><td>'+safe(x.account)+'</td><td>Demo transfer</td></tr>')))+
+ panel('Projection & Scenarios',lineGraph(8)+goto('View Scenario Planning',42))+
+ panel('Documents & Notes','<div class="cap-note warn">No real document vault is connected. Do not upload sensitive financial documents into this demo.</div>')+
+ '</div>');
+}
+
+/* APPEND_MORE_SCREENS */
 })();
