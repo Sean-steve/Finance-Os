@@ -441,5 +441,35 @@ const pos=el.selectionStart;bridge.render();const next=$('[data-gvsearch="'+key+
 return true;
 }
 
-/* ACTION_HANDLERS */
+
+function actSubmit(e){
+const form=e.target;if(!form.dataset?.gvform)return false;
+e.preventDefault();const data=Object.fromEntries(new FormData(form));
+switch(form.dataset.gvform){
+case 'chat':{
+const q=String(data.question||'').trim().slice(0,700);if(!q){save('Enter a question first.');break}
+state().chat.push({kind:'user',text:q,at:'Local'},{kind:'assistant',text:deterministicAnswer(q),at:'Rule-based'});
+audit('Advisor Chat','Generated local scripted response');
+save('Scripted local guidance generated — not a live AI response.');break}
+case 'scenario':{
+const target=Number(data.target),monthly=Number(data.monthly);
+if(!Number.isFinite(target)||!Number.isFinite(monthly)||target<=0||monthly<=0){save('Enter positive purchase and allocation amounts.');break}
+ui.scenario={target,monthly,months:Math.ceil(Math.max(0,target-cash())/monthly)};
+ui.modal='scenarioResult';audit('Scenario','Estimated purchase savings period');save();break}
+case 'report':{
+const type=String(data.type||'Income Statement'),name=String(data.name||'Financial Snapshot').trim(),period=String(data.period||'Last 12 Months');
+if(!name){save('Enter a report name.');break}
+const obj={id:'report-'+Date.now(),type,name,period,date:new Date().toISOString().slice(0,10),rows:reportData(type)};
+state().reports.unshift(obj);ui.reportType=type;ui.reportPeriod=period;ui.modal=null;
+audit('Generate Report',name);save('Local report snapshot generated. Download its CSV from history.');break}
+case 'profile':{
+const name=String(data.name||'').trim();if(!name){save('Enter a valid display name.');break}
+model().profile.name=name;model().profile.email=String(data.email||'').trim();model().profile.phone=String(data.phone||'').trim();
+for(const key of ['currency','timezone','language','dateFormat'])state().security[key]=String(data[key]||'');
+ui.modal=null;audit('Edit Profile','Browser-local profile changed');save('Profile updated locally; no identity verification took place.');break}
+}
+return true;
+}
+window.FinanceGovernance={init,render,actClick,actChange,actInput,actSubmit};
+
 })();
