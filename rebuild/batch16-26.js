@@ -146,5 +146,107 @@ panel('Duplicate & Suspicious Charges',r('⚠','Possible recurring overlaps','No
 panel('Unused Services',subs.filter(s=>!s.essential).map(s=>r('◌',s.name,'Marked discretionary',fmt(s.cost))).join(''))+
 panel('AI Recommendations',advisorTips())+'</div>')}
 
+
+function budgetBuilder(n){
+const total=budgetTotal(),target=Number(config().budgetLimit),categories=cats(),spent=198450;
+const steps=['Basic Details','Category Allocation','Rules & Settings','Review & Save'];
+const stepper='<div class="sp-stepper">'+steps.map((name,i)=>'<div class="sp-step '+(i===ui.budgetStep?'current':'')+'"><span class="sp-n">'+(i+1)+'</span><span><b>'+name+'</b><small>'+['Set budget type and amount','Allocate and customize','Alerts and automation','Confirm and activate'][i]+'</small></span></div>').join('')+'</div>';
+const budgetRows='<div class="sp-budget-line sp-budget-header"><span></span><span>Category</span><span>Allocation (KES)</span><span>%</span><span>Share</span><span class="sp-monthly">Monthly Limit</span><span>Rollover</span></div>'+categories.map((c,i)=>'<div class="sp-budget-line"><span style="color:'+c.color+'">'+c.icon+'</span><span>'+esc(c.name)+'</span><input type="number" step="100" min="0" data-spcat="'+esc(c.name)+'" value="'+c.value+'" aria-label="'+esc(c.name)+' allocation in KES"><span>'+pct(c.value,total)+'%</span>'+bar(c.value,total,c.color)+'<span class="sp-monthly">'+fmt(c.value)+'</span><input type="checkbox" class="sp-switch" aria-label="Allow rollover for '+esc(c.name)+'" '+(i===0||i===3||i===5?'checked':'')+'></div>').join('');
+const summary='<div class="sp-budget-line"><b>Σ</b><b>Total</b><strong>'+fmt(total)+'</strong><strong>'+pct(total,total)+'%</strong>'+bar(total,total)+'<strong class="sp-monthly">'+fmt(total)+'</strong></div>';
+const rules=config().rules;
+const budgetDetails=panel('1. Budget Details','<form id="sp-budget-form" data-spform="budget"><div class="sp-fields"><label class="sp-field">Budget Name *<input name="name" id="sp-budget-name" required value="'+esc(config().budgetName)+'"></label><label class="sp-field">Period *<select name="period">'+['October 2026','November 2026','December 2026','January 2027'].map(s=>'<option>'+s+'</option>').join('')+'</select></label><div><label class="sp-field">Budget Type *</label>'+tab(['Monthly','Weekly','Yearly','Custom Range'],config().budgetPeriod,'budgetPeriod')+'</div><label class="sp-field">Total Budget Amount (KES) *<input name="total" type="number" min="1" value="'+target+'" required></label></div><div class="sp-buttons" style="margin-top:10px">'+['KES 100K','KES 250K','KES 500K','Custom'].map((x,i)=>sb(x,'budgetAmount:'+i)).join('')+'</div></form>')+
+panel('2. Allocate by Category',budgetRows+summary+'<div class="sp-buttons" style="margin-top:12px;justify-content:flex-end">'+sb('Distribute Evenly','spreadBudget')+sb('Reset','resetBudget')+sb('Save as Template','saveTemplate')+sb('Save Budget','saveBudget','green')+'</div>');
+const quick=panel('Quick Setup',[['✦','Use Template','Start from a ready-made budget','template'],['◷','Copy from Last Month','Use your previous budget','lastMonth'],['✿','AI Recommended','Suggested splits (not a connected AI service)','aiBudget']].map(([i,t,d,a])=>'<div class="sp-stat-row"><span>'+i+'　<b>'+t+'</b><small style="display:block">'+d+'</small></span>'+sb('Choose','budgetQuick:'+a)+'</div>').join(''));
+const right=panel('Budget Preview',donut(total)+note('Your categories currently total '+fmt(total)+'. Entered overall limit: '+fmt(target)+(total!==target?' — allocations differ from the overall target.':''),total!==target))+
+panel('Monthly Projection','<div class="sp-tiny-card-grid"><div class="sp-tiny-card"><b>'+fmt(target)+'</b>Budget</div><div class="sp-tiny-card"><b>'+fmt(spent)+'</b>Projected Spend</div><div class="sp-tiny-card"><b>'+fmt(Math.max(0,target-spent))+'</b>Expected Leftover</div><div class="sp-tiny-card">↓ 34%<br>Illustrative</div></div>'+bar(spent,target))+
+panel('Budget Rules & Alerts','<div class="sp-tag-list">'+[
+['Alert when spending reaches',String(rules.alertThreshold)+'% of category limit','alertThreshold'],
+['Send weekly budget summary','Enabled','weeklyDigest'],
+['Alert on unusual spending','Enabled','unusual'],
+['Pause alerts for this budget','Optional','paused']].map(([name,desc,key])=>'<div><span class="sp-icon">⚙</span><span style="flex:1"><b>'+esc(name)+'</b><small style="display:block">'+esc(desc)+'</small></span>'+(key==='alertThreshold'?'<select class="sp-select" data-spchange="alertThreshold" aria-label="Budget alert threshold">'+[60,70,80,90,100].map(v=>'<option '+(rules.alertThreshold===v?'selected':'')+' value="'+v+'">'+v+'%</option>').join('')+'</select>':'<input class="sp-switch" type="checkbox" data-sprule="'+key+'" aria-label="'+esc(name)+'" '+(rules[key]?'checked':'')+'>')+'</div>').join('')+'</div>')+
+panel('Budget Goals',r('◎','Stay within budget','Keep spending below '+fmt(target),fmt(Math.max(0,target-spent))+' left')+bar(spent,target));
+const desc=n===22?note('Screen 22 has no supplied approved reference image. This editable reconstruction is provisional and awaits visual sign-off.',true):'';
+return shell(n,desc+stepper+'<div class="sp-budget-form"><div class="sp-left">'+budgetDetails+'</div><aside class="sp-right">'+quick+right+'</aside></div>');
+}
+function screen23(){
+const allowance=config().allowance;const usedDay=3000,usedWeek=allowance.weekly*.64;
+const limits=panel('Daily & Weekly Spending Limits','<div class="sp-allowance"><div class="sp-gauge" style="--p:67%"><div><b>'+fmt(usedDay)+'</b><small>Daily spent</small><b style="font-size:14px">'+pct(usedDay,allowance.daily)+'%</b></div></div><div><div class="sp-stat-row"><b>Daily Allowance</b><strong>'+fmt(allowance.daily)+'</strong></div>'+bar(usedDay,allowance.daily)+'<div class="sp-stat-row"><b>Weekly Allowance</b><strong>'+fmt(allowance.weekly)+'</strong></div>'+bar(usedWeek,allowance.weekly,'#579fe2')+'</div></div>');
+const planner=panel('Daily & Weekly Allowance Settings','<form data-spform="allowance" class="sp-fields"><label class="sp-field">Daily Limit (KES)<input name="daily" type="number" min="0" required value="'+allowance.daily+'"></label><label class="sp-field">Weekly Limit (KES)<input name="weekly" type="number" min="0" required value="'+allowance.weekly+'"></label><label class="sp-field">Protected Cash (KES)<input name="locked" type="number" min="0" value="'+allowance.locked+'"></label><div class="sp-buttons" style="align-self:end"><button class="sp-btn green" type="submit">Save allowance</button></div></form>');
+const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+return shell(23,metrics([['▣','Daily Spending Allowance',fmt(allowance.daily),'Today’s limit'],['◷','Weekly Spending Allowance',fmt(allowance.weekly),'This week'],['▥','Total Spending This Month',fmt(kpiTotal()),'Illustrative'],['◆','On Track','Yes','Within local rules']])+
+'<div class="sp-grid">'+limits+
+panel('Weekly Progress','<b>'+fmt(15500)+'</b> spent this week'+bar(usedWeek,allowance.weekly)+chart('double'))+
+panel('Monthly Progress',donut(45000))+
+planner+
+panel('Category Breakdown',C.slice(0,8).map(c=>'<div class="sp-stat-row"><span>'+c[3]+' '+esc(c[0])+'</span><span>'+fmt(c[1])+'</span>'+bar(c[1],120000,c[2])+'</div>').join(''))+
+panel('Recent Transactions (Today)',rows(['Merchant','Category','Amount'],model().transactions.slice(0,6).map(x=>'<tr><td>'+esc(x[1])+'</td><td>'+esc(x[2])+'</td><td>'+(x[4]<0?'−':'+')+fmt(x[4])+'</td></tr>')))+
+panel('Smart Allowance Tips',advisorTips())+
+panel('Spending Guardrails','<div class="sp-buttons">'+to('Purchase check',24,'green')+to('Edit budget',21)+to('Spending review',26)+'</div>')+
+panel('Quick Actions','<div class="sp-buttons">'+to('Record Expense',12)+to('View Expenditure',17)+to('Set Guardrails',24)+'</div>')+'</div>');
+}
+function guardRow(g,i){return '<tr><td>'+(i+1)+'</td><td><b>'+esc(g.name)+'</b></td><td>'+esc(g.condition)+'</td><td>'+fmt(g.limit)+'</td><td>'+esc(g.trigger)+'</td><td><input class="sp-switch" data-spguard="'+esc(g.id)+'" type="checkbox" aria-label="Activate '+esc(g.name)+'" '+(g.active?'checked':'')+'></td></tr>'}
+function screen24(){
+const active=config().guardrails.filter(g=>g.active).length;
+const approvals=[['Amazon','Electronics',52900],['Emirates','Travel',180000],['Apple Store','Electronics',65000]];
+const guardRules=panel('Guardrail Rules',tab(['All Rules','Amount Limits','Category Rules','Merchant Rules','Time & Location','Approval Rules'],ui.guard,'guard')+rows(['#','Rule Name','Condition','Limit','Action','Status'],config().guardrails.map(guardRow))+sb('+ Add Rule','newRule','green'));
+const approval=panel('Approval Queue',approvals.map(([name,category,amount],i)=>'<div class="sp-plan-item"><span class="sp-ico">⚑</span><span><b>'+esc(name)+'</b><small>'+esc(category)+' · '+fmt(amount)+' · Awaiting review</small></span><div class="sp-buttons">'+sb('Reject','approval:'+i+':reject')+sb('Approve','approval:'+i+':approve','green')+'</div></div>').join(''));
+const purchase=panel('Real-time Purchase Check',tab(['Check Purchase','Bulk Check'],'Check Purchase','purchase')+
+'<form data-spform="purchase"><div class="sp-fields"><label class="sp-field">Amount (KES) <input name="amount" type="number" min="1" required value="'+ui.purchase+'"></label><label class="sp-field">Merchant<input name="merchant" required value="Samsung Store"></label><label class="sp-field">Category<select name="category">'+C.map(c=>'<option>'+esc(c[0])+'</option>').join('')+'</select></label><label class="sp-field">Location<select name="location"><option>Kenya (Nairobi)</option><option>Outside Kenya</option></select></label></div><button class="sp-btn green" style="margin-top:10px;width:100%" type="submit">◆ Check Against Guardrails</button></form>');
+return shell(24,metrics([['◆','Total Rules Active',String(active),'Across demo accounts'],['✖','Purchases Blocked','8','This month, illustrative'],['◷','Pending Approvals','3','Needs your review'],['✓','Approved Purchases','47','This month, illustrative']])+
+'<div class="sp-grid"><div class="sp-col2">'+guardRules+'</div>'+approval+purchase+
+panel('Rule Impact Summary','<div class="sp-tiny-card-grid">'+[['47','Allowed'],['8','Blocked'],['3','Sent for Approval'],[fmt(412800),'Potential Overspend']].map(x=>'<div class="sp-tiny-card"><b>'+x[0]+'</b>'+x[1]+'</div>').join('')+'</div>')+
+panel('Spending Risk Score','<div class="sp-gauge" style="--p:28%"><div><b>28</b><small>Low Risk</small></div></div>')+
+panel('AI Recommendations',advisorTips())+
+panel('Blocked Purchases (Recent)',rows(['Merchant','Amount','Category','Reason'],vendors.slice(0,5).map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+fmt(x[2])+'</td><td>'+esc(x[1])+'</td><td>Review limit</td></tr>')))+
+panel('Recent Approval Activity',rows(['Merchant','Amount','Status'],approvals.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+fmt(x[2])+'</td><td>'+('Pending')+'</td></tr>')))+
+panel('Approval Settings','<div class="sp-tag-list">'+['Approval channels','Trusted reviewers','Auto-approval rules','Cooling-off period','Emergency overrides'].map(x=>r('⚙',x,'Demo workspace')).join('')+'</div>')+'</div>');
+}
+function screen25(){
+const subs=config().subscriptions;const active=subs.filter(s=>s.status==='Active');const monthly=active.reduce((sum,s)=>sum+Number(s.cost),0);
+const upcoming=active.slice().sort((a,b)=>a.renew.localeCompare(b.renew)).slice(0,5);
+let list=active.concat(subs.filter(s=>s.status!=='Active')).filter(s=>ui.subscriptionFilter==='All'||s.status===ui.subscriptionFilter).filter(s=>s.name.toLowerCase().includes(ui.subscriptionSearch.toLowerCase()));
+const table=rows(['','Subscription','Category','Amount (KES)','Billing Cycle','Next Renewal','Status','Actions'],list.map(s=>'<tr><td><input type="checkbox" aria-label="Select '+esc(s.name)+'"></td><td>'+esc(s.name)+'</td><td>'+esc(s.category)+'</td><td>'+fmt(s.cost)+'</td><td>'+esc(s.freq)+'</td><td>'+esc(s.renew)+'</td><td><span class="sp-chip '+(s.status==='Active'?'':'red')+'">'+esc(s.status)+'</span></td><td>'+sb('Manage','editSub:'+s.id)+'</td></tr>'));
+return shell(25,metrics([['▤','Monthly Subscription Cost',fmt(monthly),'Active services'],['▧','Yearly Subscription Cost',fmt(monthly*12),'Annualized estimate'],['◷','Upcoming Renewals',String(upcoming.length),'Next scheduled'],['▣','Potential Savings',fmt(active.filter(s=>!s.essential).reduce((n,s)=>n+s.cost,0)),'Review before cancelling']])+
+'<div class="sp-grid"><section class="sp-panel sp-col2"><div class="sp-panel-title"><h2>All Subscriptions ('+list.length+')</h2><div class="sp-buttons">'+sb('＋ Add Subscription','newSub','green')+'</div></div>'+
+'<div class="sp-buttons" style="margin-bottom:7px">'+tab(['All','Active','Paused','Cancelled'],ui.subscriptionFilter,'subs')+'<input class="sp-search" data-spsearch="subscription" placeholder="Search subscriptions…" aria-label="Search subscriptions" value="'+esc(ui.subscriptionSearch)+'"></div>'+table+'</section>'+
+panel('Spending by Category',donut(monthly))+
+panel('Subscription Insights','<div class="sp-tiny-card-grid">'+[['7','Tracked services'],[fmt(monthly),'Monthly'],[fmt(monthly*12),'Annual'],[String(active.filter(s=>!s.essential).length),'To review']].map(x=>'<div class="sp-tiny-card"><b>'+x[0]+'</b>'+x[1]+'</div>').join('')+'</div>')+
+panel('Upcoming Renewals',upcoming.map(s=>'<div class="sp-stat-row"><span><b>'+esc(s.name)+'</b><small style="display:block">'+esc(s.renew)+'</small></span><b>'+fmt(s.cost)+'</b>'+sb('Manage','editSub:'+s.id)+'</div>').join(''))+
+panel('Spending & Renewal Alerts',advisorTips())+
+panel('Quick Actions','<div class="sp-buttons">'+sb('Add Subscription','newSub','green')+to('View Bills',30)+to('Spending Leaks',20)+to('Recovery Plan',26)+'</div>')+
+panel('Subscriptions By Category',C.filter(x=>['Utilities','Entertainment','Subscriptions','Health & Medical'].includes(x[0])).map(x=>r(x[3],x[0],'Monthly recurring',fmt(active.filter(s=>s.category===x[0]).reduce((a,b)=>a+b.cost,0)))).join(''))+
+panel('Review Recommendations',note('Some subscriptions may be essential. No external cancellations are performed by this prototype.')+to('Open leak detector',20))+'</div>');
+}
+function screen26(){
+const plan=[
+['Review subscriptions','Identify services you no longer use','subscriptions'],
+['Reduce dining out','Set a manageable weekly food limit','dining'],
+['Optimize transport','Compare commuting alternatives','transport'],
+['Monitor daily allowance','Set a spending boundary you can maintain','allowance'],
+['Revisit monthly budget','Adjust category allocations realistically','budget'],
+['Weekly progress review','Review actual spending every week','review']];
+const marked=config().recovery.completed;
+return shell(26,metrics([['▤','Current Monthly Spending',fmt(kpiTotal()),'Illustrative baseline'],['◆','Potential Monthly Savings',fmt(config().recovery.targetReduction),'Target reduction'],['▣','Target Monthly Spend',fmt(Math.max(0,kpiTotal()-config().recovery.targetReduction)),'Based on review target'],['◈','Recovery Progress',Math.round(marked.length/plan.length*100)+'%','Checklist completion']])+
+'<div class="sp-grid">'+panel('Spending Trend & Forecast',chart('double'))+panel('Where Your Money Goes',donut())+panel('Spending Health Score','<div class="sp-gauge" style="--p:62%"><div><b>62</b><small>Needs Improvement</small></div></div><div class="sp-banner-note warn">A heuristic based on demo entries, not verified financial advice.</div>')+
+panel('Key Insights',advisorTips())+
+'<section class="sp-panel sp-col2"><div class="sp-panel-title"><h2>Recovery Plan</h2>'+sb('Save Recovery Plan','saveRecovery','green')+'</div>'+
+plan.map(([t,d,key],i)=>'<div class="sp-plan-item"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" data-sprecovery="'+key+'" '+(marked.includes(key)?'checked':'')+' aria-label="Complete '+esc(t)+'"></label><span><b>'+esc(t)+'</b><small>'+esc(d)+'</small></span><span class="sp-chip">'+(marked.includes(key)?'Completed':'Action needed')+'</span></div>').join('')+'</section>'+
+panel('Top Opportunities to Save',vendors.slice(1,6).map(x=>r('⚑',x[0],x[1],fmt(x[2]))).join(''))+
+panel('Weekly Recovery Projection',lineGraph())+
+panel('Financial Goal Impact',config().recovery.targetReduction?'<b>Potential annual redirection: '+fmt(config().recovery.targetReduction*12)+'</b>'+bar(config().recovery.targetReduction,100000):note('Set a realistic savings target.'))+
+panel('Recent Overspending (Last 30 Days)',rows(['Category','Spent','Variance'],C.slice(0,7).map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+fmt(Math.round(x[1]*1.12))+'</td><td class="sp-red">↑ 12%</td></tr>')))+
+panel('Recovery Settings','<form data-spform="recovery" class="sp-fields"><label class="sp-field">Monthly reduction target (KES)<input name="target" type="number" min="0" value="'+config().recovery.targetReduction+'"></label><label class="sp-field">Personal notes<input name="notes" value="'+esc(config().recovery.notes)+'"></label><button class="sp-btn green" type="submit">Save plan</button></form>')+'</div>');
+}
+function modal(){
+if(!ui.modal)return '';
+const m=ui.modal;let title='',form='';
+if(m==='subscription'||m==='editSub'){let sub=config().subscriptions.find(x=>x.id===ui.selectedSub);title=sub?'Edit Subscription':'Add Subscription';form='<form class="sp-fields" data-spform="subscription"><label class="sp-field">Name<input name="name" value="'+esc(sub?.name||'')+'" required></label><label class="sp-field">Amount (KES)<input name="amount" type="number" min="0" required value="'+esc(sub?.cost||1000)+'"></label><label class="sp-field">Category<select name="category">'+C.map(c=>'<option '+(sub?.category===c[0]?'selected':'')+'>'+esc(c[0])+'</option>').join('')+'</select></label><label class="sp-field">Cycle<select name="freq">'+['Monthly','Weekly','Yearly'].map(c=>'<option '+(sub?.freq===c?'selected':'')+'>'+c+'</option>').join('')+'</select></label><label class="sp-field">Renewal date<input name="renew" type="date" required value="'+esc(sub?.renew||'2026-11-01')+'"></label><label class="sp-field"><input type="checkbox" name="essential" '+(sub?.essential?'checked':'')+'> Essential expense</label><button type="submit" class="sp-btn green">Save subscription</button></form>'+(sub?'<div class="sp-buttons">'+sb(sub.status==='Active'?'Pause':'Resume', 'subStatus:'+(sub.status==='Active'?'Paused':'Active'))+sb('Cancel locally','subStatus:Cancelled')+'</div>':'');
+}else if(m==='rule'){title='Add Guardrail Rule';form='<form class="sp-fields" data-spform="rule"><label class="sp-field">Rule name<input name="name" required placeholder="Large discretionary purchase"></label><label class="sp-field">Amount threshold<input name="amount" type="number" min="0" required value="20000"></label><label class="sp-field">Action<select name="trigger"><option>Warning</option><option>Approval required</option><option>Block in prototype</option></select></label><button class="sp-btn green" type="submit">Create rule</button></form>'}
+else{title=ui.modal;form='<p class="sp-mini">Demo-only planning information; no external payment or banking operation.</p>'}
+return '<div class="b-dialog-backdrop" role="presentation"><div class="b-dialog" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="sp-panel-title"><h2>'+esc(title)+'</h2>'+sb('Close','closeModal')+'</div>'+form+'</div></div>';
+}
+function render(n){
+switch(Number(n)){case 16:return screen16();case 17:return screen17();case 18:return screen18();case 19:return screen19();case 20:return screen20();case 21:case 22:return budgetBuilder(Number(n));case 23:return screen23();case 24:return screen24();case 25:return screen25();case 26:return screen26();default:return ''}}
+
 /* REMAINING_SCENE */
 })();
