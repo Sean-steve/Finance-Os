@@ -248,5 +248,102 @@ return '<div class="b-dialog-backdrop" role="presentation"><div class="b-dialog"
 function render(n){
 switch(Number(n)){case 16:return screen16();case 17:return screen17();case 18:return screen18();case 19:return screen19();case 20:return screen20();case 21:case 22:return budgetBuilder(Number(n));case 23:return screen23();case 24:return screen24();case 25:return screen25();case 26:return screen26();default:return ''}}
 
-/* REMAINING_SCENE */
+
+function previewCSV(){
+const head=['Date','Merchant','Category','Amount','Status'];
+const body=vendors.slice(0,10).map(x=>['October 2026',x[0],x[1],-x[2],'Demonstration']).map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+const csv=[head.join(','),...body].join('\r\n');
+const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='finance-os-spending-demo.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),300);
+}
+function handleClick(e){
+const el=e.target.closest?.('[data-sp],[data-spnav]');if(!el)return false;
+if(el.dataset.spnav){e.preventDefault();nav(el.dataset.spnav);return true}
+const command=el.dataset.sp,parts=command.split(':'),name=parts[0],arg=parts.slice(1).join(':');ui.notice='';
+switch(name){
+ case 'reference':location.href='index.html#screen/'+bridge.screen();break;
+ case 'export':previewCSV();save('Illustrative spending CSV downloaded (no bank data).');break;
+ case 'trend':ui.trend=arg;save('Trend view: '+arg+'. Data are illustrative.');break;
+ case 'segment':ui.segment=arg;save('Breakdown mode: '+arg+'.');break;
+ case 'tip':case 'recommendation':ui.modal='Review your transactions, existing commitments and budget before taking any suggested action.';save();break;
+ case 'scan':ui.notice='Demo review refreshed. No external account scanning was performed.';save();break;
+ case 'leak':{let v=vendors[Number(arg)];if(v){config().leakStatus[v[0]]='Reviewed';save(v[0]+' marked reviewed. No actual service was cancelled.')}break}
+ case 'tab':{
+   const sep=arg.indexOf(':'),key=arg.slice(0,sep),val=arg.slice(sep+1);
+   if(key==='subs')ui.subscriptionFilter=val;
+   if(key==='budgetPeriod'){config().budgetPeriod=val}
+   if(key==='guard')ui.guard=val;
+   if(key==='breakdown')ui.segment=val;
+   if(key==='recovery')ui.recoveryFilter=val;
+   save();break}
+ case 'budgetAmount':{const amounts=[100000,250000,500000,budgetTotal()];config().budgetLimit=amounts[Number(arg)]??budgetTotal();save('Budget target updated. Adjust category allocations as needed.');break}
+ case 'spreadBudget':{const total=config().budgetLimit,items=C.map(c=>c[0]),n=items.length,base=Math.floor(total/n);items.forEach((c,i)=>config().categories[c]=base+(i===n-1?total-base*n:0));save('Budget distributed evenly across categories.');break}
+ case 'resetBudget':{config().categories=Object.fromEntries(C.map(c=>[c[0],c[1]]));config().budgetLimit=300000;save('Restored illustration budget allocations.');break}
+ case 'saveBudget':{const form=$('#sp-budget-form');const fd=form?new FormData(form):null;config().budgetName=String(fd?.get('name')||config().budgetName);config().budgetLimit=Number(fd?.get('total')||config().budgetLimit);config().budgetPeriod=String(config().budgetPeriod);save('Budget saved locally. It is now used by spending and allowance screens.');break}
+ case 'saveTemplate':save('Budget template stored in browser demo state.');break;
+ case 'budgetQuick':{
+  if(arg==='template'){config().categories=Object.fromEntries(C.map(c=>[c[0],c[1]]));config().budgetLimit=300000}
+  else if(arg==='aiBudget'){const p=[40,15,10,8,6,5,4,4,3,5];C.forEach((c,i)=>config().categories[c[0]]=Math.round(config().budgetLimit*p[i]/100))}
+  else{config().budgetName='Copied Previous Month Budget'}
+  save('Updated budget draft with a '+arg+' preset; verify before saving.');break}
+ case 'newSub':ui.selectedSub=null;ui.modal='subscription';save();break;
+ case 'editSub':ui.selectedSub=arg;ui.modal='editSub';save();break;
+ case 'subStatus':{const sub=config().subscriptions.find(x=>x.id===ui.selectedSub);if(sub){sub.status=arg;ui.modal=null;save(sub.name+' marked '+arg+' in local records. No provider cancellation performed.')}break}
+ case 'newRule':ui.modal='rule';save();break;
+ case 'approval':{const [i,decision]=arg.split(':');config().approvals??={};config().approvals[Number(i)]=decision==='approve'?'Approved':'Rejected';save('Purchase '+decision+' recorded locally. No payment occurred.');break}
+ case 'saveRecovery':save('Recovery checklist saved locally.');break;
+ case 'closeModal':ui.modal=null;save();break;
+ default:ui.modal='Prototype-only review: no real provider action was performed.';save();break;
+}
+return true;
+}
+function handleChange(e){
+const el=e.target;
+if(el.matches?.('[data-spcat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){config().categories[el.dataset.spcat]=value;bridge.save();bridge.render()}return true}
+if(el.matches?.('[data-sprule]')){config().rules[el.dataset.sprule]=el.checked;save('Budget alert preference saved in this browser.');return true}
+if(el.matches?.('[data-spguard]')){const g=config().guardrails.find(x=>x.id===el.dataset.spguard);if(g){g.active=el.checked;save('Guardrail rule updated (demo only).')}return true}
+if(el.matches?.('[data-sprecovery]')){const completed=new Set(config().recovery.completed);if(el.checked)completed.add(el.dataset.sprecovery);else completed.delete(el.dataset.sprecovery);config().recovery.completed=[...completed];save('Recovery checklist updated.');return true}
+if(el.dataset?.spchange){const key=el.dataset.spchange;if(key==='period')ui.period=el.value;if(key==='account')ui.account=el.value;if(key==='category')ui.category=el.value;if(key==='alertThreshold')config().rules.alertThreshold=Number(el.value);save('Updated '+key+' for demo analysis.');return true}
+return false;
+}
+function handleInput(e){
+const el=e.target;
+if(el.dataset.spsearch==='subscription'){
+ ui.subscriptionSearch=el.value;
+ const pos=el.selectionStart;
+ bridge.render();
+ const input=$('[data-spsearch="subscription"]');if(input){input.focus();input.setSelectionRange(pos,pos)}
+ return true;
+}
+return false;
+}
+function handleSubmit(e){
+const form=e.target;if(!form.dataset.spform)return false;
+e.preventDefault();const d=Object.fromEntries(new FormData(form));
+switch(form.dataset.spform){
+ case 'budget':{let total=Number(d.total);if(total<=0){save('Enter a positive total budget amount.');break}config().budgetLimit=total;config().budgetName=String(d.name||'Monthly Budget');save('Budget details saved locally. Category allocations can be adjusted below.');break}
+ case 'allowance':{const a=Number(d.daily),w=Number(d.weekly),locked=Number(d.locked||0);if([a,w,locked].some(v=>!Number.isFinite(v)||v<0)){save('Enter non-negative limits.');break}config().allowance={daily:a,weekly:w,locked};save('Daily and weekly spending allowance updated.');break}
+ case 'purchase':{
+  const amt=Number(d.amount),merchant=String(d.merchant||''),category=String(d.category||''),location=String(d.location||'');
+  if(!(amt>0)||!merchant){save('Enter a valid amount and merchant.');break}
+  const triggered=config().guardrails.filter(g=>g.active&&g.limit>0&&amt>g.limit);
+  const warning=amt>config().allowance.daily;
+  config().lastPurchase={amt,merchant,category,location,at:new Date().toISOString(),decision:triggered.length?'Review required':warning?'Daily allowance warning':'Within configured demo rules'};
+  save('Purchase check: '+config().lastPurchase.decision+' (advisory simulation only; no payment was blocked).');break}
+ case 'subscription':{
+  const cost=Number(d.amount),name=String(d.name||'').trim();if(!name||!Number.isFinite(cost)||cost<0){save('Enter a valid subscription name and amount.');break}
+  const v={name,cost,category:String(d.category),freq:String(d.freq),renew:String(d.renew),essential:d.essential==='on'};
+  const prev=config().subscriptions.find(x=>x.id===ui.selectedSub);
+  if(prev)Object.assign(prev,v);else config().subscriptions.push({id:'local-'+Date.now(),status:'Active',...v});
+  ui.modal=null;save('Subscription recorded in browser demo; no subscription provider changed.');break}
+ case 'rule':{
+  let amount=Number(d.amount);if(!String(d.name||'').trim()||amount<0){save('Valid name and nonnegative amount required.');break}
+  config().guardrails.push({id:'rule-'+Date.now(),name:String(d.name),limit:amount,active:true,condition:'Custom limit',trigger:String(d.trigger)});
+  ui.modal=null;save('Added local guardrail rule.');break}
+ case 'recovery':{let amount=Number(d.target);if(!Number.isFinite(amount)||amount<0){save('Enter a valid savings target.');break}
+  config().recovery.targetReduction=amount;config().recovery.notes=String(d.notes||'');save('Recovery plan saved in browser.');break}
+}
+return true;
+}
+window.FinanceSpend={init,render,handleClick,handleChange,handleInput,handleSubmit};
+
 })();
