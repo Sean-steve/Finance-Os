@@ -137,5 +137,38 @@ panel('Income Allocation Targets',donut([['Essentials',160000],['Savings',130000
 panel('Financial Planning Recommendations',alertPanelContent())+'</div>')}
 function alertPanelContent(){return row('✓','Build predictable income','Track the expected payment dates of clients')+row('◷','Plan for variable earnings','Keep a conservative income estimate')+row('◆','Preserve a cash buffer','Do not treat unconfirmed income as available cash')}
 
-/* REMAINING_30_34 */
+
+function billsTable(){let list=state().bills.filter(b=>v.billFilter==='All'||v.billFilter==='All Bills'||b.status===v.billFilter).filter(b=>b.name.toLowerCase().includes(v.billSearch.toLowerCase()));return table(['Bill / Service','Category','Amount','Due Date','Payment Method','Status','Actions'],list.map(b=>'<tr><td><b>'+safe(b.name)+'</b></td><td>'+safe(b.category)+'</td><td>'+money(b.amount)+'</td><td>'+safe(b.due)+'</td><td>'+safe(b.account)+'</td><td>'+tag(b.status)+'</td><td>'+bc('Details','bill:'+b.id)+'</td></tr>'))}
+function calGrid(){let out='<div class="cf-calendar">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>'<b style="font-size:10px;text-align:center">'+d+'</b>').join('');for(let i=0;i<35;i++){const d=i-2;if(d<1||d>31){out+='<span></span>';continue}const related=state().bills.filter(x=>Number(x.due.slice(8))===d&&x.status!=='Paid');out+='<button type="button" class="cf-day '+(related.length?'pay':'')+'" data-cfa="calendarDay:'+d+'">'+d+(related.length?'<small>'+related.length+' bill</small>':'')+'</button>'}return out+'</div><p class="cf-muted">🔴 Overdue　🟠 Upcoming　🔵 Scheduled</p>'}
+function screen30(){
+ const all=state().bills,open=all.filter(b=>b.status!=='Paid'),late=all.filter(b=>b.status==='Overdue'),total=outstanding();
+ return shell(30,metric([['▦','Total Monthly Obligations',money(total),'Tracked bills'],['▣','Total Annual Obligations',money(total*12),'Projected recurring costs'],['⚑','Overdue Amount',money(late.reduce((n,b)=>n+b.amount,0)),late.length+' overdue'],['◷','Upcoming Next 7 Days',money(open.slice(0,5).reduce((n,b)=>n+b.amount,0)),'5 tracked bills']])+
+ '<div class="cf-toolbar">'+tabs(['All Bills','Upcoming','Overdue','Paid','Recurring','One-off','Insurance','Taxes'],v.billTab,'billTab')+
+ '<input class="cfsearch" aria-label="Search bills" placeholder="Search bills or providers" data-cfsearch="bill" value="'+safe(v.billSearch)+'">'+bc('+ Add Bill','newBill','green')+'</div>'+
+ '<div class="cf-grid"><section class="cf-panel cf-col2"><div class="cf-head"><h2>Bills & Obligations ('+all.length+')</h2>'+bc('Export Bills','billExport')+'</div>'+billsTable()+'</section>'+
+ panel('Payment Calendar (October 2026)',calGrid(),nav('View Calendar',6))+
+ panel('Spending Breakdown',donut([['Housing',80000],['Insurance',26300],['Utilities',11300],['Business',12000],['Subscriptions',1200]],130500))+
+ panel('Obligation Timeline',graph('stack',7))+
+ panel('Upcoming Bills',open.slice(0,5).map(b=>row('▦',b.name,b.due,money(b.amount),'bill:'+b.id)).join(''))+
+ panel('Quick Actions',bc('Add a new bill','newBill','green')+row('◷','Set payment reminders','Check upcoming obligations')+row('✓','Reduce recurring bills','Review all subscriptions')+nav('Financial Calendar',6))+
+ '</div>')}
+function bill(){return state().bills.find(x=>x.id===v.billId)||state().bills[0]}
+function screen31(){
+ const b=bill();const paid=state().paymentHistory.filter(x=>x.billId===b.id);
+ const details=[['Previous Balance',money(b.previous)],['Current Charges',money(Math.max(0,b.amount-650))],['Taxes & Levies',money(650)],['Total Amount Due',money(b.amount)],['Due Date',b.due],['Billing Period',b.period],['Status',b.status]];
+ return shell(31,'<div class="cf-bill-banner"><div class="cf-actions"><span class="cf-round">ϟ</span><div><small>Bills　›　Bill Details & Payment</small><h2>'+safe(b.name)+'</h2><small>Customer Number　'+safe(b.customer)+'　 ·　 Billing Period　'+safe(b.period)+'</small></div></div><div class="cf-actions">'+tag(b.status)+bc('⋯','billSettings')+'</div><div class="cf-billamount"><small>Amount Due</small><strong>'+money(b.status==='Paid'?0:b.amount)+'</strong><small>Due Date　'+safe(b.due)+'</small></div></div>'+
+ tabs(['Overview','Payment','Usage & History','Documents','Reminders','Settings'],v.billDetailTab,'billDetailTab')+
+ '<div class="cf-grid"><div class="cf-panel-stack">'+panel('Bill Summary (October 2026)',details.map(x=>'<div class="cf-row"><span class="cf-grow">'+safe(x[0])+'</span><strong>'+safe(x[1])+'</strong></div>').join(''),bc('Statement','billPdf'))+
+ panel('Usage & Consumption',row('ϟ','320 kWh','Illustrative consumption','↑ 8%')+graph('bars',7))+
+ panel('Payment History',table(['Date','Amount','Method','Status','Receipt'],paid.map(p=>'<tr><td>'+safe(p.date)+'</td><td>'+money(p.amount)+'</td><td>'+safe(p.method)+'</td><td>'+tag('Demo Paid')+'</td><td>'+bc('View','receipt:'+p.id)+'</td></tr>')))+'</div>'+
+ '<div class="cf-panel-stack">'+panel('Make a Payment','<div class="cf-paymodes">'+['MPESA','Card','Bank Transfer'].map(x=>'<button type="button" class="'+(v.paymentMode===x?'active':'')+'" data-cfa="payMode:'+x+'">'+x+'</button>').join('')+'</div>'+
+ mtext('Simulation only. No M-Pesa prompt, bank transfer or card charge will be initiated.')+
+ '<form class="cf-form" data-cfform="payBill" style="margin-top:10px"><label class="cf-label">Phone / Reference<input class="cfinput" name="destination" required value="'+(v.paymentMode==='MPESA'?'+254712345678':'DEMO-REFERENCE')+'"></label><label class="cf-label">Amount (KES)<input class="cfinput" type="number" name="amount" min="1" max="'+(b.status==='Paid'?0:b.amount)+'" value="'+(b.status==='Paid'?0:b.amount)+'" required></label><button type="submit" class="cf-btn green" '+(b.status==='Paid'?'disabled':'')+'>Record simulated payment</button></form>')+
+ panel('Spending Trend',graph('area',10))+'</div>'+
+ '<div class="cf-panel-stack">'+panel('Bill Actions','<div class="cf-actions">'+bc('Download Statement','billPdf')+bc('Set Reminder','billReminder')+bc('Auto Pay '+(b.autopay?'ON':'OFF'),'billAutopay')+bc('Manage Bill','billSettings')+'</div>')+
+ panel('Upcoming Bills (Next 3)',state().bills.filter(x=>x.id!==b.id&&x.status!=='Paid').slice(0,3).map(x=>row('▦',x.name,x.due,money(x.amount),'bill:'+x.id)).join(''))+
+ panel('AI Insights & Recommendations',alertPanelContent())+'</div></div>')
+}
+
+/* REMAINING_32_34 */
 })();
