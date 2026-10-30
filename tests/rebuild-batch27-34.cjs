@@ -34,7 +34,7 @@ async function main(){
     assert.equal((await saved()).incomeFlowV2.scenario.horizon,3);
   });
   await check('Create bill, navigate to detail, and locally record a demo payment',async()=>{
-    await go(30);await page.locator('[data-cfa="newBill"]').click();
+    await go(30);await page.locator('[data-cfa="newBill"]').first().click();
     await page.locator('[data-cfform="bill"] [name="name"]').fill('QA Internet Bill');
     await page.locator('[data-cfform="bill"] [name="amount"]').fill('3200');
     await page.locator('[data-cfform="bill"] button[type="submit"]').click();
