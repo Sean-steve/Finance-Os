@@ -54,7 +54,14 @@
 | 40 — Affordability & Purchase Simulator | screen-40.webp | `rebuild.html#screen/40` | **Coded DOM / browser QA; pixel-level approval pending** |
 | 41 — Funding Requests & Approvals | screen-41.webp | `rebuild.html#screen/41` | **Coded DOM / browser QA; pixel-level approval pending** |
 | 42 — Financial Scenario Planning | screen-42.webp | `rebuild.html#screen/42` | **Coded DOM / browser QA; pixel-level approval pending** |
-| 43–60 | 18 supplied reference images | `index.html#screen/NN` | **Not yet coded in HTML/CSS** |
+| 43 — Debt Management Centre | screen-43.webp | `rebuild.html#screen/43` | **Coded DOM / browser QA; pixel-level acceptance pending** |
+| 44 — Debt Details & Repayment Schedule | screen-44.webp | `rebuild.html#screen/44` | **Coded DOM / browser QA; pixel-level acceptance pending** |
+| 45 — Debt Repayment Optimizer | screen-45.webp | `rebuild.html#screen/45` | **Coded DOM / browser QA; pixel-level acceptance pending** |
+| 46 — Tax Overview & Planning | screen-46.webp | `rebuild.html#screen/46` | **Coded DOM / browser QA; pixel-level acceptance pending** |
+| 47 — Insurance & Financial Protection | screen-47.webp | `rebuild.html#screen/47` | **Coded DOM / browser QA; pixel-level acceptance pending** |
+| 48 — Retirement Planning | screen-48.webp | `rebuild.html#screen/48` | **Coded DOM / browser QA; pixel-level acceptance pending** |
+| 49 — Estate & Beneficiary Planning | screen-49.webp | `rebuild.html#screen/49` | **Coded DOM / browser QA; pixel-level acceptance pending** |
+| 50–60 | 11 supplied reference images | `index.html#screen/NN` | **Not yet coded in HTML/CSS** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
 
@@ -101,6 +108,17 @@ The unchanged approved-design viewer is the source of truth while the rebuilt pa
 - Purchase results are **illustrative only**, not credit approval, financial advice or an actual lender quote. Funding approvals are administrative status changes, not disbursements.
 - Scenario projections are uncertain estimates and do not guarantee investment returns. CSV exports contain local demo projections.
 - Chromium checks at 1536px and 390px validate flows and state invariants, **not pixel-perfect visual sign-off**.
+
+## Screens 43–49 — debt, tax, protection, retirement and estate
+
+- Seven separate screenshot-guided DOM workspaces in `rebuild/batch43-49.js` and `rebuild/batch43-49.css`.
+- Debt details, amortization and avalanche/snowball optimizer share consistent local loan records. A recorded payment reduces demo loan principal only; no cash account or lender is charged.
+- Tax overview uses editable **illustrative** estimates; not live Kenya Revenue Authority calculations or an iTax submission.
+- Insurance policies and claim drafts are **local metadata**, not verified cover or provider submissions.
+- Retirement projections are deterministic scenarios, not investment return guarantees.
+- Estate beneficiary names are fictional placeholders, checklists are non-binding and legal document uploads are deliberately disabled due to privacy risk.
+- Browser tests cover 43–49 routes, edit persistence, simulated workflow safeguards, download and mobile overflow; screenshots are retained in the Actions run.
+- **Not pixel-perfect approved:** chart geometry, typography, imagery/icons and secondary tab content require human comparison.
 
 ## Rebuild implementation behavior
 

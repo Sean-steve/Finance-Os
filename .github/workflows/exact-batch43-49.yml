@@ -1,0 +1,35 @@
+name: Finance OS Screens 43-49 Reconstruction QA
+on:
+  push:
+    branches: ['reconstruction/exact-screens-43-49']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check rebuild/app.js
+          node --check rebuild/batch43-49.js
+          node --check tests/rebuild-batch43-49.cjs
+      - name: Install browser runner
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Run 43–49 browser workflows
+        run: node tests/rebuild-batch43-49.cjs
+      - name: Retain screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-screens-43-49-chromium
+          path: qa-artifacts/batch43-49
+          if-no-files-found: ignore
+          retention-days: 14
