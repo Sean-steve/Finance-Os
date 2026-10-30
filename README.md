@@ -122,3 +122,11 @@ These six coded interfaces share browser-local asset, investment, debt and perso
 [Financial Health](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/56) · [AI Financial Advisor (local scripted)](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/57) · [Financial Reports](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/58) · [Integrations Preview](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/59) · [Settings & Privacy](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/60).
 
 Five coded interfaces provide local health scoring, rule-based financial guidance, CSV/JSON report exports, provider preview listings and editable demo privacy/profile settings. **There are no real AI, banking, identity, MFA, billing or security integrations.** The browser-local demo data can be downloaded or deleted. All **60 routes have coded reconstructions**; exact pixel-by-pixel match to the supplied designs still requires a separate final review (Screen 22 source image missing).
+
+## Visual parity correction — pass 1, and Screen 22
+
+**[Screen 22 — Create / Edit Budget](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/22)** is a dedicated coded editor, adapted from the approved Screen 21 budget design. It includes budget rules, editable allocations, the category pie preview and saving to the shared spending record.
+
+The first visual reconciliation pass measured all 59 supplied references. Mean RGB distance improved from **27.18 to 24.74**; Screen 01 improved 72.66→41.31, Screen 08 improved 37.37→23.80 and Screen 11 improved 34.34→22.63.
+
+Read [Pass 1 metrics, remaining differences, and Screen 22 rationale](docs/VISUAL_PARITY_CORRECTION_PASS1.md). This is **not pixel-perfect certification**, and the original Screen 22 image was never supplied. Real authentication, financial service providers and encrypted financial storage remain outside this static demonstration.
