@@ -31,7 +31,7 @@ return '<div class="be22"><div class="be22-hero"><div><small>Budgets　›　Cre
 '<section class="be22-card"><header><h2>Budget Rules & Alerts</h2>'+act('Edit','step:2')+'</header><div class="be22-rules"><label><span>♧</span>Alert when category spending reaches<select data-be22-threshold>'+[60,70,80,90,100].map(n=>'<option value="'+n+'" '+(draft.rules.alertThreshold===n?'selected':'')+'>'+n+'%</option>').join('')+'</select><input type="checkbox" data-be22-rule="limitEnabled" class="be22-switch" '+(draft.rules.limitEnabled!==false?'checked':'')+'></label>'+
 [['weeklyDigest','✉','Send weekly budget summary'],['unusual','⚠','Alert me on unusual spending'],['paused','⌘','Pause alerts for this budget']].map(([k,i,t])=>'<label><span>'+i+'</span>'+t+'<input type="checkbox" class="be22-switch" data-be22-rule="'+k+'" '+(draft.rules[k]?'checked':'')+'></label>').join('')+'</div><small>Preferences only; no notification service connected.</small></section>'+
 '<section class="be22-card"><header><h2>Budget Goals</h2>'+act('Link Goal','goals')+'</header><div class="be22-goals">◎ <div><b>Stay within budget</b><small>Keep spending under '+fmt(draft.limit)+'</small><div class="be22-bar large"><i style="width:'+Math.min(100,projected/Math.max(1,draft.limit)*100)+'%"></i></div><small>'+fmt(draft.limit-projected)+' left</small></div></div></section></aside></div>'+
-'<p class="be22-caption">Screen 22 recreated using the approved Create / Edit Budget visual language provided for Screen 21. No standalone Screen 22 screenshot was supplied.</p></div>';
+'<p class="be22-caption">No separate Screen 22 screenshot was supplied. Screen 22 has been recreated using the approved Create / Edit Budget design language provided for Screen 21.</p></div>';
 }
 
 
