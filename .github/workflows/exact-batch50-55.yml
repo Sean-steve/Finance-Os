@@ -1,0 +1,35 @@
+name: Finance OS Screens 50-55 Reconstruction QA
+on:
+  push:
+    branches: ['reconstruction/exact-screens-50-55']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check rebuild/app.js
+          node --check rebuild/batch50-55.js
+          node --check tests/rebuild-batch50-55.cjs
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Check six wealth workspaces, cash safety and mobile layouts
+        run: node tests/rebuild-batch50-55.cjs
+      - name: Archive screenshots and test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-screens-50-55
+          path: qa-artifacts/batch50-55
+          retention-days: 14
+          if-no-files-found: ignore

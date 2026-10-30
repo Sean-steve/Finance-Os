@@ -61,7 +61,13 @@
 | 47 — Insurance & Financial Protection | screen-47.webp | `rebuild.html#screen/47` | **Coded DOM / browser QA; pixel-level acceptance pending** |
 | 48 — Retirement Planning | screen-48.webp | `rebuild.html#screen/48` | **Coded DOM / browser QA; pixel-level acceptance pending** |
 | 49 — Estate & Beneficiary Planning | screen-49.webp | `rebuild.html#screen/49` | **Coded DOM / browser QA; pixel-level acceptance pending** |
-| 50–60 | 11 supplied reference images | `index.html#screen/NN` | **Not yet coded in HTML/CSS** |
+| 50 — Net Worth Dashboard | screen-50.webp | `rebuild.html#screen/50` | **Coded DOM / browser QA; exact visual review pending** |
+| 51 — Assets & Liabilities Overview | screen-51.webp | `rebuild.html#screen/51` | **Coded DOM / browser QA; exact visual review pending** |
+| 52 — Asset Details & Valuation | screen-52.webp | `rebuild.html#screen/52` | **Coded DOM / browser QA; exact visual review pending** |
+| 53 — Investment Portfolio | screen-53.webp | `rebuild.html#screen/53` | **Coded DOM / browser QA; exact visual review pending** |
+| 54 — Investment Details & Performance | screen-54.webp | `rebuild.html#screen/54` | **Coded DOM / browser QA; exact visual review pending** |
+| 55 — Wealth Growth & Risk Analysis | screen-55.webp | `rebuild.html#screen/55` | **Coded DOM / browser QA; exact visual review pending** |
+| 56–60 | 5 supplied reference images | `index.html#screen/NN` | **Not yet coded in HTML/CSS** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
 
@@ -119,6 +125,17 @@ The unchanged approved-design viewer is the source of truth while the rebuilt pa
 - Estate beneficiary names are fictional placeholders, checklists are non-binding and legal document uploads are deliberately disabled due to privacy risk.
 - Browser tests cover 43–49 routes, edit persistence, simulated workflow safeguards, download and mobile overflow; screenshots are retained in the Actions run.
 - **Not pixel-perfect approved:** chart geometry, typography, imagery/icons and secondary tab content require human comparison.
+
+## Screens 50–55 — assets, investments, net worth & wealth risk
+
+- Six individual, screenshot-guided workspaces in `rebuild/batch50-55.js` and `rebuild/batch50-55.css`.
+- **Shared financial source of truth:** net worth = personal cash from primary personal accounts + recorded physical asset values + investment holdings at estimated market value − debt balances in `protectionV2.debts`. Business account balances and separately earmarked savings goals are excluded from personal cash to avoid double counting.
+- Asset creation, valuation adjustments and investment holding edits persist in the same browser-local model and update all six screens.
+- Simulated buy/sell entries move value between the selected demo personal cash account and holding quantities; no broker, exchange, settlement or bank is contacted. Cash-plus-holding value must remain conserved at the simulated execution price.
+- Market prices and historical chart series are **illustrative**, not authoritative quotes, investment research or verified past results. Projected wealth relies on user-editable assumptions.
+- Portfolio and wealth CSV exports are local snapshots. No sensitive documents, verification or secure account integration.
+- Rendered at 1536×1024 and tested at 390px; final pixel-overlays against the original screenshots remain to be reviewed.
+- Assets screen 52 uses decorative CSS illustrations; original property photographs were not supplied separately as source assets and must be reconciled before pixel-level signoff.
 
 ## Rebuild implementation behavior
 
