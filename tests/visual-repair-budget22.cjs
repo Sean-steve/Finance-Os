@@ -113,6 +113,16 @@ assert.ok(d.body<=d.viewport+2,'Screen '+n+' overflow: '+JSON.stringify(d));
 await page.screenshot({path:path.join(out,'screen-'+String(n).padStart(2,'0')+'-mobile.png'),fullPage:true});
 }
 });
+await check('Capture reference comparisons in clean isolated browser contexts',async()=>{
+const pristine=await browser.newContext({viewport:{width:1536,height:1024}});
+const visual=await pristine.newPage();
+for(const n of [8,11,21,22,29,33,40]){
+ await visual.goto(base+'/rebuild.html#screen/'+n);
+ await visual.locator('.banner h1, .b8-ident h1, .b11-hero h1').first().waitFor();
+ await visual.screenshot({path:path.join(out,'screen-'+String(n).padStart(2,'0')+'-desktop.png'),fullPage:false});
+}
+await pristine.close();
+});
 await check('No uncaught page errors',async()=>assert.deepEqual(jsErrors,[]));
 fs.writeFileSync(path.join(out,'qa-results.json'),JSON.stringify({passes,fails,jsErrors},null,2));
 console.log('RESULT:',passes.length,'passed;',fails.length,'failed');
