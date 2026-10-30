@@ -110,3 +110,9 @@ Eight real HTML/CSS screens with connected local demo workflows, separate from t
 [Debt Management](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/43) · [Home Loan](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/44) · [Repayment Optimizer](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/45) · [Tax Planning](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/46) · [Insurance Protection](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/47) · [Retirement](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/48) · [Estate Planning](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/49).
 
 Seven real HTML/CSS reconstructions with local demo workflows; **visual pixel-level approval remains pending**. None of the tax estimates, policies, retirement returns or beneficiaries are verified or legally effective. Do not store real sensitive information in a public browser prototype.
+
+## Screens 50–55 — Net Worth, Asset Valuations, Investments and Wealth Analysis
+
+[Net Worth](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/50) · [Assets & Liabilities](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/51) · [Asset Details](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/52) · [Portfolio](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/53) · [Investment Details](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/54) · [Wealth Growth & Risk](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/55).
+
+These six coded interfaces share browser-local asset, investment, debt and personal cash records. Simulated trades conserve cash and investment value at the chosen demo price; no brokerage orders or real account operations occur. Historical series, quotes, financial projections and risk readings are illustrative, and pixel-perfect acceptance against the approved screenshots is pending.
