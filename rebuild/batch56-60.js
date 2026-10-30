@@ -67,11 +67,9 @@ const expenses=()=>model().expenses.reduce((a,x)=>a+Number(x[1]||0),0);
 const accounts=()=>model().accounts;
 const cash=()=>accounts().filter((x,i)=>i<=2||String(x[0]).toLowerCase().includes('cash wallet')).reduce((a,x)=>a+Number(x[1]||0),0);
 const debts=()=>model().protectionV2?.debts?.reduce((a,d)=>a+Number(d.balance||0),0)||0;
-const totalAssets=()=>{
- const v=model().wealthV2;if(!v)return cash();
- return cash()+v.assets.reduce((s,x)=>s+Number(x.value||0),0)+v.holdings.reduce((s,h)=>s+Number(h.shares||0)*Number(h.price||0),0)
-};
+const totalAssets=()=>window.FinanceLedgerCore?.summary(model()).assets??cash();
 const nw=()=>totalAssets()-debts();
+const ledger=()=>window.FinanceLedgerCore?.transactions(model())||{count:0,income:0,expenses:0};
 const savings=()=>model().goals?.filter(g=>/savings|emergency|investments/i.test(g[0])).reduce((sum,g)=>sum+Number(g[1]||0),0)||0;
 const saveRate=()=>Math.max(0,Math.min(100,100*(income()-expenses())/Math.max(1,income())));
 const debtIncome=()=>debts()/Math.max(1,income()*12);
@@ -136,7 +134,8 @@ info('Your score combines six local factors. It is not an externally validated c
 panel('Financial Health Score Breakdown',breakdown.map(([title,val,color,weight])=>'<div class="gv-row"><span style="width:112px">'+esc(title)+'</span><div class="grow">'+progress(val,100,color)+'</div><strong>'+val+'/100</strong><span style="color:#7a9098;width:23px">'+weight+'%</span></div>').join(''))+
 panel('Financial Health Trend',plot('line',7)+info('Historical score series are illustrative until actual snapshots are recorded.'))+
 panel('Cash Flow Health',plot('stack',7)+mini([[money(income()),'Income'],[money(expenses()),'Expenses'],[money(income()-expenses()),'Net cash flow']]),nav('Cash Flow Timeline',32))+
-panel('Spending Insights',donut(model().expenses.map(x=>({name:x[0],value:Number(x[1])})),expenses()),nav('Analyze Spending',16))+
+panel('Spending Insights',donut(model().expenses.map(x=>({name:x[0],value:Number(x[1])})),expenses())+
+rows([['Recorded ledger spending',money(ledger().expenses)],['Recorded ledger income',money(ledger().income)],['Transactions in ledger',String(ledger().count)]])+info('Planning expense categories and recorded transaction totals are separate; manual records do not automatically debit cash.'),nav('Analyze Spending',16))+
 panel('Top Insights',[
 ['✓','Your income covers recorded expenses',money(income()-expenses())+' monthly remaining',4],
 ['⚑','Some liabilities remain outstanding',money(debts())+' in the debt ledger',43],
@@ -197,11 +196,13 @@ function reportTypes(){return [
 ['Tax Summary Report','Recorded tax-planning placeholders','tax'],
 ['Goal Progress Report','Savings targets and amounts saved','goals'],
 ['Budget Performance','Category allocations and planning estimates','budget'],
+['Transaction Ledger Report','Recorded income and expenses from transactions','transactions'],
 ['Custom Report','All major finance summaries from local demo records','custom']
 ]}
 function reportData(type){
 const h=health();let rows=[['Metric','Amount (KES)'],['Monthly income',income()],['Monthly expenditure',expenses()],['Cash flow headroom',income()-expenses()]];
 if(type==='Expense Report'||type==='Budget Performance'){rows=[['Category','Amount (KES)'],...model().expenses.map(x=>[x[0],Number(x[1])])];if(type==='Budget Performance')rows.push(['Budget Target',model().spendV2?.budgetLimit||0])}
+if(type==='Transaction Ledger Report'){rows=[['Date','Description','Category','Account','Amount (KES)'],...model().transactions.map(x=>[x[0],x[1],x[2],x[3],x[4]])]}
 if(type==='Net Worth Report')rows=[['Metric','Amount (KES)'],['Total Assets',totalAssets()],['Total Debts',debts()],['Net Worth',nw()],['Personal Cash',cash()]];
 if(type==='Investment Performance Report')rows=[['Holding','Estimated Value (KES)'],...(model().wealthV2?.holdings||[]).map(x=>[x.name,x.shares*x.price])];
 if(type==='Debt Repayment Report')rows=[['Debt','Outstanding Principal (KES)'],...(model().protectionV2?.debts||[]).map(x=>[x.name,x.balance])];
