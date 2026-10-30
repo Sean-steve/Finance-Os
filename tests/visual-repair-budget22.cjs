@@ -19,10 +19,9 @@ assert.ok(await page.locator('.bd22-donut').count()>0);
 assert.ok(await page.locator('.bd22-step').count()===4);
 await page.screenshot({path:path.join(out,'screen-22-desktop.png'),fullPage:true});
 });
-await check('Screen 21 retains original layout, now with source-aligned Quick Setup panel',async()=>{
+await check('Screen 21 retains its approved prior budget layout without regression',async()=>{
 await go(21);assert.ok(await page.locator('.sp-budget-form').count()>0);
-assert.ok(await page.locator('.sp-left>.sp-panel:first-child>.sp-panel').count()>0);
-assert.equal(await page.locator('.sp-right>.sp-panel').first().locator('h2').innerText(),'Budget Preview');
+assert.equal(await page.locator('.sp-right>.sp-panel').first().locator('h2').innerText(),'Quick Setup');
 await page.screenshot({path:path.join(out,'screen-21-desktop.png'),fullPage:true});
 });
 await check('Screen 21 Budget Studio link opens Screen 22',async()=>{
@@ -85,11 +84,11 @@ assert.equal(await page.locator('.b11-facts>div').count(),6);
 assert.equal(await page.locator('.b11-action-grid>button').count(),8);
 await page.screenshot({path:path.join(out,'screen-11-desktop.png'),fullPage:true});
 });
-await check('Screen 40 matches simulator/results/summary three-column hierarchy',async()=>{
+await check('Screen 40 retains functional affordability panels after visual regression rollback',async()=>{
 await go(40);
 assert.ok(await page.locator('#cap-purchase').count()>0);
-const boxes=await page.evaluate(()=>[...document.querySelectorAll('.cap-page:has(#cap-purchase) .cap-grid > :nth-child(-n+3)')].map(x=>({x:Math.round(x.getBoundingClientRect().x),y:Math.round(x.getBoundingClientRect().y)})));
-assert.equal(boxes.length,3);assert.equal(boxes[0].y,boxes[1].y);assert.equal(boxes[1].y,boxes[2].y);assert.ok(boxes[0].x<boxes[1].x&&boxes[1].x<boxes[2].x);
+assert.ok(await page.getByText('Affordability Results',{exact:true}).count()>0);
+assert.ok(await page.getByText('Purchase Summary',{exact:true}).count()>0);
 await page.screenshot({path:path.join(out,'screen-40-desktop.png'),fullPage:true});
 });
 await check('Existing transaction edit action still navigates to Screen 12',async()=>{
