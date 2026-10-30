@@ -226,5 +226,120 @@ panel('Recovery Opportunities',alertPanelContent())+
 panel('Financial Recovery Settings','<form data-cfform="recovery" class="cf-form"><label class="cf-label">Recovery Target (KES)<input name="target" class="cfinput" type="number" min="0" value="'+rec.target+'"></label><label class="cf-label">Notes<input name="notes" class="cfinput" value="'+safe(rec.notes)+'"></label><button class="cf-btn green" type="submit">Save Recovery Plan</button></form>')+
 panel('Recovery Progress','<div class="cf-health" style="--p:'+Math.round(rec.completed.length/tasks.length*100)+'%"><div><b>'+Math.round(rec.completed.length/tasks.length*100)+'%</b><small>Tasks reviewed</small></div></div>'+nav('Forecast Cash Flow',33))+'</div>')}
 
-/* HANDLERS_TO_INSERT */
+
+function modal(){
+if(!v.modal)return '';
+let title='',form='';
+if(v.modal==='income'){const x=state().incomes.find(s=>s.id===v.incomeDetail);title=x?'Edit Income Source':'New Income Source';
+form='<form class="cf-form" data-cfform="income">'+
+'<label class="cf-label">Name<input class="cfinput" required name="name" value="'+safe(x?.name||'')+'"></label>'+
+'<label class="cf-label">Monthly amount (KES)<input class="cfinput" required type="number" min="0" name="amount" value="'+(x?.amount||0)+'"></label>'+
+'<label class="cf-label">Category<select class="cf-select" name="category">'+['Business Income','Freelance','Investments','Property','Other'].map(c=>'<option '+(x?.category===c?'selected':'')+'>'+c+'</option>').join('')+'</select></label>'+
+'<label class="cf-label">Frequency<select class="cf-select" name="frequency">'+['Monthly','Weekly','Variable','Quarterly'].map(c=>'<option '+(x?.frequency===c?'selected':'')+'>'+c+'</option>').join('')+'</select></label>'+
+'<label class="cf-label">Expected receipt date<input type="date" class="cfinput" name="expected" value="'+safe(x?.expected||'2026-11-20')+'"></label>'+
+'<button type="submit" class="cf-btn green">Save Income Source</button></form>';
+}else if(v.modal==='bill'){const b=state().bills.find(x=>x.id===v.editBillId);title=b?'Edit Bill':'Add Bill';
+form='<form data-cfform="bill" class="cf-form">'+
+'<label class="cf-label">Bill name<input class="cfinput" name="name" required value="'+safe(b?.name||'')+'"></label>'+
+'<label class="cf-label">Amount (KES)<input class="cfinput" name="amount" type="number" required min="0" value="'+(b?.amount||0)+'"></label>'+
+'<label class="cf-label">Category<select class="cf-select" name="category">'+['Housing','Utilities','Business','Insurance','Subscriptions','Other'].map(c=>'<option '+(b?.category===c?'selected':'')+'>'+c+'</option>').join('')+'</select></label>'+
+'<label class="cf-label">Due date<input name="due" type="date" class="cfinput" required value="'+safe(b?.due||'2026-11-30')+'"></label>'+
+'<label class="cf-label">Payment account<select class="cf-select" name="account">'+ctx.model.accounts.map(x=>'<option>'+safe(x[0])+'</option>').join('')+'</select></label>'+
+'<button class="cf-btn green" type="submit">Save Bill</button></form>'
+}else{title=v.modal;form='<p class="cf-muted">Demonstration-only action. No external financial provider or authenticated document storage is connected.</p>'}
+return '<div class="cf-dialog-backdrop"><div role="dialog" aria-modal="true" class="cf-dialog" aria-label="'+safe(title)+'"><div class="cf-head"><h2>'+safe(title)+'</h2>'+bc('Close','closeModal')+'</div>'+form+'</div></div>'
+}
+function download(name,headers,records){
+const csv=[headers,...records].map(row=>row.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500)}
+function render(n){switch(Number(n)){case 27:return screen27();case 28:return screen28();case 29:return screen29();case 30:return screen30();case 31:return screen31();case 32:return screen32();case 33:return screen33();case 34:return screen34();default:return ''}}
+function click(e){
+const element=e.target.closest?.('[data-cfa],[data-cfnav]');if(!element)return false;
+if(element.dataset.cfnav){e.preventDefault();go(element.dataset.cfnav);return true}
+const raw=element.dataset.cfa,name=raw.split(':')[0],arg=raw.slice(name.length+1);v.notice='';
+switch(name){
+ case 'reference':location.href='index.html#screen/'+ctx.screen();break;
+ case 'tab':{const i=arg.indexOf(':'),key=arg.slice(0,i),val=arg.slice(i+1);
+   if(key==='incomeType')v.incomeType=val;
+   else if(key==='billTab'){v.billTab=val;v.billFilter=['All Bills','Recurring','One-off','Insurance','Taxes'].includes(val)?'All':val}
+   else if(key==='billDetailTab')v.billDetailTab=val;
+   else if(key==='cashTab')v.cashTab=val;
+   else if(key==='scenario'){v.forecastScenario=val;const growth={Baseline:[5,3],Conservative:[-8,7],Optimistic:[12,2]};let g=growth[val]||[5,3];state().scenario.incomeGrowth=g[0];state().scenario.expenseGrowth=g[1]}
+   save();break}
+ case 'income':v.incomeDetail=arg;v.modal='income';save();break;
+ case 'newIncome':v.incomeDetail=null;v.modal='income';save();break;
+ case 'newBill':v.editBillId=null;v.modal='bill';save();break;
+ case 'bill':v.billId=arg;go(31);break;
+ case 'billSettings':v.editBillId=v.billId;v.modal='bill';save();break;
+ case 'billPdf':v.modal='PDF bill generation requires a verified statement or uploaded document; no real statement exists in this demo.';save();break;
+ case 'billReminder':bill().reminder=!bill().reminder;save('Bill reminder '+(bill().reminder?'enabled':'disabled')+' in browser state. No actual notification service is connected.');break;
+ case 'billAutopay':bill().autopay=!bill().autopay;save('Automatic payment preference stored locally only. No automatic bank payments will run.');break;
+ case 'payMode':v.paymentMode=arg;save();break;
+ case 'receipt':v.modal='The simulated payment receipt is a local demonstration; a provider receipt does not exist.';save();break;
+ case 'incomeExport':download('finance-os-income-demo.csv',['Source','Category','Amount','Frequency','Expected Date'],state().incomes.map(s=>[s.name,s.category,s.amount,s.frequency,s.expected]));save('Income CSV exported.');break;
+ case 'billExport':download('finance-os-bills-demo.csv',['Bill','Category','Amount','Due','Status'],state().bills.map(b=>[b.name,b.category,b.amount,b.due,b.status]));save('Bill summary CSV exported.');break;
+ case 'forecastExport':download('finance-os-cash-forecast-demo.csv',['Month','Income','Expenses','Bills','Net','Projected Cash'],forecastData().map(x=>[x.month,x.income,x.expenses,x.obligations,x.net,x.cash]));save('Forecast CSV exported.');break;
+ case 'calendarDay':v.selectedDate='2026-10-'+String(arg).padStart(2,'0');save('Selected '+v.selectedDate+' on payment calendar.');break;
+ case 'cashPrev':case 'cashNext':case 'cashToday':save('Timeline view updated; reference chart uses illustrative month data.');break;
+ case 'period':save('This reference view displays a representative multi-month scenario.');break;
+ case 'closeModal':v.modal=null;save();break;
+ default:v.modal='Not connected to a live financial provider.';save();break;
+}
+return true
+}
+function change(e){
+const el=e.target;if(!el.dataset?.cfchange)return false;
+if(el.dataset.cfchange==='incomeType')v.incomeType=el.value;
+if(el.dataset.cfchange==='billFilter')v.billFilter=el.value;
+save();return true
+}
+function input(e){
+const el=e.target,key=el.dataset?.cfsearch;if(!key)return false;
+if(key==='income')v.incomeSearch=el.value;
+if(key==='bill')v.billSearch=el.value;
+const pos=el.selectionStart;ctx.render();
+const found=$('[data-cfsearch="'+key+'"]');if(found){found.focus();found.setSelectionRange(pos,pos)}
+return true;
+}
+function submit(e){
+const form=e.target;if(!form.dataset?.cfform)return false;
+e.preventDefault();
+const d=Object.fromEntries(new FormData(form));
+switch(form.dataset.cfform){
+ case 'income':{
+  const amount=Number(d.amount),name=String(d.name||'').trim();if(!name||!Number.isFinite(amount)||amount<0){save('Provide a valid income amount and source.');break}
+  const exists=state().incomes.find(x=>x.id===v.incomeDetail);
+  const record={name,amount,category:d.category,frequency:d.frequency,expected:d.expected,account:'KCB Main Account',status:'Active'};
+  if(exists)Object.assign(exists,record);
+  else state().incomes.push({id:'inc-'+Date.now(),previous:0,growth:0,...record});
+  v.modal=null;save('Income source saved to local financial planning records.');break}
+ case 'bill':{
+  let amount=Number(d.amount),name=String(d.name||'').trim();if(!name||!Number.isFinite(amount)||amount<0){save('Provide a valid bill and amount.');break}
+  let exists=state().bills.find(x=>x.id===v.editBillId);
+  const record={name,amount,due:d.due,category:d.category,account:d.account,status:exists?.status||'Upcoming',customer:exists?.customer||'MANUAL',period:'Manual',previous:exists?.previous||amount,reminder:exists?.reminder??false,autopay:exists?.autopay??false};
+  if(exists)Object.assign(exists,record);else state().bills.push({id:'bill-'+Date.now(),...record});
+  v.modal=null;save('Bill saved to local demonstration obligations.');break}
+ case 'payBill':{
+  const b=bill(),amount=Number(d.amount),destination=String(d.destination||'').trim();
+  if(!(amount>0)||amount>b.amount||!destination||b.status==='Paid'){save('Enter a valid payment amount for an unpaid bill.');break}
+  state().paymentHistory.push({id:'payment-'+Date.now(),billId:b.id,date:'2026-10-30',amount,method:v.paymentMode,reference:'DEMO-ONLY'});
+  b.amount=Math.max(0,b.amount-amount);if(b.amount===0)b.status='Paid';
+  // Do not debit cash or assert provider settlement without an authorized payment allocation.
+  save('Simulated payment recorded locally. This is NOT a completed bank or M-Pesa payment.');break}
+ case 'scenario':{
+  for(const key of ['incomeGrowth','expenseGrowth','minimum','horizon']){const val=Number(d[key]);if(!Number.isFinite(val)){save('Enter valid forecast assumptions.');return true}state().scenario[key]=val}
+  save('Forecast recalculated using updated assumptions.');break}
+ case 'recovery':{
+  const val=Number(d.target);if(val<0||!Number.isFinite(val)){save('Enter a non-negative recovery target.');break}
+  state().shortfall.target=val;state().shortfall.notes=String(d.notes||'');save('Recovery plan saved locally.');break}
+}
+return true
+}
+function onChange(e){
+const el=e.target;if(!el.matches?.('[data-cfrecovery]'))return false;
+const list=new Set(state().shortfall.completed);if(el.checked)list.add(el.dataset.cfrecovery);else list.delete(el.dataset.cfrecovery);
+state().shortfall.completed=[...list];save('Recovery progress saved locally.');return true
+}
+window.FinanceIncomeFlow={init,render,click,change,input,submit,onChange};
+
 })();
