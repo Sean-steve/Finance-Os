@@ -80,5 +80,54 @@ const coverage=()=>state().policies.filter(p=>p.status==='Active').reduce((n,p)=
 const annualPremiums=()=>state().policies.filter(p=>p.status==='Active').reduce((n,p)=>n+p.premium*12,0);
 function detailsPairs(rows){return rows.map(([label,value])=>'<div class="pr-row"><span class="grow">'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>').join('')}
 
-/* SCREENS_GO_HERE */
+
+function debtRows(){return table(['Debt / Account','Lender','Balance','Interest Rate','Monthly Payment','Next Due','Status','Actions'],
+debts().map(d=>'<tr><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.lender)+'</td><td>'+fmt(d.balance)+'</td><td>'+d.rate+'%</td><td>'+fmt(d.payment)+'</td><td>'+esc(d.next)+'</td><td>'+pill(d.status,d.status==='Needs Review'?'warn':'')+'</td><td>'+action('Details','debt:'+d.id)+'</td></tr>'))}
+function amortize(d,extra=0){let bal=d.balance,rate=d.rate/1200,monthly=d.payment+extra,rows=[],interestTotal=0;
+for(let i=0;i<360&&bal>0.01;i++){let interest=bal*rate;if(monthly<=interest)return {rows,months:360,interest:Infinity,error:true};let pay=Math.min(monthly,bal+interest),principal=pay-interest;bal=Math.max(0,bal-principal);interestTotal+=interest;rows.push({month:i+1,payment:Math.round(pay),principal:Math.round(principal),interest:Math.round(interest),balance:Math.round(bal)})}
+return {rows,months:rows.length,interest:interestTotal}}
+function screen43(){
+const weighted=debts().reduce((n,d)=>n+d.balance*d.rate,0)/Math.max(1,debtTotal());
+return shell(43,metrics([['▣','Total Debt Balance',fmt(debtTotal()),'Illustrative debt portfolio'],['▧','Monthly Debt Payments',fmt(debtMonthly()),'Required payments'],['%','Average Interest Rate',weighted.toFixed(1)+'%','Balance-weighted'],['◷','Debt-Free Target','Dec 2031','Planning milestone']])+
+tabs(43,['Overview','All Debts','Payment Schedule','Repayment Strategy','Refinancing Options','Debt Analytics','Documents','Settings'])+
+'<div class="pr-grid">'+panel('Debt Breakdown',donut(debts().map(d=>[d.kind,d.balance]),debtTotal()))+
+panel('Debt Balance Trend',chart('line'),action('Last 6 Months','period'))+
+panel('Quick Actions',[
+['⊕','Add Debt Account','addDebt'],['▣','Make a Payment','payment'],['⇄','Set Up Auto Payment','autopay'],['✦','Create Payoff Plan','optimizer'],['◈','Compare Refinancing','refinance'],['▥','Upload Documents','documents']
+].map(x=>row(x[0],x[1],'Local demo only','',x[2])).join(''))+
+panel('Monthly Payment Commitments',chart('stack'))+
+panel('Debt Payoff Progress',donut([['Repaid',debts().reduce((n,d)=>n+d.original-d.balance,0)],['Remaining',debtTotal()]],debtTotal()))+
+panel('Debt Insights',row('⚑','Review highest-interest debt','Credit card APR could dominate costs',fmt(debts().find(d=>d.id==='d-card').balance),'optimizer')+row('✓','Stay on payment schedules','Review the next due dates','','schedule')+row('◷','Compare extra repayments','Repayment scenario review','','optimizer'))+
+'<section class="pr-panel pr-col2"><div class="pr-head"><h2>All Debt Accounts</h2>'+action('+ Add Debt','addDebt','primary')+'</div>'+debtRows()+'</section>'+
+panel('Payoff Strategies','<div class="pr-mini-grid">'+[['Avalanche','Highest APR'],['Snowball','Smallest balance'],['Refinance','Check fees'],['Extra Payments','Accelerate payoff']].map(x=>'<div class="pr-mini"><b>'+x[0]+'</b>'+x[1]+'</div>').join('')+'</div>'+link('View optimizer',45,'primary'))+
+panel('Payment Alerts',debts().slice(0,3).map(d=>row('◷',d.name,'Due '+d.next,fmt(d.payment),'debt:'+d.id)).join(''))+'</div>')}
+function screen44(){
+const d=selectedDebt(),schedule=amortize(d),repaid=d.original-d.balance;
+return shell(44,metrics([['⌂','Outstanding Balance',fmt(d.balance),percent(repaid,d.original)+'% paid down'],['▣','Monthly Payment',fmt(d.payment),'Scheduled'],['%','Interest Rate',d.rate+'%','Annual nominal'],['◷','Remaining Payments',schedule.months+' months','Illustrative model']])+
+tabs(44,['Overview','Repayment Schedule','Payment History','Amortization','Extra Payments','Refinancing Options','Documents','Settings'])+
+'<div class="pr-grid">'+panel('Loan Details',detailsPairs([['Loan Type',d.kind],['Lender',d.lender],['Original Loan',fmt(d.original)],['Outstanding Balance',fmt(d.balance)],['Interest Rate',d.rate+'%'],['Monthly Payment',fmt(d.payment)],['Next Due',d.next],['Status',d.status]]))+
+panel('Balance & Payoff Projection',chart('area',10)+bar(repaid,d.original)+detailsPairs([['Principal repaid',fmt(repaid)],['Principal remaining',fmt(d.balance)]]))+
+panel('Payoff Scenarios',[0,10000,25000].map(extra=>row('◈',extra?'Extra '+fmt(extra):'Current Plan',amortize(d,extra).months+' months to pay off',fmt(d.payment+extra),'extra:'+extra)).join(''))+
+panel('Payment Breakdown (Monthly)',donut([['Principal',Math.max(0,d.payment-d.balance*d.rate/1200)],['Interest',d.balance*d.rate/1200]],d.payment))+
+'<section class="pr-panel pr-col2"><div class="pr-head"><h2>Amortization Schedule — Next 12 Payments</h2>'+action('Export CSV','loanExport')+'</div>'+table(['Month','Payment','Principal','Interest','Ending Balance','Status'],schedule.rows.slice(0,12).map(r=>'<tr><td>'+r.month+'</td><td>'+fmt(r.payment)+'</td><td>'+fmt(r.principal)+'</td><td>'+fmt(r.interest)+'</td><td>'+fmt(r.balance)+'</td><td>'+pill('Projected','blue')+'</td></tr>'))+'</section>'+
+panel('Quick Actions',[['Make a Payment','payment'],['Debt Optimizer','optimizer'],['Update Interest Rate','editDebt'],['Request Refinancing','refinance'],['Download Schedule','loanExport']].map(x=>row('▣',x[0],'Demo only','',x[1])).join(''))+
+panel('Payment History',table(['Date','Amount','Method'],state().debtPayments.filter(x=>x.debtId===d.id).slice(-5).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+fmt(x.amount)+'</td><td>Local simulation</td></tr>')))+
+panel('Extra Payments Impact',detailsPairs([['Extra '+fmt(10000)+' monthly',amortize(d,10000).months+' months'],['Interest difference',fmt(Math.max(0,schedule.interest-amortize(d,10000).interest))]])+link('Compare plans',45))+
+panel('Lender Insights',notice('Projections assume constant interest and payment amounts; verify contract terms and fees.'))+'</div>')}
+function optimization(){const list=debts().slice().sort((a,b)=>ui.strategy==='Snowball'?a.balance-b.balance:b.rate-a.rate);
+return list.map((d,i)=>({...d,result:amortize(d,i===0?ui.extra:0)}))}
+function screen45(){
+const plan=optimization(),before=debts().reduce((n,d)=>n+amortize(d).interest,0),after=plan.reduce((n,d)=>n+d.result.interest,0),saved=Math.max(0,before-after);
+return shell(45,metrics([['▣','Total Debt Balance',fmt(debtTotal()),'Shared debts'],['▧','Monthly Payments',fmt(debtMonthly()),'Before extra contributions'],['%','Estimated Interest Saved',fmt(saved),'Illustrative'],['◷','Remaining Payoff',Math.max(...plan.map(d=>d.result.months))+' months','Not a lender quote']])+
+tabs(45,['Optimizer','Strategy Comparison','Extra Payments','Debt Priority List','Savings Analysis','Recommended Plan','Settings'])+
+'<div class="pr-grid">'+
+panel('Optimization Settings','<form data-prform="optimizer" class="pr-form">'+select('Optimization Goal','strategy',['Avalanche','Snowball','Minimum Payments'],ui.strategy)+field('Extra Monthly Payment (KES)','extra',ui.extra,'number','min="0" required')+field('Start Date','start','2026-11-01','date')+'<button class="pr-btn primary" type="submit">Optimize Plan</button></form>'+notice('This model does not include changing rates or lender fees.'))+
+panel('Strategy Comparison','<div class="pr-strategy">'+[['Avalanche','Highest APR First','Usually minimizes interest'],['Snowball','Smallest Balance First','Earlier milestone wins'],['Minimum Payments','Current Schedule','No extra allocation'],['Custom Strategy','Not yet configured','Manual priority needed']].map(x=>'<button class="'+(ui.strategy===x[0]?'selected':'')+'" data-pr="strategy:'+x[0]+'" type="button"><b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>').join('')+'</div>')+
+panel('Projected Benefits',detailsPairs([['Baseline interest',fmt(before)],['Optimized interest',fmt(after)],['Difference',fmt(saved)],['Extra payment',fmt(ui.extra)]])+bar(saved,before))+
+panel('Debt Payoff Timeline',chart('area',12))+
+'<section class="pr-panel pr-col2"><div class="pr-head"><h2>Recommended Debt Priority</h2>'+action('Export Plan','optimizerExport')+'</div>'+table(['Priority','Debt','Balance','APR','Monthly Pay','Months','Interest'],plan.map((d,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(d.name)+'</td><td>'+fmt(d.balance)+'</td><td>'+d.rate+'%</td><td>'+fmt(d.payment+(i===0?ui.extra:0))+'</td><td>'+d.result.months+'</td><td>'+fmt(d.result.interest)+'</td></tr>'))+'</section>'+
+panel('Extra Payment Impact',chart('bars',8)+detailsPairs([['Extra per month',fmt(ui.extra)],['Total debt',fmt(debtTotal())]])+action('Save Simulation','optimizerApply','primary'))+
+panel('Advisor Notes',row('⚑','Highest APR priority','Consider fees before refinancing',fmt(23)+'%','optimizer')+row('✓','Protect savings buffer','Avoid exhausting emergency funds','','reserve'))+'</div>')}
+
+/* REMAINING_SCREENS */
 })();
