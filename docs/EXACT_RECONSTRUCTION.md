@@ -67,7 +67,11 @@
 | 53 — Investment Portfolio | screen-53.webp | `rebuild.html#screen/53` | **Coded DOM / browser QA; exact visual review pending** |
 | 54 — Investment Details & Performance | screen-54.webp | `rebuild.html#screen/54` | **Coded DOM / browser QA; exact visual review pending** |
 | 55 — Wealth Growth & Risk Analysis | screen-55.webp | `rebuild.html#screen/55` | **Coded DOM / browser QA; exact visual review pending** |
-| 56–60 | 5 supplied reference images | `index.html#screen/NN` | **Not yet coded in HTML/CSS** |
+| 56 — Financial Health & Insights | screen-56.webp | `rebuild.html#screen/56` | **Coded DOM / functional QA; exact visual signoff pending** |
+| 57 — AI Financial Advisor | screen-57.webp | `rebuild.html#screen/57` | **Coded DOM / functional QA; exact visual signoff pending** |
+| 58 — Financial Reports & Reviews | screen-58.webp | `rebuild.html#screen/58` | **Coded DOM / functional QA; exact visual signoff pending** |
+| 59 — Integrations & Account Synchronization | screen-59.webp | `rebuild.html#screen/59` | **Coded DOM / functional QA; exact visual signoff pending** |
+| 60 — Settings, Privacy, Security & Audit History | screen-60.webp | `rebuild.html#screen/60` | **Coded DOM / functional QA; exact visual signoff pending** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
 
@@ -136,6 +140,17 @@ The unchanged approved-design viewer is the source of truth while the rebuilt pa
 - Portfolio and wealth CSV exports are local snapshots. No sensitive documents, verification or secure account integration.
 - Rendered at 1536×1024 and tested at 390px; final pixel-overlays against the original screenshots remain to be reviewed.
 - Assets screen 52 uses decorative CSS illustrations; original property photographs were not supplied separately as source assets and must be reconciled before pixel-level signoff.
+
+## Screens 56–60 — financial intelligence, reports and governance
+
+- Five independent HTML/CSS/JS workspaces follow the supplied 1536×1024 reference screenshots in `rebuild/batch56-60.js` and `rebuild/batch56-60.css`.
+- Financial Health aggregates actual **browser-demo records** from the other 55 screens; its score and historical chart are **illustrative heuristics**, not an audited financial health or credit score.
+- AI Financial Advisor is **rule-based and local**; no remote model/API, professional financial adviser or confidential data transfer is connected.
+- Reports generate downloadable **CSV/JSON snapshots** from the local financial ledger, with report history and a browser print/save-to-PDF option. Scheduled report toggles are local preferences; no automated delivery occurs.
+- Integrations gallery is provider metadata and demonstration previews only. `Connected Accounts=0`, `Verified Syncs=0`, `Sync Balance=0`; **no provider is connected**, even if a preview is marked as prepared.
+- Profile, notifications, privacy toggles and local audit history persist in browser storage. Users can export their local demo JSON and explicitly delete demo data. Passwords, multifactor authentication, devices, billing, encrypted storage, server-side audit and access control **cannot be implemented securely in a static GitHub Pages prototype**; these actions are visibly unavailable.
+- The complete routed inventory is now **60/60 coded**, but **visual overlay acceptance has not been completed**. Screen 22 still has **no original supplied screenshot**, so its provisional layout cannot be deemed exact.
+- Chrominium QA tests all 60 routes, mobile 390px, actionable forms, report exports, provider status honesty, and local data deletion.
 
 ## Rebuild implementation behavior
 
