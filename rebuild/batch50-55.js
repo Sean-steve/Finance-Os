@@ -61,13 +61,14 @@ const investTotal=()=>state().holdings.reduce((sum,h)=>sum+investmentValue(h),0)
 const costTotal=()=>state().holdings.reduce((sum,h)=>sum+h.shares*h.avg,0);
 const personalCash=()=>ctx.model.accounts.filter((x,i)=>i<=2||String(x[0]).toLowerCase().includes('cash wallet')).reduce((sum,a)=>sum+Number(a[1]||0),0);
 const assetsValue=()=>state().assets.reduce((sum,a)=>sum+Number(a.value||0),0);
-const assetsTotal=()=>assetsValue()+investTotal()+personalCash();
+const goalTransferAssets=()=>window.FinanceLedgerCore?.goalTransfers(ctx.model)||0;
+const assetsTotal=()=>assetsValue()+investTotal()+personalCash()+goalTransferAssets();
 const debtData=()=>ctx.model.protectionV2?.debts||[];
 const liabilities=()=>debtData().reduce((sum,d)=>sum+Number(d.balance||0),0);
 const networth=()=>assetsTotal()-liabilities();
 const selAsset=()=>state().assets.find(x=>x.id===ui.asset)||state().assets[0];
 const selHolding=()=>state().holdings.find(x=>x.id===ui.holding)||state().holdings[0];
-const assetBuckets=()=>[{name:'Real Estate',value:state().assets.filter(x=>x.kind==='Real Estate').reduce((sum,a)=>sum+a.value,0)},{name:'Investments',value:investTotal()},{name:'Business',value:state().assets.filter(x=>x.kind==='Business').reduce((sum,a)=>sum+a.value,0)},{name:'Vehicles',value:state().assets.filter(x=>x.kind==='Vehicle').reduce((sum,a)=>sum+a.value,0)},{name:'Cash & Bank Accounts',value:personalCash()},{name:'Other Assets',value:state().assets.filter(x=>x.kind==='Other').reduce((sum,a)=>sum+a.value,0)}].filter(x=>x.value>0);
+const assetBuckets=()=>[{name:'Real Estate',value:state().assets.filter(x=>x.kind==='Real Estate').reduce((sum,a)=>sum+a.value,0)},{name:'Investments',value:investTotal()},{name:'Business',value:state().assets.filter(x=>x.kind==='Business').reduce((sum,a)=>sum+a.value,0)},{name:'Vehicles',value:state().assets.filter(x=>x.kind==='Vehicle').reduce((sum,a)=>sum+a.value,0)},{name:'Cash & Bank Accounts',value:personalCash()},{name:'Earmarked Savings Transfers',value:goalTransferAssets()},{name:'Other Assets',value:state().assets.filter(x=>x.kind==='Other').reduce((sum,a)=>sum+a.value,0)}].filter(x=>x.value>0);
 const debtBuckets=()=>{const groups={};for(const x of debtData())groups[x.kind]=(groups[x.kind]||0)+x.balance;return Object.entries(groups).map(([name,value])=>({name,value}))};
 const holdingKinds=()=>{const groups={};for(const h of state().holdings)groups[h.kind]=(groups[h.kind]||0)+investmentValue(h);return Object.entries(groups).map(([name,value])=>({name,value}))};
 function donut(data,total){let sum=data.reduce((n,x)=>n+Number(x.value),0),from=0,slices=[];
@@ -82,7 +83,7 @@ for(let i=0;i<Math.min(points,12);i++){if(i%Math.ceil(points/6)!==0)continue;svg
 return svg+'</svg><div class="we-legend" style="display:flex;gap:14px;flex-wrap:wrap"><span>🟩 Assets / Portfolio</span><span>🟦 Net worth trend</span><span class="grow">Illustrative, not historical market data</span></div>'}
 function shell(n,body){return '<div class="we-page"><section class="banner"><div><div class="banner-date">Wealth　›　'+esc(titles[n][0])+'</div><h1>'+esc(titles[n][0])+'</h1><p>'+esc(titles[n][1])+'</p></div><div class="banner-quote">“Measure today.<br>Grow responsibly.<br>Build tomorrow.”</div></section><div class="we-inner">'+(ui.alert?'<div role="status" class="we-note">'+esc(ui.alert)+'</div>':'')+body+
 '<p class="we-note warn">All valuations, securities and prices are illustrative. No verified banking or brokerage feed. Personal financial records are stored in this browser only. '+button('Compare Approved Screen '+n,'reference')+'</p></div>'+dialog()+'</div>'}
-function incomeNotice(){return note('Business bank accounts and saved-goal allocations are excluded from personal cash to avoid double counting. Debt balances are read from the shared debt workspace. Figures are not audited.')}
+function incomeNotice(){return note('Business accounts and original seeded goal balances are excluded from personal cash. New funded goal transfers are included once as earmarked savings assets. Debt balances are read from the shared debt workspace. Figures are not audited.')}
 
 
 function assetBreakdown(){return assetBuckets().map((a,i)=>item(['⌂','▣','◈','▰','▤','◆'][i]||'◎',a.name,'Recorded demo asset category',money(a.value),'category:'+a.name,['','blue','purple','','blue',''][i]||'')).join('')}
