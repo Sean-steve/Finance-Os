@@ -1,0 +1,28 @@
+/* Reconciliation pass: WCAG AA contrast fixes for the 60-screen coded prototype.
+   Scoped to components with confirmed serious axe-core contrast findings.
+   Keep these overrides after all reconstruction module stylesheets. */
+.chart-axis,.chart-axis span,.safe-legend small,.safe-legend>div,
+.b-trend,.b-account-card small,.b-good,
+.sp-mini,.sp-red,.sp-budget-line>span,
+.cf-row .cf-status,.cf-status,.cf-status.warn,.cf-status.bad,
+.we-positive,.we-mini,.we-mini>div,
+.gv-mini,.gv-mini>div,.gv-mini>div small,
+.gv-legend,.gv-tag,.gv-tag.blue,.gv-tag.warn {
+  color:#43565e;
+}
+.b-good,.we-positive{color:#086a4e}
+.sp-red{color:#9e3041}
+.cf-status{color:#126549;background:#e1f7ec}
+.cf-status.warn{color:#79510e;background:#fff2d8}
+.cf-status.bad{color:#9c3448;background:#ffe9ec}
+.cf-row .cf-status{color:#23564b}
+.gv-mini>div{color:#4e5e66}
+.gv-mini b,.we-mini b{color:#263a44}
+.we-mini{color:#4b5962}
+.we-tag{color:#126044}
+.gv-tag{color:#126549}
+.gv-tag.warn{color:#775011}
+.gv-tag.blue{color:#21577e}
+.cf-row .bad,.cf-row .warn{color:#8d3948}
+.sp-chip.red,.sp-bad{color:#923748}
+@media(prefers-reduced-motion:reduce){.gv-page *, .we-page *, .cf-page *, .sp-page *{scroll-behavior:auto;animation-duration:.01ms!important;transition-duration:.01ms!important}}
