@@ -347,5 +347,47 @@ panel('User Management',table(['Member','Role','Access','Actions'],[
 panel('System Settings',systemRows())+
 '</div>')}
 
+
+function dialog(){
+if(!ui.modal)return '';
+let title='',body='';
+if(ui.modal==='profile'){const p=model().profile,set=state().security;title='Edit Profile & Preferences';
+body='<form data-gvform="profile" class="gv-form"><div class="gv-fields">'+
+field('Display Name','name',p.name,'text','required maxlength="100"')+
+field('Email (demo only)','email',p.email||'','email','maxlength="150"')+
+field('Phone (demo only)','phone',p.phone||'','tel','maxlength="30"')+
+select('Currency','currency',['KES','USD','EUR','GBP'],set.currency)+
+select('Language','language',['English','Kiswahili'],set.language)+
+select('Timezone','timezone',['Africa/Nairobi','UTC'],set.timezone)+
+select('Date Format','dateFormat',['DD MMM YYYY','YYYY-MM-DD','DD/MM/YYYY'],set.dateFormat)+
+'</div><button class="gv-btn primary" type="submit">Save Profile</button></form>'+info('This is not an authenticated or verified account.');
+}else if(ui.modal==='report'){title='Generate Local Financial Report';
+body='<form data-gvform="report" class="gv-form">'+
+select('Report Type','type',reportTypes().map(x=>x[0]),ui.reportType||'Income Statement')+
+select('Period','period',['Last 30 Days','Last 3 Months','Last 6 Months','Last 12 Months'],ui.reportPeriod)+
+field('Report Name','name',(ui.reportType||'Income Statement')+' — Snapshot','text','required maxlength="100"')+
+info('Saves a snapshot from locally recorded figures, not a certified report.')+
+'<button class="gv-btn primary" type="submit">Generate Snapshot</button></form>';
+}else if(ui.modal==='provider'){const p=state().integrations.find(x=>x.id===ui.selectedProvider);title=(p?.provider||'Provider')+' — Preview';
+body=info('Local template only; there is NO OAuth, no API, no stored credentials, and no live synchronization.',true)+
+rows([['Provider',p?.provider||''],['Category',p?.category||''],['Verified Connection','None'],['Last Successful Sync','Never'],['Authorized Tokens','None']])+
+'<div class="gv-actions">'+button(p?.demo?'Reset Demo Template':'Prepare Demo Template','providerPrepare','primary')+nav('Manual Statement Import',13)+'</div>';
+}else if(ui.modal==='reportView'){const report=state().reports.find(x=>x.id===ui.reportId);title=report?.name||'Report';
+body=info('Locally generated snapshot: '+(report?.date||'Unknown date'))+
+table(report?.rows?.[0]||['Metric','Value'],(report?.rows||[]).slice(1,17).map(r=>'<tr>'+r.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>'))+
+button('Export Snapshot CSV','reportExport:'+report?.id,'primary');
+}else if(ui.modal==='deleteConfirm'){title='Permanently Delete Local Demo Data';
+body=info('Clears the entire Finance OS browser-local demo record: saved edits, reports, chat history and settings. No cloud account exists. This cannot be undone.',true)+
+'<div class="gv-actions">'+button('Cancel','closeModal')+button('Confirm Deletion','deleteConfirm','warn')+'</div>';
+}else if(ui.modal==='scenarioResult'){const v=ui.scenario||{};title='Purchase Affordability Scenario';
+body=rows([['Target amount',money(v.target)],['Personal cash',money(cash())],['Planned allocation',money(v.monthly)],['Months until target',String(v.months)]])+
+info('This simple scenario excludes taxes, inflation, loan financing and future expenses.');
+}else{title='Unavailable in Static Prototype';body=info('This requires a real identity provider, bank, secure storage, notification or regulatory service. No external request was sent.',true)}
+return '<div class="gv-dialog-shade"><div class="gv-dialog" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="gv-head"><h2>'+esc(title)+'</h2>'+button('Close','closeModal')+'</div>'+body+'</div></div>'}
+function download(filename,data,mime='text/plain;charset=utf-8'){const blob=new Blob([data],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500)}
+const csvRows=records=>records.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+function exportReport(type,id){const report=state().reports.find(x=>x.id===id),rows=report?.rows||reportData(type||ui.reportType||'Income Statement');download('finance-os-'+(report?.type||type||'finance').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-demo.csv',csvRows(rows),'text/csv;charset=utf-8');audit('Export Report',report?.name||type||'Financial Snapshot');save('Local report CSV generated. Figures are illustrative.')}
+function render(n){switch(Number(n)){case 56:return screen56();case 57:return screen57();case 58:return screen58();case 59:return screen59();case 60:return screen60();default:return ''}}
+
 /* ACTION_HANDLERS */
 })();
