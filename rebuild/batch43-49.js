@@ -196,5 +196,95 @@ panel('Asset Distribution Checks',detailsPairs([['Assigned percentage',share+'%'
 panel('AI Estate Advisor',notice('This is not a will, trust, power of attorney, beneficiary designation or substitute for a Kenyan succession-law professional.',true)+row('◷','Consult a licensed attorney','Discuss a legally valid estate plan')+row('▥','Keep sensitive documents offline','Do not upload legal IDs here'))+
 '</div>')}
 
-/* HANDLERS */
+
+function dialog(){
+if(!ui.modal)return '';
+let content='',title=ui.modal;
+if(ui.modal==='debt'){const d=ui.editId?debts().find(x=>x.id===ui.editId):null;title=d?'Edit Debt':'Add Debt';
+content='<form data-prform="debt" class="pr-form"><div class="pr-fields">'+field('Debt name','name',d?.name||'','text','required')+field('Lender','lender',d?.lender||'','text','required')+
+field('Current Balance (KES)','balance',d?.balance||0,'number','min="0" required')+field('Original Loan (KES)','original',d?.original||0,'number','min="0" required')+
+field('Annual Interest (%)','rate',d?.rate||12,'number','min="0" max="100" step=".1" required')+field('Monthly Payment (KES)','payment',d?.payment||10000,'number','min="1" required')+
+field('Next Due','next',d?.next||'2026-11-15','date','required')+'</div><button class="pr-btn primary" type="submit">Save Debt</button></form>';
+}else if(ui.modal==='payment'){title='Record Simulated Debt Payment';content='<form data-prform="payment" class="pr-form">'+
+select('Debt','debt',debts().map(x=>x.name),selectedDebt().name)+field('Payment (KES)','amount',selectedDebt().payment,'number','min="1" required')+
+notice('This reduces the local demo principal only. No money moves and no lender receipt is created.')+'<button class="pr-btn primary" type="submit">Record locally</button></form>'}
+else if(ui.modal==='tax'){title='Edit Tax Planning Estimates';const t=state().taxes;
+content='<form data-prform="tax" class="pr-form"><div class="pr-fields">'+field('Estimated Tax (KES)','estimatedTax',t.estimatedTax,'number','min="0" required')+
+field('Recorded Tax Paid (KES)','paid',t.paid,'number','min="0" required')+field('Potential Deductions (KES)','deductions',t.deductions,'number','min="0" required')+field('Estimated Filing Date','filingDate',t.filingDate,'date','required')+'</div>'+notice('Only illustrative values; no KRA connection or legal calculation.')+'<button class="pr-btn primary" type="submit">Save estimates</button></form>'}
+else if(ui.modal==='policy'){const p=ui.editId?state().policies.find(x=>x.id===ui.editId):null;title=p?'Edit Policy':'Add Insurance Policy';
+content='<form data-prform="policy" class="pr-form"><div class="pr-fields">'+field('Policy Name','name',p?.name||'','text','required')+field('Provider','provider',p?.provider||'','text','required')+
+select('Category','category',['Life','Medical','Motor','Property','Travel','Accident','Other'],p?.category||'Life')+field('Coverage (KES)','coverage',p?.coverage||1000000,'number','min="0" required')+
+field('Monthly Premium (KES)','premium',p?.premium||1000,'number','min="0" required')+field('Renewal Date','renew',p?.renew||'2027-04-01','date','required')+'</div><button class="pr-btn primary" type="submit">Save local policy</button></form>'}
+else if(ui.modal==='claim'){title='Record Claim for Review';content='<form data-prform="claim" class="pr-form">'+field('Claim description','name','','text','required')+
+select('Policy','policy',state().policies.map(x=>x.name),state().policies[0].name)+field('Claim Amount (KES)','amount',10000,'number','min="0" required')+
+notice('This does not submit an insurance claim to a provider.')+'<button class="pr-btn primary" type="submit">Record demo claim</button></form>'}
+else if(ui.modal==='retirement'){const r=state().retirement;title='Retirement Planning Assumptions';
+content='<form data-prform="retirement" class="pr-form"><div class="pr-fields">'+field('Current age','age',r.age,'number','min="18" max="95" required')+
+field('Target retirement age','retireAge',r.retireAge,'number','min="19" max="100" required')+field('Current retirement savings (KES)','saved',r.saved,'number','min="0" required')+
+field('Monthly contribution (KES)','monthly',r.monthly,'number','min="0" required')+field('Monthly income goal (KES)','monthlyIncomeTarget',r.monthlyIncomeTarget,'number','min="0" required')+
+field('Return assumption (%)','annualReturn',r.annualReturn,'number','min="-20" max="30" step=".1" required')+field('Inflation assumption (%)','inflation',r.inflation,'number','min="0" max="30" step=".1" required')+'</div><button type="submit" class="pr-btn primary">Update projection</button></form>'}
+else if(ui.modal==='beneficiary'){const b=state().estate.beneficiaries.find(x=>x.id===ui.editId);title=b?'Edit Placeholder Beneficiary':'Add Placeholder Beneficiary';
+content='<form data-prform="beneficiary" class="pr-form">'+field('Placeholder label (no real name)','name',b?.name||'Beneficiary E','text','required')+
+select('Relationship','relationship',['Spouse / Partner','Child','Parent','Sibling','Other'],b?.relationship||'Other')+
+field('Share (%)','share',b?.share||0,'number','min="0" max="100" required')+
+select('Type','status',['Primary','Contingent'],b?.status||'Primary')+
+notice('For privacy, use fictional placeholders only. This is not a legally binding nomination.')+'<button class="pr-btn primary" type="submit">Save placeholder</button></form>'}
+else{title='Demo-only action';content=notice('This action requires a real provider or professional review, which is not connected.',true)}
+return '<div class="pr-dialog-backdrop"><div class="pr-dialog" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="pr-head"><h2>'+esc(title)+'</h2>'+action('Close','closeModal')+'</div>'+content+'</div></div>'}
+function download(filename,heads,rows){const data=[heads,...rows].map(row=>row.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob([data],{type:'text/csv;charset=utf-8'}),href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),500)}
+function render(n){switch(Number(n)){case 43:return screen43();case 44:return screen44();case 45:return screen45();case 46:return screen46();case 47:return screen47();case 48:return screen48();case 49:return screen49();default:return ''}}
+function actClick(e){const el=e.target.closest?.('[data-pr],[data-prnav]');if(!el)return false;
+if(el.dataset.prnav){e.preventDefault();go(el.dataset.prnav);return true}
+const raw=el.dataset.pr,cmd=raw.split(':')[0],arg=raw.slice(cmd.length+1);ui.notice='';
+switch(cmd){
+case 'reference':location.href='index.html#screen/'+ctx.screen();return true;
+case 'tab':{let i=arg.indexOf(':'),n=arg.slice(0,i),val=arg.slice(i+1);ui.tabs[n]=val;save('');return true}
+case 'debt':ui.debt=arg;go(44);return true;
+case 'addDebt':ui.editId=null;ui.modal='debt';save();return true;
+case 'editDebt':ui.editId=ui.debt;ui.modal='debt';save();return true;
+case 'payment':ui.modal='payment';save();return true;
+case 'extra':ui.extra=Number(arg);go(45);return true;
+case 'optimizer':go(45);return true;
+case 'strategy':ui.strategy=arg==='Custom Strategy'?'Avalanche':arg;save('Illustrative payoff order updated.');return true;
+case 'loanExport':{const d=selectedDebt();download('finance-os-loan-schedule.csv',['Month','Payment','Principal','Interest','Balance'],amortize(d).rows.map(x=>[x.month,x.payment,x.principal,x.interest,x.balance]));save('Loan schedule exported from illustrative assumptions.');return true}
+case 'optimizerExport':download('finance-os-debt-optimizer.csv',['Debt','Balance','Rate','Months'],optimization().map(x=>[x.name,x.balance,x.rate,x.result.months]));save('Plan exported.');return true;
+case 'optimizerApply':save('Saved selected strategy as a local planning preference. No debt allocation or payment occurred.');return true;
+case 'taxEstimate':case 'taxPlan':ui.modal='tax';save();return true;
+case 'taxDeductions':ui.tabs[46]='Deductions';save();return true;
+case 'taxExport':{const t=state().taxes;download('finance-os-tax-estimate.csv',['Item','Amount'],[['Tax estimated',t.estimatedTax],['Tax recorded paid',t.paid],['Potential deductions',t.deductions]]);save('Tax demo CSV downloaded.');return true}
+case 'policy':ui.editId=arg;ui.policy=arg;ui.modal='policy';save();return true;
+case 'addPolicy':ui.editId=null;ui.modal='policy';save();return true;
+case 'newClaim':ui.modal='claim';save();return true;
+case 'editRetirement':case 'retirementScenario':ui.modal='retirement';save();return true;
+case 'beneficiary':ui.editId=arg;ui.modal='beneficiary';save();return true;
+case 'addBeneficiary':ui.editId=null;ui.modal='beneficiary';save();return true;
+case 'estateDocument':save('Document metadata shown as missing. Sensitive legal files cannot be uploaded into this public prototype.');return true;
+case 'closeModal':ui.modal=null;save();return true;
+default:ui.modal='unavailable';save('');return true
+}}
+function actChange(e){const el=e.target;if(!el.matches?.('[data-prcheck]'))return false;
+const i=Number(el.dataset.prcheck),item=state().estate.checklist[i];if(item){item[1]=el.checked;save('Estate checklist saved as a non-legal planning note.')}return true}
+function actSubmit(e){const form=e.target;if(!form.dataset.prform)return false;e.preventDefault();const d=Object.fromEntries(new FormData(form));
+switch(form.dataset.prform){
+case 'debt':{const balance=Number(d.balance),original=Number(d.original),rate=Number(d.rate),payment=Number(d.payment);
+if(!String(d.name).trim()||!String(d.lender).trim()||[balance,original,rate,payment].some(x=>!Number.isFinite(x)||x<0)||payment<=0||rate>100){save('Enter valid loan details.');break}
+const data={name:d.name,lender:d.lender,balance,original:Math.max(original,balance),rate,payment,next:d.next,dueDay:Number(d.next.slice(-2)),status:'On Track',kind:'Other Debt',term:0};
+const old=debts().find(x=>x.id===ui.editId);if(old)Object.assign(old,data);else debts().push({id:'d-'+Date.now(),...data});
+ui.modal=null;save('Debt recorded locally without any lender connection.');break}
+case 'payment':{const loan=debts().find(x=>x.name===d.debt);const amount=Number(d.amount);if(!loan||!Number.isFinite(amount)||amount<=0||amount>loan.balance){save('Payment must be positive and no more than the debt balance.');break}
+loan.balance=Math.max(0,loan.balance-amount);state().debtPayments.push({id:'pay-'+Date.now(),debtId:loan.id,date:today,amount});ui.debt=loan.id;ui.modal=null;save('Simulated principal payment saved locally. Cash accounts and lenders were not charged.');break}
+case 'optimizer':{const value=Number(d.extra);if(!Number.isFinite(value)||value<0){save('Enter a non-negative extra monthly payment.');break}ui.extra=value;ui.strategy=d.strategy==='Minimum Payments'?'Minimum Payments':d.strategy;if(ui.strategy==='Minimum Payments')ui.extra=0;save('Repayment simulation recalculated.');break}
+case 'tax':{const t=state().taxes;for(const k of ['estimatedTax','paid','deductions']){let n=Number(d[k]);if(!Number.isFinite(n)||n<0){save('Tax estimate amounts must be non-negative.');return true}t[k]=n}t.filingDate=d.filingDate;ui.modal=null;save('Estimated tax values updated; no KRA filing or computation occurred.');break}
+case 'policy':{const coverage=Number(d.coverage),premium=Number(d.premium);if(!d.name?.trim()||!d.provider?.trim()||[coverage,premium].some(x=>!Number.isFinite(x)||x<0)){save('Invalid policy fields.');break}
+const data={name:d.name,provider:d.provider,coverage,premium,category:d.category,renew:d.renew,status:'Active',beneficiary:'Not specified'};
+const old=state().policies.find(x=>x.id===ui.editId);if(old)Object.assign(old,data);else state().policies.push({id:'policy-'+Date.now(),...data});ui.modal=null;save('Policy metadata updated locally. No insurer verification.');break}
+case 'claim':{const amount=Number(d.amount);if(!d.name.trim()||!Number.isFinite(amount)||amount<0){save('Invalid claim details.');break}state().claims.push({id:'claim-'+Date.now(),name:d.name,policy:d.policy,amount,status:'Draft only'});ui.modal=null;save('Claim draft recorded locally, not sent to any insurer.');break}
+case 'retirement':{let values=['age','retireAge','saved','monthly','monthlyIncomeTarget','annualReturn','inflation'].map(k=>Number(d[k]));if(values.some(x=>!Number.isFinite(x))||values[0]<18||values[1]<=values[0]||values[5]<-20||values[5]>30||values.slice(2,5).some(x=>x<0)){save('Retirement age must be later than current age, and values valid.');break}
+['age','retireAge','saved','monthly','monthlyIncomeTarget','annualReturn','inflation'].forEach((k,i)=>state().retirement[k]=values[i]);ui.modal=null;save('Retirement projection recalculated from local assumptions.');break}
+case 'beneficiary':{let share=Number(d.share);if(!String(d.name).trim()||!Number.isFinite(share)||share<0||share>100){save('Beneficiary share must be 0–100%.');break}
+const data={name:d.name,share,relationship:d.relationship,status:d.status};const old=state().estate.beneficiaries.find(x=>x.id===ui.editId);if(old)Object.assign(old,data);else state().estate.beneficiaries.push({id:'e-'+Date.now(),...data});ui.modal=null;save('Demo beneficiary placeholder saved; distribution is not legally valid.');break}
+}
+return true}
+window.FinanceProtection={init,render,actClick,actChange,actSubmit};
+
 })();
