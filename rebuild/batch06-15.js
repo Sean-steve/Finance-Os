@@ -110,19 +110,34 @@ return shell(10,'<div class="b-screen-toolbar">'+tabs(['All Transactions','Incom
 
 
 function transactionDetails(){
-let t=data().transactions[view.tx]||data().transactions[0],amount=Number(t[4]),expense=amount<0;
-return shell(11,'<div class="b-account-banner"><div class="b-detail-title"><span class="b-round">▣</span><div><small>Transactions › Transaction Details</small><h2>'+safe(t[1])+'</h2><small>'+safe(t[3])+' · '+safe(t[2])+'</small></div></div><div class="b-actions"><strong style="font-size:22px">'+(expense?'−':'+')+fmt(amount)+'</strong>'+tag('Completed')+'</div></div>'+
-'<div class="b-cols"><div class="b-left">'+tabs(['Overview','Receipt & Evidence','Category & Rules','Linked Items','History','Related Transactions'],view.txDetailTab,'txDetails')+
-'<div class="b-cols even">'+card('Transaction Information',[
-['Transaction',t[1]],['Merchant',t[1]],['Date',t[0]],['Category',t[2]],['Account',t[3]],['Type',expense?'Expense':'Income'],['Amount',(expense?'−':'+')+fmt(amount)],['Status','Completed'],['Reference','DEMO-TXN-'+String(view.tx+1).padStart(5,'0')]
-].map(x=>'<div class="b-list-pair"><span>'+safe(x[0])+'</span><strong>'+safe(x[1])+'</strong></div>').join(''))+
-card('Spending Context',bars()+'<div class="b-twostats"><div class="b-account-mini"><small>Category this month</small><b>'+fmt(Math.abs(amount)*12)+'</b></div><div class="b-account-mini"><small>Related transactions</small><b>'+data().transactions.filter(x=>x[2]===t[2]).length+'</b></div></div>')+'</div>'+
-card('Receipt & Evidence','<div class="b-note warning">Receipts and source documents will require authenticated encrypted storage. Local prototype only.</div>')+
-card('Related Transactions',txTable(data().transactions.map((v,i)=>({t:v,i})).filter(x=>x.t[2]===t[2]),7))+'</div>'+
-'<aside class="b-right">'+card('Actions','<div class="b-actions">'+btn('Edit transaction','editTx','primary')+btn('Change category','editTx')+btn('Mark reviewed','markReviewed')+link('View ledger',10)+'</div>')+
-card('Category',select('detailCategory',['Food & Groceries','Transport','Communication','Utilities','Subscriptions','Business Income','Other'],t[2],'Category')+btn('Save category','updateCategory','primary'))+
-card('Notes','<textarea class="b-input" rows="4" id="detailNotes" aria-label="Transaction notes" style="width:100%">'+safe(state().notes?.[view.tx]||'')+'</textarea>'+btn('Save Notes','saveNotes','primary'))+
-card('Audit & Metadata','<p class="b-muted">Created in the local demonstration ledger. No external banking authority verified this record.</p>')+'</aside></div>',[['▣',t[1],'Merchant / Description','Local ledger'],['▤',(expense?'−':'+')+fmt(amount),'Transaction amount','Recorded'],['◆',t[2],'Category','Editable'],['◈','Completed','Status','Demo record']])}
+const t=data().transactions[view.tx]||data().transactions[0],amount=Number(t[4]),expense=amount<0,neg=expense?'−':'+',related=data().transactions.map((x,i)=>({t:x,i})).filter(x=>x.t[2]===t[2]);
+const info=[
+['Merchant',t[1]],['Description',t[1]+' · Demo transaction'],['Amount',neg+fmt(amount)],
+['Date & Time',t[0]],['Account',t[3]],['Category',t[2]],['Subcategory',t[2]==='Communication'?'Airtime':'General'],
+['Transaction Type',expense?'Expense':'Income'],['Status','Completed (demo)'],['Reference','DEMO-MPESA-8F3T2K9'],
+['Transaction ID','DEMO-TXN-'+String(view.tx+1).padStart(5,'0')],['Channel','Local demo entry'],
+['Location','Nairobi, Kenya'],['Balance After','Requires bank verification']
+];
+const actions=[['✎','Edit Transaction','editTx'],['♧','Split Transaction','markReviewed'],['◇','Change Category','editTx'],['⇄','Mark as Transfer','markReviewed'],['◎','Add to Budget','markReviewed'],['▦','Create Recurring','markReviewed'],['▤','Attach Receipt','markReviewed'],['⚑','Report an Issue','markReviewed']];
+const body='<div class="b11-hero"><div class="b11-breadcrumb">Transactions　›　Transaction Details</div><h1>Transaction Details</h1><p>View all information, manage and categorize this transaction.</p><div class="b11-quote">“Small transactions today,<br>big clarity tomorrow.”</div></div>'+
+'<div class="b11-grid"><div class="b11-main"><div class="b11-identity"><div class="b11-brand">'+(t[3].toLowerCase().includes('mpesa')?'M':'▣')+'</div><div class="b11-identity-name"><h2>'+safe(t[1])+' <span class="b11-verified">✓</span></h2><p>'+safe(t[3])+'　·　'+safe(t[2])+'</p>'+tag(t[2])+'</div><div class="b11-value"><strong class="'+(expense?'negative':'')+'">'+neg+fmt(amount)+'</strong><small>'+safe(t[0])+'</small>'+tag('Completed')+'</div></div>'+
+'<div class="b11-facts">'+[
+['▣','Account',t[3]],['↘','Transaction Type',expense?'Expense':'Income'],['◇','Category',t[2]],
+['▤','Reference','DEMO-MPESA'],['#','Transaction ID','DEMO-TXN'],['⌂','Balance After','Unverified']
+].map(x=>'<div><span>'+x[0]+'</span><small>'+safe(x[1])+'</small><b>'+safe(x[2])+'</b></div>').join('')+'</div>'+
+'<div class="b11-tabs">'+tabs(['Overview','Receipt & Evidence','Category & Rules','Linked Items','Notes','History','Related Transactions'],view.txDetailTab,'txDetails')+'</div>'+
+'<div class="b11-body">'+card('Transaction Information',info.map(x=>'<div class="b-list-pair"><span>'+safe(x[0])+'</span><strong>'+safe(x[1])+'</strong></div>').join(''))+
+card('Spending Context',bars()+'<div class="b11-spend-stats"><div><small>Total category spend</small><b>'+fmt(Math.abs(amount)*12)+'</b><small>Illustrative</small></div><div><small>Related transactions</small><b>'+related.length+'</b><small>Local records</small></div><div><small>Monthly average</small><b>'+fmt(Math.abs(amount)*8)+'</b><small>Illustrative</small></div></div>')+
+card('Receipt & Evidence','<div class="b11-receipt"><span>▣</span><div><b>No receipt attached</b><p>Secure document upload is unavailable in this browser demo.</p></div>'+btn('Attach receipt','markReviewed')+'</div>')+
+card('Related Transactions',txTable(related,5))+'</div></div>'+
+'<aside class="b11-side">'+card('Actions','<div class="b11-action-grid">'+actions.map(x=>'<button type="button" data-baction="'+x[2]+'"><span>'+x[0]+'</span>'+x[1]+'</button>').join('')+'</div>')+
+card('Category',tag(t[2])+' '+btn('Change','editTx')+'<div class="b11-category-sub"><label>Subcategory</label>'+select('detailCategory',['Food & Groceries','Transport','Communication','Utilities','Subscriptions','Business Income','Other'],t[2],'Category')+btn('Save Category','updateCategory','primary')+'</div>')+
+card('Notes','<textarea class="b-input" id="detailNotes" rows="4" aria-label="Transaction notes" style="width:100%;resize:vertical">'+safe(state().notes?.[view.tx]||'')+'</textarea>'+btn('Save Notes','saveNotes','primary'))+
+card('Audit & Metadata','<div class="b-list-pair"><span>Created</span><strong>'+safe(t[0])+'</strong></div><div class="b-list-pair"><span>Source</span><strong>Local demonstration</strong></div><div class="b-list-pair"><span>Imported</span><strong>Not verified</strong></div><div class="b-list-pair"><span>External ID</span><strong>None</strong></div>')+'</aside></div>'+
+'<div class="b-muted" style="padding:12px">Illustrative transaction, not a bank statement. '+btn('Compare approved source ↗','reference')+'</div>';
+return '<div class="bpage bscreen-11">'+body+modal()+'</div>';
+}
+
 function transactionEditor(){
 let t=view.txMode==='edit'?(data().transactions[view.tx]||data().transactions[0]):null;
 let draft=view.draft||{};
