@@ -1,0 +1,32 @@
+/* Audit-first visual calibration across existing reference-led Finance OS screens.
+   Geometry matches approved dashboard structure while keeping every control as DOM. */
+/* Approved Screen 21: Quick Setup lives WITHIN Budget Details, preview is right column. */
+.spend-page:has(.sp-budget-form) .sp-budget-form{grid-template-columns:minmax(0,1.56fr) minmax(330px,.84fr);gap:11px}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child{display:grid;grid-template-columns:minmax(0,1.27fr) minmax(180px,.58fr);gap:10px;align-items:start;min-height:256px}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>.sp-panel-title{grid-column:1/-1;margin-bottom:0}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>#sp-budget-form{grid-column:1}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>.sp-panel{grid-column:2;grid-row:2;background:#f0f7ff;border-color:#eaf2f9;box-shadow:none;padding:9px;border-radius:7px}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>.sp-panel .sp-panel-title{margin-bottom:5px}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>.sp-panel .sp-stat-row{padding:6px 0;font-size:10px}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>.sp-panel button{border:0;padding:4px 0;min-width:34px;min-height:20px}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>.sp-fields{gap:7px}
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child .sp-field input,
+.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child .sp-field select{min-height:33px}
+.spend-page:has(.sp-budget-form) .sp-budget-line{grid-template-columns:27px minmax(96px,1fr) 97px 40px minmax(75px,.9fr) 95px 43px;min-height:33px;padding:4px 5px}
+.spend-page:has(.sp-budget-form) .sp-budget-line input[type=number]{min-height:28px;padding:5px}
+.spend-page:has(.sp-budget-form) .sp-right>.sp-panel:first-child{min-height:255px}
+.spend-page:has(.sp-budget-form) .sp-right .sp-tiny-card{padding:6px 4px;border-color:#edf4ef}
+.spend-page:has(.sp-budget-form) .sp-right .sp-tiny-card b{font-size:12px}
+.spend-page:has(.sp-budget-form) .sp-right .sp-tag-list>div{padding:5px 0}
+.spend-page:has(.sp-budget-form) .sp-panel h2{font-size:13px}
+.spend-page:has(.sp-budget-form) .sp-stepper{margin-bottom:8px}
+.spend-page:has(.sp-budget-form) .sp-budget-form .sp-btn.green{background:#005640;color:white}
+@media(max-width:1350px){.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child{grid-template-columns:1fr}.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:first-child>.sp-panel{grid-column:1;grid-row:auto}}
+@media(max-width:1060px){.spend-page:has(.sp-budget-form) .sp-budget-form{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:750px){.spend-page:has(.sp-budget-form) .sp-budget-line{min-width:650px}.spend-page:has(.sp-budget-form) .sp-left>.sp-panel:nth-child(2){overflow:auto}}
+/* Shared design-tokens: the reference uses crisp white canvas, compact cards and dark-blue text. */
+.bpage .b-panel,.spend-page .sp-panel,.cfpage .cf-panel,.cap-page .cap-panel,.pr-page .pr-panel,.we-page .we-panel,.gv-page .gv-panel{box-shadow:0 1px 5px #163b3709;border-color:#e6efea}
+.spend-page .sp-panel h2,.bpage .b-panel h2{color:#10213b}
+.bpage .b-panel .b-muted,.spend-page .sp-mini{color:#445a63}
+.spend-page .sp-stat-row .sp-dot{width:9px;height:9px}
+.main:has(.bscreen-8),.main:has(.bscreen-11){padding-top:0}
