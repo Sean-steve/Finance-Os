@@ -86,3 +86,9 @@ Read [Phase 2.1 design reconciliation and remaining gaps](docs/PHASE_2_1.md).
 GitHub Pages publishes the static frontend automatically from `main` after syntax, state, and 60-screen smoke checks pass. Only `index.html` and application JS/CSS are published. Phase 2.1 was merged through pull request #1; GitHub Pages deployment completed successfully.
 
 This is a **demo**, not a secure online banking application.
+
+## Screens 16–26 — coded spending & budgeting reconstructions
+
+[Open Screen 16 — Spending Intelligence](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/16) · [Screen 21 — Budget Editor](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/21) · [Screen 25 — Subscriptions](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/25) · [Screen 26 — Recovery](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/26).
+
+Eleven distinct screen layouts are coded with local demo workflows, charts, filters and form controls. Pixel-by-pixel visual approval is still outstanding. The original Screen 22 screenshot is missing, so that editor is provisional. Financial-provider connections, actual payment restrictions and subscription cancellations are **not** active. [Track exact reconstruction status](docs/EXACT_RECONSTRUCTION.md).

@@ -1,0 +1,35 @@
+name: Finance OS Screens 16-26 Reconstruction QA
+on:
+  push:
+    branches: ['reconstruction/exact-screens-16-26']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JS syntax
+        run: |
+          node --check rebuild/app.js
+          node --check rebuild/batch16-26.js
+          node --check tests/rebuild-batch16-26.cjs
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Validate 11 screens and financial workflows
+        run: node tests/rebuild-batch16-26.cjs
+      - name: Upload comparison screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-screens-16-26-chromium
+          path: qa-artifacts/batch16-26
+          if-no-files-found: ignore
+          retention-days: 14

@@ -38,6 +38,8 @@ jobs:
         run: node tests/reference-fidelity-qa.cjs
       - name: Validate exact reconstruction screens 06–15
         run: node tests/rebuild-batch06-15.cjs
+      - name: Validate coded spending and budgeting screens 16–26
+        run: node tests/rebuild-batch16-26.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs

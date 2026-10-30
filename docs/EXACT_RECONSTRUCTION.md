@@ -27,8 +27,18 @@
 | 13 — Statement Import | screen-13.webp | `rebuild.html#screen/13` | **Coded DOM / browser QA; visual approval pending** |
 | 14 — Transfers & Payments | screen-14.webp | `rebuild.html#screen/14` | **Coded DOM / browser QA; visual approval pending** |
 | 15 — Reconciliation & Financial Ledger | screen-15.webp | `rebuild.html#screen/15` | **Coded DOM / browser QA; visual approval pending** |
-| 16–21, 23–60 | 44 supplied reference images | `index.html#screen/NN` | **Not yet reconstructed in HTML/CSS** |
-| 22 — Create / Edit Budget | Missing original | Previous prototype | **Design reference missing / not approved** |
+| 16 — Spending Intelligence Dashboard | screen-16.webp | `rebuild.html#screen/16` | **Coded DOM; pixel-match approval pending** |
+| 17 — Expenditure Trends | screen-17.webp | `rebuild.html#screen/17` | **Coded DOM; pixel-match approval pending** |
+| 18 — Spending Category Analysis | screen-18.webp | `rebuild.html#screen/18` | **Coded DOM; pixel-match approval pending** |
+| 19 — Merchant & Lifestyle Analysis | screen-19.webp | `rebuild.html#screen/19` | **Coded DOM; pixel-match approval pending** |
+| 20 — Spending Leak Detector | screen-20.webp | `rebuild.html#screen/20` | **Coded DOM; pixel-match approval pending** |
+| 21 — Create / Edit Budget (reference label) | screen-21.webp | `rebuild.html#screen/21` | **Coded DOM; pixel-match approval pending** |
+| 22 — Create / Edit Budget (provisional) | **Missing approved source** | `rebuild.html#screen/22` | **Coded DOM; pixel-match approval pending / provisional** |
+| 23 — Daily & Weekly Spending Allowance | screen-23.webp | `rebuild.html#screen/23` | **Coded DOM; pixel-match approval pending** |
+| 24 — Spending Guardrails & Purchase Approval Check | screen-24.webp | `rebuild.html#screen/24` | **Coded DOM; pixel-match approval pending** |
+| 25 — Subscriptions & Recurring Expenses | screen-25.webp | `rebuild.html#screen/25` | **Coded DOM; pixel-match approval pending** |
+| 26 — Spending Review & Recovery Plan | screen-26.webp | `rebuild.html#screen/26` | **Coded DOM; pixel-match approval pending** |
+| 27–60 | 34 supplied reference images | `index.html#screen/NN` | **Not yet reconstructed in HTML/CSS** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
 
@@ -43,6 +53,19 @@ The unchanged approved-design viewer is the source of truth while the rebuilt pa
 - Reconciliation provides local manual matching, status filters, and a clear non-authoritative disclaimer.
 - Browser QA covers all ten screens, key workflows, and 390px mobile overflow (`tests/rebuild-batch06-15.cjs`).
 - **Not yet approved as pixel-identical.** Photography, chart geometry, iconography, some secondary tabs, text density, and spacing require reference-overlay comparison. Screenshot rendering and working navigation alone do not prove fidelity.
+
+## Screens 16–26 — spending and budgeting reconstruction
+
+- Reference-aware HTML/CSS renderers in `rebuild/batch16-26.js` and `rebuild/batch16-26.css` cover 11 named screen destinations.
+- Four KPI cards, three-column analytics panels, charts, tables and dense financial controls follow the supplied compositions.
+- Editable budget category allocations, alerts, periods and local save actions feed into allowance and spending modules.
+- Daily/weekly allowances, configurable guardrails and purchase checks are **advisory simulations** only, not actual payment restrictions.
+- Subscriptions can be added, edited and locally paused/cancelled; no third-party subscription is cancelled.
+- Spending-leak review and recovery-plan tasks persist as local demonstrations, not verified financial advice.
+- The supplied screenshot labelled **Screen 21** visibly says **"Create / Edit Budget"**, despite the earlier named screen inventory calling 21 "Budget Management." The screenshot is the source of truth for the coded layout.
+- **Screen 22** has no supplied reference and is a provisional derivative of the Screen 21 budget form. It must not be signed off as exact.
+- Chromium tests capture screen screenshots at 1536px and 390px, financial state persistence, CSV export and 01–15 navigation regressions in `tests/rebuild-batch16-26.cjs`.
+- The JSX/DOM route status does **not** imply visual pixel-level approval. Final comparison, typography, chart geometry and per-control testing remain pending.
 
 ## Rebuild implementation behavior
 
