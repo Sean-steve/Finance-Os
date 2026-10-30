@@ -245,5 +245,168 @@ function screen38(){
  '</div>');
 }
 
-/* APPEND_MORE_SCREENS */
+
+function screen39(){
+ const eg=emergency(),cfg=state().emergency;
+ const current=eg?.saved||0,target=Number(cfg.target),coverage=monthlyCosts()>0?(current/monthlyCosts()).toFixed(1):0;
+ return shell(39,metrics([['◆','Current Emergency Fund',cash(current),'↑ 12% vs last month'],['◎','Target Amount',cash(target),percent(current,target)+'% complete'],['▦','Months Covered',coverage+' months','of 6 recommended months'],['☂','Recommended Target',cash(monthlyCosts()*6),'6 months of essential costs']])+
+ tabs(39,['Overview','Contributions','Target & Coverage','Account & Allocation','Withdrawals','History','Settings'],tabValue(39,'Overview'))+
+ '<div class="cap-grid">'+
+ panel('Emergency Fund Progress','<div class="cap-donut-flex"><div class="cap-gauge" style="--p:'+percent(current,target)+'%"><div class="inner"><strong>'+percent(current,target)+'%</strong><small>'+cash(current)+' saved</small></div></div><div class="cap-legend">'+row('◆','Current Balance','',cash(current))+row('◎','Target Amount','',cash(target))+row('▣','Recommended','',cash(monthlyCosts()*6))+'</div></div>')+
+ panel('Emergency Fund Growth',lineGraph(9)+row('↑','Monthly Planned Saving','Contribution target',cash(cfg.monthly)))+
+ panel('Quick Actions',[
+ ['⊕','Add Contribution','Fund your emergency savings','fundEmergency'],
+ ['◎','Set / Edit Target','Define your cash reserve goal','editEmergency'],
+ ['↗','Adjust Target Amount','Review your reserve needs','editEmergency'],
+ ['▧','Make a Withdrawal','Simulate an emergency withdrawal','withdrawEmergency'],
+ ['⌂','Pause Contributions','Change planned contributions','pauseEmergency']
+ ].map(x=>row(x[0],x[1],x[2],'',x[3])).join(''))+
+ panel('Coverage Analysis','<div class="cap-columns">'+[
+ ['Housing',80000],['Food & Groceries',40000],['Utilities',15000],['Transport',30000]
+ ].map(([x,n])=>row('▥',x,'Estimate of monthly needs',cash(n))).join('')+'</div>'+
+ '<h3>Coverage by Month</h3>'+[1,2,3,4,5,6].map(n=>'<div class="cap-row"><b>Month '+n+'</b><span class="grow">'+progress(current,monthlyCosts()*n,n*monthlyCosts()<=current?'#0daf77':'#c9aa51')+'</span>'+pill(current>=n*monthlyCosts()?'Covered':'Target',current>=n*monthlyCosts()?'':'warn')+'</div>').join(''))+
+ panel('Monthly Contributions',barGraph(Array.from({length:8},(_,i)=>({name:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'][i],value:35+i*6})))+
+ row('▥','Planned Contribution','Next recurring month',cash(cfg.monthly)))+
+ panel('Emergency Fund Insights',[
+ ['Emergency fund target','Protect cash for unexpected obligations.'],
+ ['Savings coverage','Verify essential expenses to estimate coverage.'],
+ ['Funding consistency','Monthly contributions may improve resilience.']
+ ].map(x=>row('✦',x[0],x[1])).join(''))+
+ panel('Recent Contributions',table(['Date','Amount','From Account','Status'],cfg.contributions.slice(-6).reverse().map(x=>'<tr><td>'+safe(x.date)+'</td><td>'+cash(x.amount)+'</td><td>'+safe(x.account)+'</td><td>'+pill('Recorded')+'</td></tr>')))+
+ panel('Withdrawal History',table(['Date','Amount','Destination','Status'],cfg.withdrawals.slice(-6).reverse().map(x=>'<tr><td>'+safe(x.date)+'</td><td>'+cash(x.amount)+'</td><td>'+safe(x.account)+'</td><td>'+pill('Local transfer')+'</td></tr>')))+
+ panel('Emergency Fund Settings',row('◆','Protected savings','Protection reminder is '+(cfg.isProtected?'on':'off'),'','toggleProtection')+
+ row('◷','Contribution schedule','Manually planned, not automated',cash(cfg.monthly))+
+ act('Adjust Emergency Plan','editEmergency','primary'))+
+ '</div>');
+}
+function loanMetrics(){
+ const p=state().purchase,principal=Math.max(0,Number(p.price)-Number(p.down)),rate=Number(p.interest)/1200,n=Math.max(1,Number(p.term));
+ const payment=rate===0?principal/n:principal*rate/(1-Math.pow(1+rate,-n));
+ const total=payment*n+Number(p.down)+Number(p.costs);
+ const net=monthlyIncome()-monthlyCosts();const ratio=net<=0?100:payment/net*100;
+ const score=Math.max(0,Math.min(10,10-Math.max(0,ratio-25)/7));
+ return {payment,total,principal,interest:Math.max(0,payment*n-principal),net,ratio,score,affordable:ratio<=35&&Number(p.down)<=liquid()};
+}
+function screen40(){
+ const p=state().purchase,k=loanMetrics(),types=[['🚙','Car'],['⌂','House'],['♙','Business'],['🎓','Education'],['···','Other']];
+ const alternativePrices=p.type==='Car'?[2200000,3500000,6500000]:[p.price*.65,p.price,p.price*1.35];
+ return shell(40,metrics([['🛒','Purchase Budget (Max)',cash(4200000),'Illustrative from assumptions'],['✓','Recommended Range',cash(2800000)+'–'+cash(3500000),'Subject to circumstances'],['◕','Monthly Payment (Max)',cash(85000),'Advisory threshold'],['◷','Affordability Score',k.score.toFixed(1)+'/10','Not lending approval']])+
+ tabs(40,['Simulator','Purchase Options','Affordability Analysis','Monthly Impact','Compare Options','Scenarios','Saved Simulations'],tabValue(40,'Simulator'))+
+ '<div class="cap-grid">'+
+ panel('Purchase Simulator','<form class="cap-form" id="cap-purchase" data-capform="purchase">'+
+ '<label class="cap-field">Purchase Type<div class="cap-purchase-types">'+types.map(([i,n])=>'<button type="button" class="'+(p.type===n?'active':'')+'" data-cap="purchaseType:'+n+'"><strong>'+i+'</strong>'+n+'</button>').join('')+'</div></label>'+
+ label('Purchase Price (KES)','price',p.price,'number','min="1000" required')+
+ '<input type="range" min="500000" max="15000000" step="50000" data-caprange="price" value="'+p.price+'" aria-label="Purchase price slider">'+
+ label('Down Payment (KES)','down',p.down,'number','min="0" required')+
+ '<input type="range" min="0" max="'+p.price+'" step="10000" data-caprange="down" value="'+p.down+'" aria-label="Down payment slider">'+
+ '<div class="cap-formgrid">'+sel('Loan Term','term',['12','24','36','48','60','72','84'],String(p.term))+
+ label('Interest Rate (%)','interest',p.interest,'number','min="0" max="100" step="0.1" required')+'</div>'+
+ label('Additional Costs (KES)','costs',p.costs,'number','min="0" required')+
+ '<button class="cap-btn primary" type="submit">▤ Calculate Affordability</button>'+
+ '<div class="cap-actions">'+act('Save Simulation','savePurchase')+act('Compare Options','purchaseCompare')+act('Reset','resetPurchase')+'</div></form>')+
+ '<div class="cap-span2" style="display:grid;gap:10px">'+panel('Affordability Results','<div class="cap-score">'+icon(k.affordable?'✓':'!')+'<div><strong>'+(k.affordable?'Within selected guardrails':'Review affordability assumptions')+'</strong><small style="display:block">Based on monthly modeled cash flow; actual loan eligibility requires a lender.</small></div><div class="big">'+k.score.toFixed(1)+' / 10</div></div>'+
+ '<div class="cap-columns">'+[
+ ['Monthly Payment',k.payment],['Total Cost',k.total],['Interest Amount',k.interest],['Debt-to-available-income',k.ratio]
+ ].map(([name,value])=>row('▥',name,'',name.includes('income')?value.toFixed(1)+'%':cash(value))).join('')+'</div>')+
+ '<div class="cap-columns">'+panel('Payment Breakdown',donut([{name:'Principal',value:k.principal},{name:'Interest',value:k.interest},{name:'Down Payment',value:Number(p.down)},{name:'Other Costs',value:Number(p.costs)}],k.total))+
+ panel('Monthly Payment Schedule',barGraph(Array.from({length:12},(_,i)=>({name:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],value:70+i/4})),true))+'</div></div>'+
+ panel('Purchase Summary','<div class="cap-note">Selected '+safe(p.type)+' purchase</div>'+[
+ ['Purchase Price',cash(p.price)],['Down Payment',cash(p.down)],['Loan Amount',cash(k.principal)],['Interest Rate',p.interest+'%'],['Loan Term',p.term+' months'],['Monthly Payment',cash(k.payment)],['Total Repayment',cash(k.total)]
+ ].map(x=>'<div class="cap-row"><span class="grow">'+x[0]+'</span><b>'+x[1]+'</b></div>').join(''))+
+ panel('Impact on Financial Goals',state().goals.slice(0,5).map(g=>row(g.icon||'◎',g.name,percent(g.saved,g.target)+'% complete',k.affordable?'On Track':'Review')).join(''))+
+ panel('Alternative Options',alternativePrices.map((price,i)=>row('🚙',safe(p.type)+' Option '+(i+1),'Illustrative price',cash(price),'option:'+i)).join(''))+
+ panel('AI Insights & Recommendations',[
+ ['Loan eligibility is not verified','Check with an authorized lender before deciding.'],
+ ['Increase down payment','Reduces loan interest and monthly costs.'],
+ ['Protect emergency savings','Avoid consuming essential cash reserves.'],
+ ['Review ownership costs','Insurance, repairs and fees may add expenses.']
+ ].map(x=>row('✦',x[0],x[1])).join(''))+
+ '</div>');
+}
+function screen41(){
+ const requests=state().requests,total=requests.reduce((a,x)=>a+x.amount,0),pending=requests.filter(x=>x.status==='Pending');
+ const categories=['Business','Housing','Education','Travel','Health','Other'];
+ return shell(41,metrics([['▦','Total Requests',String(requests.length),'All recorded requests'],['◷','Pending Approvals',String(pending.length),'Awaiting decisions'],['✓','Approved Requests',cash(requests.filter(x=>x.status==='Approved').reduce((n,x)=>n+x.amount,0)),'No funds automatically transferred'],['✕','Rejected Requests',String(requests.filter(x=>x.status==='Rejected').length),'Reviewed'],['▣','Funding Requested',cash(total),'Local planning entries'].slice(0,4)])+
+ tabs(41,['Overview','Funding Requests','Pending Approvals','Approved','Rejected','Request Templates','Approval Rules','Settings'],tabValue(41,'Overview'))+
+ '<div class="cap-grid">'+
+ panel('Funding Requests by Category',donut(categories.map(n=>({name:n,value:requests.filter(x=>x.category===n).reduce((a,x)=>a+x.amount,0)})),total))+
+ panel('Request Status Trend',barGraph(Array.from({length:8},(_,i)=>({name:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'][i],value:26+i*8})),true))+
+ panel('Quick Actions',[
+ ['⊕','Create Funding Request','newRequest'],
+ ['◷','View Pending Approvals','pending'],
+ ['⚙','Schedule Future Request','newRequest'],
+ ['✓','Set Approval Rules','approvalRules'],
+ ['▤','Manage Approvers','approvalRules']
+ ].map(x=>row(x[0],x[1],'','',x[2])).join(''))+
+ panel('Recent Funding Requests',table(['Name','Category','Amount','Status','Date','Actions'],requests.slice(-8).reverse().map(x=>'<tr><td>'+safe(x.title)+'</td><td>'+safe(x.category)+'</td><td>'+cash(x.amount)+'</td><td>'+pill(x.status,x.status==='Pending'?'warn':x.status==='Rejected'?'red':'')+'</td><td>'+safe(x.date)+'</td><td>'+act('Review','request:'+x.id,'tiny')+'</td></tr>')))+
+ panel('Approval Workflow',[
+ ['▦','1. Submit Request','Request recorded locally'],
+ ['◷','2. Review Funding','Confirm priorities and liquidity'],
+ ['✓','3. Approve / Reject','Mark administrative status'],
+ ['▣','4. Funding Allocation','Must be confirmed separately']
+ ].map(x=>row(x[0],x[1],x[2])).join(''))+
+ panel('Who Can Approve?',[
+ ['Steve Nyaga','Personal Finance Owner','Active'],['Business Manager','Business Funding Reviewer','Demo only'],
+ ['Advisor','Financial Reviewer','Not connected']
+ ].map(x=>row('♙',x[0],x[1],x[2])).join(''))+
+ panel('Pending Approvals',pending.slice(0,6).map(x=>row('◷',x.title,x.category,cash(x.amount),'request:'+x.id)).join(''),act('Review All','pending'))+
+ panel('AI Insights & Recommendations',[
+ ['Prioritize essential funding','Cash needs and goals should guide approval.'],
+ ['Review overlapping requests','Avoid committing the same funds twice.'],
+ ['Approvals do not transfer funds','This demo only changes request status.']
+ ].map(x=>row('✦',x[0],x[1])).join(''))+
+ '</div>');
+}
+function simulateScenario(){
+ const s=state().scenario,initialCash=liquid(),income=monthlyIncome(),costs=monthlyCosts();
+ let balance=initialCash,series=[],totalSaved=0,earned=0;
+ for(let month=1;month<=Number(s.horizon);month++){
+   const cashIn=income*Math.pow(1+Number(s.incomeGrowth)/1200,month);
+   const cashOut=costs*Math.pow(1+Number(s.expenseGrowth)/1200,month);
+   const surplus=cashIn-cashOut;
+   const saveAmt=Math.max(0,surplus*Number(s.savingsRate)/100);
+   const invested=saveAmt*Math.pow(1+Number(s.investmentReturn)/1200,Number(s.horizon)-month);
+   totalSaved+=saveAmt;earned+=invested-saveAmt;balance+=surplus;
+   series.push({month, cash:balance, income:cashIn, expense:cashOut, savings:totalSaved,investmentGain:earned});
+ }
+ return {end:balance,investmentGain:earned,saved:totalSaved,rows:series};
+}
+function screen42(){
+ const s=state().scenario,sim=simulateScenario(),scenarios=[
+ ['Conservative',-3,6,4],['Balanced',5,3,8],['Aggressive',12,6,13]
+ ];
+ return shell(42,metrics([['▣','Current Net Worth',cash(liquid()+state().goals.reduce((a,x)=>a+x.saved,0)),'Demo financial position'],['↑','Projected 1-Year Growth',cash(Math.max(0,sim.end-liquid())),'Assumption-based'],['◎','Monthly Savings',cash(Math.max(0,(monthlyIncome()-monthlyCosts())*s.savingsRate/100)),'Planned rate'],['◷','Financial Runway',String(s.horizon)+' months','Scenario horizon']])+
+ tabs(42,['Scenario Builder','Scenario Comparison','Impact Analysis','Monte Carlo Simulation','Goals Alignment','Reports'],tabValue(42,'Scenario Builder'))+
+ '<div class="cap-grid"><section class="cap-panel cap-span2"><div class="cap-panel-head"><h2>Scenario Projections</h2>'+act('Save Scenario','saveScenario')+'</div>'+lineGraph(12)+
+ '<div class="cap-actions">'+scenarios.map((x,i)=>pill(x[0],i===1?'':'blue')).join('')+'</div>'+info()+'</section>'+
+ panel('Key Outcome Metrics',[
+ ['Expected Cash Position',cash(sim.end)],['Investment Growth',cash(sim.investmentGain)],
+ ['Estimated Savings',cash(sim.saved)],['Cash Reserve',cash(liquid())]
+ ].map(x=>row('▥',x[0],'Scenario assumptions',x[1])).join(''))+
+ panel('Cash Flow Projection',barGraph(sim.rows.map(x=>({name:'M'+x.month,value:Math.min(95,40+(x.cash-liquid())/30000)})),true))+
+ panel('Scenario Builder','<form class="cap-form" data-capform="scenario">'+
+ '<div class="cap-formgrid">'+label('Income Growth (%)','incomeGrowth',s.incomeGrowth,'number','min="-50" max="100" step="0.5"')+
+ label('Expense Growth (%)','expenseGrowth',s.expenseGrowth,'number','min="-50" max="100" step="0.5"')+
+ label('Investment Return (%)','investmentReturn',s.investmentReturn,'number','min="-100" max="100" step="0.5"')+
+ label('Savings Rate (%)','savingsRate',s.savingsRate,'number','min="0" max="100"')+
+ sel('Time Horizon','horizon',['6','12','24','36','60'],String(s.horizon))+
+ sel('Scenario Type','scenario',['Conservative','Balanced','Aggressive','Custom'],s.scenario)+'</div><button class="cap-btn primary" type="submit">Run Scenario Model</button></form>')+
+ panel('Goal Achievement Probability',state().goals.slice(0,5).map(g=>row('◎',g.name,'Timeframe is not guaranteed',percent(g.saved,g.target)+'%')).join(''))+
+ panel('What-if Scenarios',[
+ ['Higher savings rate','Increase rate by 5 percentage points'],
+ ['Business income growth','Test more optimistic income'],
+ ['Unexpected expenses','Model higher spending'],
+ ['Market downturn','Reduce projected investment return']
+ ].map((x,i)=>row('◈',x[0],x[1],'','preset:'+i)).join(''))+
+ panel('Scenario Comparison',table(['Scenario','Projected Cash','Savings','Risk'],scenarios.map((x,i)=>'<tr><td>'+x[0]+'</td><td>'+cash(sim.end*(1+(i-1)*.12))+'</td><td>'+cash(sim.saved*(1+(i-1)*.18))+'</td><td>'+pill(i===0?'Lower':i===1?'Moderate':'Higher',i===2?'warn':'')+'</td></tr>')))+
+ panel('Scenario Insights',[
+ ['Financial projections are uncertain','They may differ materially from real outcomes.'],
+ ['Cash reserves matter','Consider unexpected bills and delayed payments.'],
+ ['Review regularly','Update assumptions with actual transactions.']
+ ].map(x=>row('✦',x[0],x[1])).join(''))+
+ panel('Export & Share',act('Export CSV','exportScenario')+' '+act('Save Scenario','saveScenario')+' '+act('Compare Saved','viewSaved'))+
+ '</div>');
+}
+
+/* APPEND_HANDLERS */
 })();
