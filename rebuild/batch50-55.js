@@ -146,5 +146,69 @@ function screen52(){const a=selAsset(),all=state().assets;return shell(52,'<div 
 '<div class="we-note">Personal assets: '+all.length+' · External valuation feeds unavailable.</div></aside>'+
 '<div>'+assetDetailPanel()+'</div></div>')}
 
-/* SCREENS_53_55 */
+
+function holdingTable(limit=20){let h=state().holdings.filter(x=>ui.holdFilter==='All'||x.kind===ui.holdFilter).filter(x=>x.name.toLowerCase().includes(ui.holdingSearch.toLowerCase())||x.ticker.toLowerCase().includes(ui.holdingSearch.toLowerCase())).sort((a,b)=>investmentValue(b)-investmentValue(a));
+return table(['#','Holding','Asset Type','Market Value (KES)','Portfolio Weight','Unrealized Gain','Actions'],h.slice(0,limit).map((x,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(x.name)+'</b><small style="display:block;color:#73868e">'+esc(x.ticker)+'</small></td><td>'+esc(x.kind)+'</td><td>'+money(investmentValue(x))+'</td><td>'+pct(investmentValue(x),investTotal())+'%</td><td class="'+(x.price>=x.avg?'we-positive':'we-negative')+'">'+signed(x.shares*(x.price-x.avg))+'</td><td>'+button('Details','holding:'+x.id)+'</td></tr>'))}
+function investMetrics(){let inv=investTotal(),cost=costTotal(),profit=inv-cost;return kpis([['▥','Total Portfolio Value',money(inv),'Illustrative market values'],['▤','Total Invested',money(cost),'Cost basis of recorded holdings'],['↗','Total Gain / Loss',signed(profit),pct(Math.abs(profit),cost)+'% change from cost'],['◉','Return on Cost',((profit/cost)*100||0).toFixed(1)+'%','Not XIRR or market feed']])}
+function dividendBars(){let out='<svg viewBox="0 0 430 172" role="img" aria-label="Illustrative income by month" class="we-chart">';
+for(let i=0;i<12;i++){let x=20+i*33,total=46+i*2+Math.sin(i)*12,y=150;for(let j=0;j<3;j++){let h=(total*(j===0?.44:j===1?.34:.22));y-=h;out+='<rect x="'+x+'" y="'+y+'" width="21" height="'+h+'" fill="'+['#228ce0','#0fac83','#ffbd57'][j]+'"/>'}
+out+='<text x="'+(x-2)+'" y="165" font-size="9" fill="#7a8990">'+['J','F','M','A','M','J','J','A','S','O','N','D'][i]+'</text>'}
+return out+'</svg><p style="font-size:9px;color:#73868b">Blue: dividends · Green: interest · Yellow: other income — illustrative, not recorded distributions.</p>'}
+function screen53(){const total=investTotal(),cost=costTotal(),gain=total-cost;
+return shell(53,investMetrics()+
+tabs(53,['Overview','Holdings','Performance','Asset Allocation','Income & Dividends','Transactions','Risk & Analytics','Watchlist','Goals','Documents','Settings'])+
+'<div class="we-grid">'+panel('Portfolio Value Trend',plot('area',12),button('Last 12 Months','time:Last 12 Months'))+
+panel('Asset Allocation',donut(holdingKinds(),total))+
+panel('Portfolio Performance',mini([[(100*gain/Math.max(cost,1)).toFixed(1)+'%','Return on cost'],['9.2%','Demo benchmark'],[money(gain),'Unrealized gain'],[money(cost),'Cost basis']])+plot('bars',5))+
+'<section class="we-panel we-col2"><div class="we-title"><h2>Top Holdings</h2>'+goto('View All',54)+'</div>'+holdingTable(8)+'</section>'+
+panel('Income & Dividends',mini([['KES 0','Verified distributions'],['N/A','Verified yield'],['0','Posted transactions'],['Demo','Chart mode']])+dividendBars())+
+panel('Quick Actions',[['Buy Investment','tradeBuy'],['Sell Investment','tradeSell'],['Add External Holding','newHolding'],['Record Dividend / Income','dividend'],['Transfer Between Accounts','transfer'],['Set Investment Goal','investGoal'],['Rebalance Portfolio','rebalance'],['Download Portfolio Report','exportPortfolio']].map(x=>item('▣',x[0],'Brokerage not connected','',x[1])).join(''))+
+panel('Investment Goals',state().holdings.slice(0,3).map((x,i)=>'<div class="we-row"><span class="grow"><b>'+['Grow Portfolio','Retirement Fund','Purchase Rental Property'][i]+'</b><small>Illustrative milestone</small>'+bar(investmentValue(x),Math.max(1,investTotal()*.32))+'</span><b>'+pct(investmentValue(x),investTotal())+'%</b></div>').join(''))+
+panel('Risk Analysis',rows([['Number of holdings',String(state().holdings.length)],['Portfolio exposure',money(total)],['Top holding weight',pct(Math.max(...state().holdings.map(investmentValue)),total)+'%'],['Single-market risk','Review'],['Realized dividends','Not connected']])+goto('Detailed Wealth Risk',55))+
+panel('AI Insights & Recommendations',item('✓','Portfolio diversification','Review weight by category')+
+item('⚑','Price data is simulated','Do not act on displayed quotes')+
+item('◷','Review contribution plan','Consider goals and liquidity before trading')+
+note('Buy and sell controls simulate internal cash-to-holding transfers. They do not send orders to brokers.'))+
+'</div>')}
+function holdingMetrics(h){let value=investmentValue(h),cost=h.avg*h.shares;return [money(h.price),money(value),signed(value-cost),pct(Math.abs(value-cost),cost)+'%']}
+function stockChart(h){let s='<svg role="img" aria-label="Illustrative share price and volume over time" class="we-chart large" viewBox="0 0 450 202">';
+for(let y of [30,68,106,144,182])s+='<line x1="20" y1="'+y+'" x2="442" y2="'+y+'" stroke="#ebf0ec"/>';
+for(let i=0;i<50;i++){let x=24+i*8.1,vol=6+Math.sin(i*1.8)*5+i*.13;s+='<rect x="'+x+'" y="'+(181-vol)+'" width="4" height="'+vol+'" fill="#b5c9e7" opacity=".75"/>'}
+for(let j=0;j<2;j++){let pts=Array.from({length:50},(_,i)=>[24+i*8.1,95+j*33-i*.85-Math.sin(i*.35+j)*8-Math.cos(i*.7)*3]);s+='<path d="'+pts.map(([x,y],i)=>(i?'L':'M')+x+' '+y).join(' ')+'" fill="none" stroke="'+(j===0?'#13b58a':'#3b92de')+'" stroke-width="'+(j===0?2.7:2)+'"/>'}
+return s+'</svg><div class="we-actions"><span class="we-tag">Demo price trend</span><span class="we-tag blue">Demo portfolio value</span><span class="we-tag orange">Not live exchange data</span></div>'}
+function screen54(){const h=selHolding();if(!h)return shell(54,note('Create a holding to review investment performance.'));
+let val=investmentValue(h),gain=val-h.avg*h.shares,weighted=pct(Math.abs(gain),h.avg*h.shares);
+return shell(54,'<div class="we-stock-header"><div class="we-stock-logo">↗</div><div class="we-stock-meta"><strong>'+esc(h.name)+'</strong><small>'+esc(h.kind)+' · '+esc(h.platform)+' · '+esc(h.ticker)+'</small><div class="we-actions">'+tag('Demo instrument')+tag(h.change>=0?'Gain':'Loss',h.change<0?'red':'blue')+'</div></div>'+
+'<div class="we-actions">'+mini([[money(h.price),'Current Price'],[money(val),'Market Value'],[signed(gain),'Unrealized Gain']])+button('Buy','tradeBuy','primary')+button('Sell','tradeSell','danger')+button('Edit','editHolding')+'</div></div>'+
+tabs(54,['Overview','Performance','Transactions','Dividends','Analysis','News & Insights','Documents','Alerts','Settings'])+
+'<div class="we-grid"><section class="we-panel we-col2"><div class="we-title"><h2>Price & Value Performance</h2>'+button('1Y','time:1Y')+'</div>'+stockChart(h)+'</section>'+
+panel('Key Metrics',mini([[money(h.price),'Current Price'],[fnum(h.shares),'Total Units'],[money(h.avg),'Avg. Cost'],[money(val),'Market Value']])+rows([['Total Invested',money(h.avg*h.shares)],['Unrealized Gain / Loss',signed(gain)],['Return on Cost',weighted+'%'],['Demo 52-week High',money(h.price*1.12)],['Demo 52-week Low',money(h.price*.84)]]))+
+panel('Holding Details',rows([['Investment Type',h.kind],['Ticker',h.ticker],['Platform',h.platform],['Shares / Units',fnum(h.shares)],['Average Cost',money(h.avg)],['Market Value',money(val)],['Unrealized Gain',signed(gain)],['Notes',h.notes]])+button('Edit Holding','editHolding'))+
+panel('Distribution History',table(['Date','Distribution','Units','Total'],state().investEvents.filter(x=>x.type==='dividend'&&x.holdingId===h.id).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+money(x.perShare)+'</td><td>'+fnum(x.shares)+'</td><td>'+money(x.amount)+'</td></tr>'))+note('Blank until you record a demo distribution. No dividends are imported from brokers.'))+
+panel('Performance vs Benchmarks',plot('line',8)+note('Benchmark comparisons are illustrative, not an investment performance claim.'))+
+panel('Recent Transactions',table(['Date','Type','Units','Price','Amount'],state().investEvents.filter(x=>x.holdingId===h.id&&x.type!=='dividend').slice(-6).reverse().map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.type)+'</td><td>'+fnum(x.shares)+'</td><td>'+money(x.price)+'</td><td>'+money(x.amount)+'</td></tr>')))+
+panel('Analyst Insights & Latest News',item('◷','No verified analyst reports','Live market and news feeds are disconnected')+item('◆','Review concentration risk','Single holding '+pct(val,investTotal())+'% of portfolio')+item('✓','Revisit investment thesis','Document your goals and risk tolerance'))+
+panel('AI Insights & Recommendations',note('Displayed pricing, returns, dividends and chart series are synthetic. All trades are local simulations.',true)+goto('Review Portfolio',53)+goto('Risk Analysis',55))+
+'</div>')}
+function wealthRisk(){let total=investTotal(),top=Math.max(...state().holdings.map(investmentValue)),share=pct(top,total),debt=liabilities(),a=assetsTotal(),r=state().riskPreferences;return {concentration:share,liquidity:pct(personalCash(),a),debt:pct(debt,a),score:Math.max(0,Math.round(100-share*.5-debt/a*40)),return:r.annualReturn}}
+function riskGauge(score){return '<div class="we-donut" style="background:conic-gradient(#10b988 0 '+score+'%,#e6f0ec '+score+'% 100%);margin:auto"><div class="we-donut-hole"><b style="font-size:19px">'+score+'/100</b><small>Illustrative risk health</small></div></div>'}
+function screen55(){const worth=networth(),total=assetsTotal(),risk=wealthRisk(),invest=investTotal(),target=50000000,r=state().riskPreferences;
+return shell(55,kpis([['▥','Current Net Worth',money(worth),'Assets − debts'],['◉','Wealth Goal',money(target),'Planning milestone'],['↗','Annual Return Scenario',r.annualReturn+'%','Assumed, not earned'],['◆','Risk Score',risk.score+'/100','Heuristic only']])+
+tabs(55,['Overview','Wealth Growth','Risk Analysis','Scenario Planning','Goals Progress','Insights & Recommendations','Settings'])+
+'<div class="we-grid"><section class="we-panel we-col2"><div class="we-title"><h2>Wealth Growth Forecast</h2>'+button('Next '+r.horizon+' Years','time:Next 10 Years')+'</div>'+plot('area',12)+
+note('Growth scenarios use a fixed assumed return on invested assets, not audited performance.')+'</section>'+
+panel('Net Worth Breakdown',donut(assetBuckets(),total)+rows([['Liabilities',money(liabilities())],['Net Worth',money(worth)]]))+
+panel('Key Wealth Metrics',rows([['Net Worth',money(worth)],['Assets',money(total)],['Liabilities',money(liabilities())],['Personal Cash',money(personalCash())],['Investments',money(invest)],['Portfolio Holdings',state().holdings.length]]))+
+panel('Risk Analysis',riskGauge(risk.score)+rows([['Largest holding share',risk.concentration+'%'],['Liquidity share',risk.liquidity+'%'],['Debt / assets',risk.debt+'%'],['Risk tolerance',r.tolerance]]))+
+panel('Scenario Analysis',table(['Scenario','Annual Growth','Estimated Future Net Worth'],[['Conservative',Math.max(0,r.annualReturn-3)],['Expected',r.annualReturn],['Optimistic',r.annualReturn+3]].map(x=>'<tr><td>'+x[0]+'</td><td>'+x[1]+'%</td><td>'+money(worth*Math.pow(1+x[1]/100,r.horizon))+'</td></tr>'))+button('Edit Assumptions','riskSettings','primary'))+
+panel('Stress Testing',rows([['10% decline in investments',money(worth-invest*.10)],['20% decline in property',money(worth-assetBuckets().find(x=>x.name==='Real Estate').value*.20)],['Interest-rate shock','Review loan repayment estimates'],['Emergency funds',money(personalCash())]]))+
+panel('Goals Progress',mini([[money(worth),'Current Worth'],[money(target),'Target'],[pct(worth,target)+'%','Progress'],[r.horizon+' years','Horizon']])+bar(worth,target)+goto('Savings & Financial Goals',37))+
+panel('Top Opportunities',item('◉','Diversify investment exposure','Consider concentration and liquidity')+item('↗','Increase consistent saving','Maintain a realistic emergency buffer')+item('▣','Revisit long-term objectives','Link plans with existing financial goals'))+
+panel('AI Insights & Recommendations',note('Financial projections are mathematical scenarios, not investment advice or guaranteed returns.',true)+
+item('✓','Reconcile real asset valuations','Last appraisals may be out of date')+
+item('◷','Update debt repayment plan','Net worth updates when you edit shared debts')+
+item('◆','Review asset allocation','Choose an approach appropriate to your risks'))+
+'</div>')}
+
+/* HANDLERS */
 })();
