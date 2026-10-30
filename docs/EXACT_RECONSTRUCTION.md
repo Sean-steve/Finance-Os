@@ -46,7 +46,15 @@
 | 32 — Cash Flow Timeline | screen-32.webp | `rebuild.html#screen/32` | **Coded DOM / QA; visual approval pending** |
 | 33 — Cash Flow Forecast & Financial Runway | screen-33.webp | `rebuild.html#screen/33` | **Coded DOM / QA; visual approval pending** |
 | 34 — Cash Shortfall Recovery | screen-34.webp | `rebuild.html#screen/34` | **Coded DOM / QA; visual approval pending** |
-| 35–60 | 26 supplied reference images | `index.html#screen/NN` | **Not yet reconstructed in HTML/CSS** |
+| 35 — Capital Allocation Command Centre | screen-35.webp | `rebuild.html#screen/35` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 36 — Allocation Rules & Money Buckets | screen-36.webp | `rebuild.html#screen/36` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 37 — Savings & Financial Goals | screen-37.webp | `rebuild.html#screen/37` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 38 — Goal Details & Funding | screen-38.webp | `rebuild.html#screen/38` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 39 — Emergency Fund Management | screen-39.webp | `rebuild.html#screen/39` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 40 — Affordability & Purchase Simulator | screen-40.webp | `rebuild.html#screen/40` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 41 — Funding Requests & Approvals | screen-41.webp | `rebuild.html#screen/41` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 42 — Financial Scenario Planning | screen-42.webp | `rebuild.html#screen/42` | **Coded DOM / browser QA; pixel-level approval pending** |
+| 43–60 | 18 supplied reference images | `index.html#screen/NN` | **Not yet coded in HTML/CSS** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
 
@@ -83,6 +91,16 @@ The unchanged approved-design viewer is the source of truth while the rebuilt pa
 - Cash-flow timeline, forecast scenarios, modelled cash runway, optional CSV export, and checklist-based shortfall recovery.
 - Scenario estimates are not authoritative: demo values can omit irregular expenses, incomplete incomes and liabilities. Payment simulations do **not** change bank balances.
 - Browser QA at 1536×1024 and mobile 390px, plus cross-batch regression. **Pixel-perfect visual sign-off remains outstanding**; source-specific chart assets, some secondary tabs, placement and typographic details require review.
+
+## Screens 35–42 — capital allocation and financial planning
+
+- Reference-specific HTML/CSS screens in `rebuild/batch35-42.js` and `rebuild/batch35-42.css`; photographs and pixel-level chart/typography details still require overlay acceptance.
+- Screens include capital overview, bucket-rule management, savings cards, goal funding, emergency reserve, a purchase affordability/amortization model, funding approvals and configurable scenario modelling.
+- Goals and emergency fund amounts share state with the earlier `model.goals`. Local funding or emergency withdrawal simulation changes source account and goal amounts inversely; no external funds move.
+- Monthly bucket allocations are **planning figures**, not new assets and do not debit accounts. Allocation rules/automation toggles are local preferences and do not install scheduled finance tasks.
+- Purchase results are **illustrative only**, not credit approval, financial advice or an actual lender quote. Funding approvals are administrative status changes, not disbursements.
+- Scenario projections are uncertain estimates and do not guarantee investment returns. CSV exports contain local demo projections.
+- Chromium checks at 1536px and 390px validate flows and state invariants, **not pixel-perfect visual sign-off**.
 
 ## Rebuild implementation behavior
 
