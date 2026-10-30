@@ -91,6 +91,13 @@ assert.ok(await page.getByText('Affordability Results',{exact:true}).count()>0);
 assert.ok(await page.getByText('Purchase Summary',{exact:true}).count()>0);
 await page.screenshot({path:path.join(out,'screen-40-desktop.png'),fullPage:true});
 });
+await check('Income planning and cash forecast preserve coded responsive charts',async()=>{
+for(const n of [29,33]){
+await go(n);assert.ok(await page.locator('.cf-grid').count()>0);
+assert.ok(await page.locator('.cf-plot').count()>0);
+await page.screenshot({path:path.join(out,'screen-'+n+'-desktop.png'),fullPage:true});
+}
+});
 await check('Existing transaction edit action still navigates to Screen 12',async()=>{
 await go(11);await page.locator('[data-baction="editTx"]').first().click();
 assert.equal(new URL(page.url()).hash,'#screen/12');
