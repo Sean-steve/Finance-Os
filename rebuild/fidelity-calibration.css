@@ -30,3 +30,26 @@
 .bpage .b-panel .b-muted,.spend-page .sp-mini{color:#445a63}
 .spend-page .sp-stat-row .sp-dot{width:9px;height:9px}
 .main:has(.bscreen-8),.main:has(.bscreen-11){padding-top:0}
+
+/* Source-aligned Screen 40: Approved simulator uses 3 parallel columns.
+   Previous coded layout spanned results across 2 columns and pushed the
+   purchase summary into a separate row, causing a major visual divergence. */
+.cap-page:has(#cap-purchase) .cap-grid{display:grid;grid-template-columns:minmax(250px,1fr) minmax(300px,1.3fr) minmax(230px,.75fr);gap:10px}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(1){grid-column:1;grid-row:1}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-span2:nth-child(2){grid-column:2;grid-row:1;display:grid;gap:10px;align-content:start}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(3){grid-column:3;grid-row:1}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(4){grid-column:1;grid-row:2}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(5){grid-column:2;grid-row:2}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(6){grid-column:3;grid-row:2}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(3)::before{
+ content:"";display:block;height:116px;margin-bottom:8px;border-radius:7px;
+ background-color:#d9eae3;background-image:url('../assets/screen-40.webp');
+ background-repeat:no-repeat;background-size:1536px 1024px;background-position:-1287px -321px;
+}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(3) .cap-note{display:none}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(3) .cap-row{padding:5px 0}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(3) .cap-row b{font-size:10px}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(2) .cap-columns{gap:8px}
+.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(1) .cap-purchase-types{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+@media(max-width:1270px){.cap-page:has(#cap-purchase) .cap-grid{grid-template-columns:1fr 1fr}.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(1){grid-column:1;grid-row:1}.cap-page:has(#cap-purchase) .cap-grid>.cap-span2:nth-child(2){grid-column:2;grid-row:1}.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(3){grid-column:1;grid-row:2}.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(4){grid-column:2;grid-row:2}.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(5){grid-column:1;grid-row:3}.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(6){grid-column:2;grid-row:3}}
+@media(max-width:760px){.cap-page:has(#cap-purchase) .cap-grid{grid-template-columns:1fr}.cap-page:has(#cap-purchase) .cap-grid>.cap-panel:nth-child(n),.cap-page:has(#cap-purchase) .cap-grid>.cap-span2:nth-child(2){grid-column:1;grid-row:auto}}
