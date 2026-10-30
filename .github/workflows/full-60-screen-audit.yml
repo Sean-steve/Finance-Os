@@ -1,0 +1,89 @@
+name: Finance OS — Full 60-Screen Visual & Integration Audit
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qa/full-60-screen-reconciliation-certification
+permissions:
+  contents: read
+jobs:
+  all-screen-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check source syntax
+        run: |
+          node --check rebuild/finance-core.js
+          node --check rebuild/batch43-49.js
+          node --check rebuild/batch50-55.js
+          node --check rebuild/batch56-60.js
+          node --check tests/full-reconciliation-qa.cjs
+          node --check tests/cross-screen-integration-qa.cjs
+          python -m py_compile scripts/visual-reconciliation-metrics.py
+      - name: Install browser and image comparison libraries
+        run: |
+          npm install --no-save playwright@1.56.1 axe-core@4.10.3
+          npx playwright install --with-deps chromium
+          python -m pip install --disable-pip-version-check 'pillow>=11,<13'
+      - name: Capture 60 desktop and mobile screens, route checks and accessibility audit
+        id: capture
+        continue-on-error: true
+        run: node tests/full-reconciliation-qa.cjs
+      - name: Validate cash, debt, goal funding, income and reporting contracts
+        id: integration
+        continue-on-error: true
+        run: node tests/cross-screen-integration-qa.cjs
+      - name: Compare actual screenshots against approved original screenshots
+        id: visual
+        if: always()
+        continue-on-error: true
+        run: python scripts/visual-reconciliation-metrics.py
+      - name: Write audit summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,os,pathlib
+          folder=pathlib.Path('qa-artifacts/full-reconciliation')
+          browser=json.loads((folder/'reconciliation-browser-results.json').read_text())['summary'] if (folder/'reconciliation-browser-results.json').exists() else {}
+          visual=json.loads((folder/'visual-diff.json').read_text())['summary'] if (folder/'visual-diff.json').exists() else {}
+          text=[
+           '# Finance OS 60-Screen Reconciliation Audit',
+           'Audit evidence, not full visual or production certification.',
+           f"- Screen routes: {browser.get('screenCount','not measured')}/60",
+           f"- Source mockups: {visual.get('sourceReferencesPresent','not measured')}/60",
+           f"- Images compared: {visual.get('assessed','not measured')}/59",
+           f"- Missing original references: {visual.get('missingReferenceScreens',[])}",
+           f"- Mobile overflow screens: {browser.get('layoutOverflows',[])}",
+           f"- Browser errors: {len(browser.get('uncaughtConsoleErrors',[]))}",
+           f"- Serious/critical accessibility items: {len(browser.get('severeAccessibilityFindings',[]))}",
+           f"- Mean absolute RGB difference: {visual.get('averageRGBDifference','not measured')}/255",
+           '- Exact pixel-level certification: NOT GRANTED without reference-based human review.',
+           '- Review attached screenshots and VISUAL_RECONCILIATION_REPORT.md.',
+          ]
+          print('\n'.join(text))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:f.write('\n'.join(text)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finance-os-full-60-screen-reconciliation
+          path: qa-artifacts/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Enforce route and integration audit results
+        if: always()
+        env:
+          CAPTURE_OUTCOME: ${{ steps.capture.outcome }}
+          INTEGRATION_OUTCOME: ${{ steps.integration.outcome }}
+        run: |
+          if [ "$CAPTURE_OUTCOME" != "success" ] || [ "$INTEGRATION_OUTCOME" != "success" ]; then
+            echo "::error::Functional/responsive certification failed. Review QA artifacts."
+            exit 1
+          fi
