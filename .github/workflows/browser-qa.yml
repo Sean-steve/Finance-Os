@@ -50,6 +50,10 @@ jobs:
         run: node tests/rebuild-batch50-55.cjs
       - name: Full 60-route QA for financial health, advisor, reporting, integrations and privacy
         run: node tests/rebuild-batch56-60.cjs
+      - name: Validate reconstructed budget Screen 22 and auth responsive layouts
+        run: node tests/visual-screen22-qa.cjs
+      - name: Measure 59 reference screens and adapted Screen 22 visual difference
+        run: node tests/visual-parity-score.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs

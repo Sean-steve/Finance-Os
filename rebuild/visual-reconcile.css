@@ -1,0 +1,128 @@
+
+/* Source-aligned Finance OS shared design refinements.
+   This file does not draw screenshots over interactive HTML. */
+:root{--fo-ink:#112338;--fo-muted:#637686;--fo-green:#00563e;--fo-border:#e8efeb;--fo-surface:#fff}
+body{color:var(--fo-ink);background:#f9fbfa}
+.header{height:49px;padding:0 19px;border-bottom:1px solid #edf1ee;gap:18px}
+.logo{width:395px;font-size:19px;letter-spacing:-.04em}
+.logo small{font-size:10px;letter-spacing:0}
+.global-search{background:#fff;border-color:#e1e9e5;border-radius:7px;max-width:620px;height:33px}
+.global-search input{font-size:11px;color:#34495b}
+.global-search input::placeholder{color:#6a7e89;opacity:1}
+.user-actions{gap:14px;color:#16293e}
+.app-shell{grid-template-columns:190px minmax(0,1fr)}
+.sidebar{padding:10px 11px 12px;border-right-color:#f0f3f1}
+.side-link{font-size:11px;padding:6px 10px;min-height:32px;gap:10px;border-radius:6px}
+.side-link>span{font-size:17px;min-width:19px}
+.side-link.selected{background:#00523d;color:#fff}
+.aside-label{font-size:9px;color:#607583}
+.main{padding:0 9px 18px;background:#fafcfb}
+.main .banner{height:124px;padding:13px 23px;border-radius:9px}
+.main .banner h1{font-size:25px;letter-spacing:-.02em}
+.main .banner p{font-size:12px}
+.main .banner-date{font-size:11px}
+.main .banner-quote{font-size:12px}
+.main .sp-panel,.main .b-panel,.main .cf-panel,.main .cp-panel,.main .pr-panel,.main .we-panel,.main .gv-panel{border-color:#edf1ee;box-shadow:0 1px 6px #173a3108}
+.main .sp-panel h2,.main .b-panel h2,.main .cf-panel h2{font-weight:730}
+/* Sign-in reference is a responsive component showcase with three layouts and four states. */
+.auth-reconstruction{padding:12px 16px;background:#626262;min-height:100vh;box-sizing:border-box}
+.auth-showcase{display:grid;grid-template-columns:minmax(0,60%) minmax(0,23.5%) minmax(0,16.5%);gap:8px;align-items:stretch}
+.auth-viewport-title{color:#fff;font:650 12px/1.2 Arial,sans-serif;margin:1px 0 8px;letter-spacing:.01em}
+.auth-desktop-demo,.auth-tablet-demo,.auth-mobile-demo{min-width:0}
+.auth-desktop-demo .auth-wrap{width:100%;max-width:none;margin:0;height:831px;min-height:0;grid-template-columns:55% 45%;padding-bottom:91px;border-radius:9px;border:1px solid #e2e9e3}
+.auth-desktop-demo .auth-story{min-height:0;height:auto;padding:27px 35px;background-image:linear-gradient(115deg,rgba(1,26,32,.64),rgba(10,39,38,.35) 62%,rgba(7,37,41,.54)),url('../assets/screen-01.webp');background-position:center,11% 23%;background-size:cover,305% 145%}
+.auth-desktop-demo .story-top{font-size:17px;line-height:1.3}
+.auth-desktop-demo .story-top span{font-size:10px;max-width:145px}
+.auth-desktop-demo .auth-intro{margin-top:100px;max-width:430px}
+.auth-desktop-demo .auth-intro h1{font-size:34px;line-height:1.1;letter-spacing:-.025em}
+.auth-desktop-demo .auth-intro em{font-size:27px;line-height:1.28}
+.auth-desktop-demo .auth-intro>p{font-size:12px;line-height:1.5;margin:14px 0}
+.auth-desktop-demo .auth-feature{margin:11px 0;gap:9px}
+.auth-desktop-demo .auth-feature>span{font-size:18px;width:37px;height:37px}
+.auth-desktop-demo .auth-feature b{font-size:12px}
+.auth-desktop-demo .auth-feature small{font-size:10px}
+.auth-desktop-demo .auth-story blockquote{bottom:32px;font-size:15px}
+.auth-desktop-demo .auth-login{padding:49px 29px 18px}
+.auth-desktop-demo .auth-login-header{margin:30px 0 19px}
+.auth-desktop-demo .auth-login-header h2{font-size:21px}
+.auth-desktop-demo .auth-login-header p{font-size:11px}
+.auth-desktop-demo .auth-form{max-width:330px}
+.auth-desktop-demo .auth-form h2{font-size:23px}
+.auth-desktop-demo .auth-form>p{font-size:11px;margin-bottom:19px}
+.auth-desktop-demo .auth-form input:not([type=checkbox]){height:44px;border-radius:9px}
+.auth-desktop-demo .auth-foot{padding:18px 23px;min-height:91px;align-items:center}
+.auth-desktop-demo .auth-foot p{font-size:9px}
+.auth-mini-viewport{border:1px solid #e2e6e0;border-radius:10px;overflow:hidden;position:relative;background:#fbfaf7;height:831px}
+.auth-mini-scenery{height:45%;color:#112d36;padding:19px 13px 5px;position:relative;background:linear-gradient(180deg,rgba(253,248,230,.16),rgba(7,35,46,.26)),url('../assets/screen-01.webp');background-size:cover,380% 135%;background-position:center,3% 27%}
+.auth-mini-scenery>small{display:block;font-size:10px;text-align:right}
+.auth-mini-headline{text-align:center;margin-top:44px}
+.auth-mini-headline span{font-size:34px;color:#003c31}
+.auth-mini-headline h2{font-size:23px;margin:0}
+.auth-mini-headline small{font-size:11px}
+.auth-mini-headline h1{font-size:24px;line-height:1.13;margin:13px 0 5px}
+.auth-mini-headline b{font-size:16px}
+.auth-mini-form{position:absolute;top:35%;left:5%;right:5%;background:#fffdfb;border-radius:11px;padding:19px 14px;text-align:center;box-shadow:0 9px 26px #102f2517;min-height:395px;display:grid;align-content:start;gap:12px}
+.auth-mini-form h3{font-size:19px;margin:0}
+.auth-mini-form p{font-size:10px;margin:0}
+.auth-mini-input{height:37px;display:flex;align-items:center;padding:9px;text-align:left;border:1px solid #e2e8e5;border-radius:7px;font-size:10px;color:#76828a}
+.auth-mini-options{font-size:9px;text-align:left;color:#07523e}
+.auth-mini-submit{background:#00513b;color:white;border-radius:7px;padding:12px 0;font-size:11px;font-weight:750}
+.auth-mini-form>small{font-size:9px;color:#60737c}
+.auth-mini-oauth{background:#f9faf8;border:1px solid #e9eeea;border-radius:7px;padding:10px 3px;font-size:10px}
+.auth-mini-bottom{position:absolute;bottom:0;background:white;padding:20px 10px;text-align:center;width:100%;font-size:10px}
+.auth-mini-viewport.mobile .auth-mini-scenery{height:39%;background-position:center,6% 24%;background-size:cover,590% 110%}
+.auth-mini-viewport.mobile .auth-mini-headline{text-align:left;margin-top:120px;color:#fff}
+.auth-mini-viewport.mobile .auth-mini-headline h1{font-size:23px}
+.auth-mini-viewport.mobile .auth-mini-headline b{font-size:12px}
+.auth-mini-viewport.mobile .auth-mini-form{top:36%;padding:17px 9px;gap:11px;min-height:470px}
+.auth-mini-viewport.mobile .auth-mini-form h3{font-size:15px}
+.auth-mini-viewport.mobile .auth-mini-form p{font-size:9px}
+.auth-mini-viewport.mobile .auth-mini-input{font-size:9px;height:35px}
+.auth-mini-viewport.mobile .auth-mini-oauth{line-height:2.6}
+.auth-state-examples{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:11px 2px 0}
+.auth-state-examples>div{height:125px;padding:13px 18px;display:grid;align-content:start;justify-items:start;background:#fffdfa;border:1px solid #e8ebdf;border-radius:8px}
+.auth-state-examples h3{font-size:11px;font-weight:500;margin:0 0 9px}
+.auth-state-examples b,.auth-state-examples small{font-size:10px}
+.auth-state-examples small{color:#88949b}
+.auth-state-examples .auth-spinner{height:25px;width:25px;border:2px solid #dbe7df;border-right-color:#00654d;border-radius:50%;justify-self:center;margin:6px}
+.auth-state-examples .auth-error{color:#a6334c;background:#fff0f1;border-radius:6px;padding:10px;font-size:10px;line-height:1.6;width:100%}
+.auth-state-examples .auth-success{color:#08694d;background:#eef9f1;border-radius:6px;padding:10px;font-size:10px;line-height:1.6;width:100%}
+.auth-state-examples button{width:100%;border:0;border-radius:5px;background:#00543d;color:white;font-size:10px;margin-top:10px;padding:7px;cursor:pointer}
+.auth-security-note{font-size:9px;color:#e7ece7;text-align:right;margin:5px 2px 0}
+@media(max-width:1050px){.auth-showcase{grid-template-columns:minmax(0,1fr) minmax(0,250px)}.auth-mobile-demo{display:none}.auth-state-examples{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.auth-reconstruction{padding:7px}.auth-showcase{display:block}.auth-viewport-title{font-size:11px}.auth-desktop-demo .auth-wrap{height:auto;min-height:900px;display:flex;flex-direction:column;padding-bottom:0}.auth-desktop-demo .auth-story{height:385px;min-height:385px;padding:20px}.auth-desktop-demo .auth-intro{margin:26px 0}.auth-desktop-demo .auth-intro h1{font-size:27px}.auth-desktop-demo .auth-intro em{font-size:20px}.auth-desktop-demo .auth-intro p{font-size:11px}.auth-desktop-demo .auth-feature{display:none}.auth-desktop-demo .auth-story blockquote{display:none}.auth-desktop-demo .auth-login{padding:25px 20px;min-height:490px}.auth-desktop-demo .auth-login-header{margin:10px 0}.auth-desktop-demo .auth-foot{position:static;display:block}.auth-tablet-demo,.auth-mobile-demo{display:none}.auth-state-examples{grid-template-columns:1fr 1fr;gap:5px}.auth-state-examples>div{height:auto;min-height:125px;padding:7px}}
+/* Screen 08 and 11: reduce duplicated metric/header height while preserving existing functional tabs */
+.bpage:has(.b-account-banner) .btop>.b-kpis{display:none}
+.bpage:has(.b-account-banner):not(:has(.b-detail-title))>.banner{height:0;min-height:0;padding:0;margin:0;border:0;overflow:hidden}
+.bpage:has(.b-account-banner):not(:has(.b-detail-title))>.btop{margin-top:0}
+.bpage:has(.b-detail-title)>.banner{height:118px}
+.bpage:has(.b-account-banner) .b-account-banner{min-height:108px;padding:16px 23px;background:linear-gradient(90deg,rgba(0,35,46,.92),rgba(8,67,67,.62)),url('../assets/screen-08.webp');background-size:auto,170% 800%;background-position:center,64% 8%}
+.bpage:has(.b-account-banner) .b-cols{gap:10px}
+.bpage:has(.b-account-banner) .b-panel{padding:11px}
+@media(max-width:960px){.header .logo{width:180px}.app-shell{grid-template-columns:182px minmax(0,1fr)}}
+@media(max-width:720px){.header .logo{width:auto}.app-shell{grid-template-columns:minmax(0,1fr)}.main{padding:0 6px}}
+
+
+/* 11 — approved design: scenic page header, white merchant summary, six-slot context ribbon. */
+.bpage:has(.b-detail-title) .b-account-banner{
+  background:#fff!important;color:#102b3b!important;min-height:100px;
+  margin-top:-26px;position:relative;z-index:2;
+  border:1px solid #e7eee8;box-shadow:0 2px 9px #0b39290c;
+  padding:18px 18px;
+}
+.bpage:has(.b-detail-title) .b-account-banner h2{color:#102b3b;font-size:19px}
+.bpage:has(.b-detail-title) .b-account-banner small{color:#5b7180;opacity:1}
+.bpage:has(.b-detail-title) .b-account-banner .b-round{width:69px;height:68px;font-size:29px;color:white;background:linear-gradient(135deg,#008d39,#02b245);border-radius:9px}
+.bpage:has(.b-detail-title) .b-account-banner .b-actions strong{color:#db3249;font-size:23px}
+.bpage:has(.b-detail-title) .b-account-banner .b-actions{justify-content:flex-end;align-items:center}
+.b11-meta{background:#fff;border:1px solid #eff1ef;border-radius:7px;margin:7px 0 10px;
+ display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:12px 9px}
+.b11-meta>div{display:flex;gap:8px;min-width:0;align-items:center;border-right:1px solid #eef2ef;padding:2px 5px}
+.b11-meta>div:last-child{border-right:0}
+.b11-meta-icon{display:grid;place-items:center;flex:none;width:28px;height:29px;background:#eff6f9;border-radius:6px;color:#087956;font-size:17px}
+.b11-meta small{display:block;font-size:9px;color:#718491}
+.b11-meta b{display:block;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.bpage:has(.b-detail-title) .b-tabs{margin-top:0;background:white;border-radius:8px;padding:6px 9px;border:1px solid #edf1ee}
+.bpage:has(.b-detail-title) .b-list-pair{padding:7px 0}
+@media(max-width:1040px){.b11-meta{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.b11-meta{grid-template-columns:repeat(2,minmax(0,1fr));padding:6px}.b11-meta b{max-width:100px}}

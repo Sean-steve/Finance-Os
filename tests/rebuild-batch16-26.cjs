@@ -14,7 +14,7 @@ async function main(){
  const page=await browser.newPage({viewport:{width:1536,height:1024},acceptDownloads:true});
  page.setDefaultTimeout(3500);
  page.on('pageerror',e=>errors.push(e.message));
- const route=async i=>{await page.goto(base+'/rebuild.html#screen/'+i);await page.locator('.banner h1').first().waitFor()};
+ const route=async i=>{await page.goto(base+'/rebuild.html#screen/'+i);await page.locator(i===22?'.be22-hero h1':'.banner h1').first().waitFor()};
  const persisted=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('finance-os-exact-rebuild-demo-v1')));
  await check('Screens 01–15 remain intact',async()=>{
    for(let n of [1,2,3,4,5,6,7,10,12,13,14,15]){await page.goto(base+'/rebuild.html#screen/'+n);assert.ok(await page.locator('#app').innerHTML().then(s=>s.length>700),'Screen '+n)}
@@ -23,10 +23,10 @@ async function main(){
   const headings=new Set();
   for(let n=16;n<=26;n++){
    await route(n);
-   assert.equal(await page.locator('.spend-page').count(),1);
-   assert.ok(await page.locator('.sp-panel').count()>=3,'not enough components screen '+n);
+   assert.equal(await page.locator(n===22?'.be22':'.spend-page').count(),1);
+   assert.ok(await page.locator(n===22?'.be22-card':'.sp-panel').count()>=3,'not enough components screen '+n);
    assert.equal(await page.locator('.reference-shade').count(),0);
-   headings.add(await page.locator('.banner h1').innerText());
+   headings.add(await page.locator(n===22?'.be22-hero h1':'.banner h1').innerText());
    await page.screenshot({path:path.join(art,'screen-'+n+'-desktop.png'),fullPage:true});
   }
   assert.ok(headings.size>=10,'Reference 21/22 may share budget editor title');
@@ -47,8 +47,8 @@ async function main(){
   assert.equal((await persisted()).spendV2.categories.Housing,130000);
   await page.locator('[data-sp="saveBudget"]').click();
   await route(22);
-  assert.equal(await page.locator('input[data-spcat="Housing"]').inputValue(),'130000');
-  assert.ok(await page.getByText(/original.*reference.*missing|no supplied approved reference/i).count()>0);
+  assert.equal(await page.locator('input[data-be22-cat="Housing"]').inputValue(),'130000');
+  assert.ok(await page.getByText(/no separate Screen 22 screenshot was supplied/i).count()>0);
  });
  await check('Budget allocations distribute evenly and settings persist',async()=>{
   await route(21);
