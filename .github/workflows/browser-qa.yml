@@ -44,6 +44,8 @@ jobs:
         run: node tests/rebuild-batch27-34.cjs
       - name: Test capital allocation, savings and scenario screens 35–42
         run: node tests/rebuild-batch35-42.cjs
+      - name: Test debt, protection, retirement and estate reconstruction Screens 43–49
+        run: node tests/rebuild-batch43-49.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs
