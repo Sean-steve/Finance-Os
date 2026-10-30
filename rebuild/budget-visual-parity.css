@@ -329,3 +329,54 @@
  .sp-budget-actions{grid-template-columns:auto 1fr auto auto}
  .sp-budget-actions .sp-btn{padding:6px}
 }
+
+
+/* Screen 22 is a separate functional editor. Apply the same approved layout
+   measurements as the source-led Screen 21 editor without replacing controls. */
+.be22-hero{
+  height:124px;
+  padding:13px 23px;
+  background-position:center,61% 7%;
+  border-radius:9px;
+}
+.be22-hero h1{font-size:25px;letter-spacing:-.025em}
+.be22-hero p{font-size:12px}
+.be22-stepper{
+  min-height:65px;
+  margin:-28px 10px 10px;
+  padding:9px 17px;
+  border-color:#edf2ee;
+}
+.be22-stepper button>b{height:33px;width:33px;flex-basis:33px}
+.be22-stepper strong{font-size:11px}
+.be22-stepper small{font-size:10px}
+.be22-layout{grid-template-columns:minmax(0,1.86fr) minmax(360px,1fr);gap:10px}
+.be22-card{padding:11px 15px;border-color:#edf2ee}
+.be22-card h2{font-size:14px;font-weight:750;color:#10253b}
+.be22-details{grid-template-columns:minmax(0,1fr) minmax(185px,225px);gap:14px}
+.be22-fields{gap:11px 18px}
+.be22-fields>label,.be22-field{font-size:11px}
+.be22-quick{background:#f2f8ff;padding:10px;min-height:196px}
+.be22-quick button{min-height:53px;border-bottom:1px solid #e7edf1}
+.be22-quick button:last-child{border-bottom:0}
+.be22-quick h3{font-size:12px}
+.be22-table th{font-size:9px}
+.be22-table td{padding:4px 5px;height:34px}
+.be22-table input[type=number]{height:27px;text-align:right;font-size:11px}
+.be22-pie{width:175px;height:175px;flex-basis:175px}
+.be22-pie>div{width:107px;height:107px}
+.be22-pie-wrap{min-height:203px}
+.be22-legend{gap:7px}
+.be22-legend>div{grid-template-columns:9px minmax(75px,1fr) 30px 85px}
+.be22-projection>div{padding:7px 9px;background:#f7faff}
+.be22-projection b{font-size:13px}
+.be22-rules label{min-height:32px;border-bottom:1px solid #edf2ef}
+.be22-rules label:last-child{border-bottom:0}
+.be22-btn.primary{background:#005840;border-color:#005840}
+.be22-caption{margin:7px 15px;color:#607785}
+@media(max-width:1320px){.be22-layout{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:860px){
+ .be22-details{grid-template-columns:minmax(0,1fr)}
+ .be22-right{grid-template-columns:minmax(0,1fr)}
+ .be22-stepper{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
