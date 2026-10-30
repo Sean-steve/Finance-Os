@@ -1,0 +1,35 @@
+name: Finance OS Screens 56-60 Reconstruction QA
+on:
+  push:
+    branches: ['reconstruction/exact-screens-56-60']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check rebuild/app.js
+          node --check rebuild/batch56-60.js
+          node --check tests/rebuild-batch56-60.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Full 60-route regression and governance workflows
+        run: node tests/rebuild-batch56-60.cjs
+      - name: Attach screenshots and QA results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-screens-56-60-chromium
+          path: qa-artifacts/batch56-60
+          retention-days: 14
+          if-no-files-found: ignore
