@@ -85,7 +85,7 @@ async function main(){
   await page.locator('[data-spform="subscription"] button[type="submit"]').click();
   let added=(await persisted()).spendV2.subscriptions.find(x=>x.name==='QA Weekly Membership');
   assert.ok(added);assert.equal(added.cost,2200);
-  await page.locator('[data-sp="editSub:'+added.id+'"]').click();
+  await page.locator('[data-sp="editSub:'+added.id+'"]').first().click();
   await page.locator('[data-sp="subStatus:Paused"]').click();
   const updated=(await persisted()).spendV2.subscriptions.find(x=>x.id===added.id);
   assert.equal(updated.status,'Paused');
@@ -109,7 +109,7 @@ async function main(){
   for(let n=16;n<=26;n++){
    await route(n);
    const dimensions=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:window.innerWidth}));
-   assert.ok(dimensions.width<=dimensions.viewport+2,'Horizontal overflow screen '+n+': '+JSON.stringify(dimensions));
+   if(dimensions.width>dimensions.viewport+2){const offenders=await page.evaluate(()=>Array.from(document.querySelectorAll('body *')).map(el=>({tag:el.tagName,cls:el.className?.toString().slice(0,65),width:Math.round(el.getBoundingClientRect().width),right:Math.round(el.getBoundingClientRect().right)})).filter(x=>x.right>innerWidth+3&&x.width>0).slice(0,20));console.log('OVERFLOW DETAILS',n,JSON.stringify(offenders));}assert.ok(dimensions.width<=dimensions.viewport+2,'Horizontal overflow screen '+n+': '+JSON.stringify(dimensions));
    if([16,20,21,23,24,25,26].includes(n))await page.screenshot({path:path.join(art,'screen-'+n+'-mobile.png'),fullPage:true});
   }
  });
