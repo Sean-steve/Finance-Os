@@ -129,5 +129,72 @@ panel('Debt Payoff Timeline',chart('area',12))+
 panel('Extra Payment Impact',chart('bars',8)+detailsPairs([['Extra per month',fmt(ui.extra)],['Total debt',fmt(debtTotal())]])+action('Save Simulation','optimizerApply','primary'))+
 panel('Advisor Notes',row('⚑','Highest APR priority','Consider fees before refinancing',fmt(23)+'%','optimizer')+row('✓','Protect savings buffer','Avoid exhausting emergency funds','','reserve'))+'</div>')}
 
-/* REMAINING_SCREENS */
+
+function screen46(){const t=state().taxes,liability=t.estimatedTax,remaining=Math.max(0,liability-t.paid);
+return shell(46,metrics([['▣','Estimated Tax Liability',fmt(liability),'Sample tax model'],['✓','Taxes Paid',fmt(t.paid),'Manual entries'],['◈','Potential Tax Deductions',fmt(t.deductions),'Illustrative only'],['▣','Filing Deadline',t.filingDate,'Verify official deadline']])+
+tabs(46,['Overview','Tax Position','Deductions','Filing & Compliance','Planning Tools','Documents','Tax Calendar','Settings'])+
+'<div class="pr-grid">'+panel('Tax Liability Trend',chart('stack',7))+
+panel('Tax Breakdown (2026 Estimated)',donut([['Income Tax',330000],['Business Taxes',175000],['Withholding',65000],['Other',50000]],liability))+
+panel('Quick Actions',[
+['Calculate My Tax','taxEstimate'],['View Deduction Opportunities','taxDeductions'],['Plan Next Year','taxPlan'],['Upload Tax Document','taxDocuments'],['Generate Tax Report','taxExport'],['Set Filing Reminders','taxReminder']
+].map(x=>row('▣',x[0],'Prototype planning only','',x[1])).join(''))+
+panel('Income vs Tax Rate',chart('line',7))+
+panel('Tax Deduction Opportunities',state().taxes.deductionItems.map(x=>row('✦',x[0],'Potential eligibility requires verification',fmt(x[1]))).join(''))+
+panel('Important Dates',state().taxes.filings.map(x=>row('◷',x.name,x.due,pill(x.status,'warn'))).join(''))+
+panel('Recent Tax Documents',table(['Document','Period','Status'],state().taxes.filings.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.period)+'</td><td>'+pill('Not uploaded','warn')+'</td></tr>')))+
+panel('Tax Planning Scenarios',detailsPairs([['Estimated tax',fmt(liability)],['Less recorded payments',fmt(t.paid)],['Remaining estimate',fmt(remaining)],['Potential relief (unverified)',fmt(t.deductions)]])+action('Review assumptions','taxEstimate','primary'))+
+panel('Tax Insights & Recommendations',notice('Kenya tax rules, rates, deductible expenses and KRA deadlines can change. None of these amounts are an official tax computation. Consult KRA and a qualified tax adviser.',true)+
+row('✓','Document your deductions','Keep receipts for review')+row('◷','Confirm filing obligations','Use official KRA iTax records'))+
+'</div>')}
+function policiesTable(){return table(['Policy / Provider','Type','Coverage','Premium / month','Renewal','Status','Action'],
+state().policies.map(p=>'<tr><td><b>'+esc(p.name)+'</b><small style="display:block">'+esc(p.provider)+'</small></td><td>'+esc(p.category)+'</td><td>'+fmt(p.coverage)+'</td><td>'+fmt(p.premium)+'</td><td>'+esc(p.renew)+'</td><td>'+pill(p.status,p.status==='Active'?'':'warn')+'</td><td>'+action('Manage','policy:'+p.id)+'</td></tr>'))}
+function screen47(){
+const policies=state().policies,active=policies.filter(p=>p.status==='Active'),coverageTotal=coverage();
+return shell(47,metrics([['♧','Total Coverage Value',fmt(coverageTotal),'Across '+active.length+' recorded policies'],['▣','Annual Premiums',fmt(annualPremiums()),'12 × monthly premiums'],['♜','Active Policies',String(active.length),'Manual policy records'],['▧','Protection Goal',fmt(45000000),'Illustrative target']])+
+tabs(47,['Overview','My Policies','Claims','Needs Analysis','Policy Recommendations','Coverage Summary','Documents','Renewals & Reminders','Settings'])+
+'<div class="pr-grid">'+panel('Coverage Overview',donut(active.map(p=>[p.category,p.coverage]),coverageTotal))+
+panel('Coverage vs Recommended',[['Life Protection',6000000,8000000],['Health & Medical',4500000,5000000],['Home / Property',4500000,6000000],['Motor Insurance',3500000,4000000],['Personal Accident',3000000,4000000],['Travel',1000000,1500000]].map(([n,c,t])=>'<div class="pr-row"><div class="grow"><b>'+esc(n)+'</b><small>'+fmt(c)+' / '+fmt(t)+'</small>'+bar(c,t)+'</div></div>').join(''))+
+panel('Quick Actions',[['Add New Policy','addPolicy'],['File a Claim','newClaim'],['Compare Policies','comparePolicy'],['Set Renewal Reminder','policyReminders'],['Run Protection Needs Analysis','needsAnalysis'],['Review Coverage Gap','needsAnalysis']].map(x=>row('▣',x[0],'Manual demo only','',x[1])).join(''))+
+'<section class="pr-panel pr-col2"><div class="pr-head"><h2>My Insurance Policies</h2>'+action('+ Add Policy','addPolicy','primary')+'</div>'+policiesTable()+'</section>'+
+panel('Upcoming Renewals',active.slice().sort((a,b)=>a.renew.localeCompare(b.renew)).slice(0,5).map(p=>row('◷',p.name,p.renew,fmt(p.premium),'policy:'+p.id)).join(''))+
+panel('Recent Claims',state().claims.length?table(['Claim','Policy','Status'],state().claims.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(c.policy)+'</td><td>'+pill(c.status,'blue')+'</td></tr>')):notice('No insurance claims recorded.'))+
+panel('Protection Needs Analysis','<div class="pr-mini-grid">'+[['Life','✓'],['Medical','✓'],['Property','△'],['Motor','✓']].map(x=>'<div class="pr-mini"><b>'+x[1]+'</b>'+x[0]+'</div>').join('')+'</div>'+notice('Coverage adequacy depends on exclusions, policy limits and individual circumstances.'))+
+panel('Risk Events & Financial Impact',table(['Risk','Potential Cost','Coverage'],[['Hospitalization',500000,'Recorded'],['Vehicle Accident',250000,'Recorded'],['Property Damage',900000,'Check terms'],['Income Loss',1500000,'Gap review']].map(x=>'<tr><td>'+x[0]+'</td><td>'+fmt(x[1])+'</td><td>'+pill(x[2],'blue')+'</td></tr>')))+
+panel('Protection Insights',row('✦','Review beneficiaries','Confirm nominations directly with insurers')+row('◷','Check renewal dates','Prevent lapse of essential cover')+row('⚑','Coverage gaps','Consider policy exclusions and deductibles'))+
+'</div>')}
+function retireProjection(){const r=state().retirement,months=Math.max(0,Math.min(100*12,(r.retireAge-r.age)*12));let balance=Number(r.saved)||0,returnRate=Math.pow(1+Number(r.annualReturn)/100,1/12)-1;
+for(let i=0;i<months;i++)balance=balance*(1+returnRate)+Number(r.monthly);return Math.round(balance)}
+function screen48(){const r=state().retirement,proj=retireProjection(),years=Math.max(0,r.retireAge-r.age),goal=Math.round(r.monthlyIncomeTarget*12*25);
+return shell(48,metrics([['⧖','Projected Retirement Fund',fmt(proj),'Modelled at age '+r.retireAge],['◉','Monthly Contribution',fmt(r.monthly),'Editable assumptions'],['▧','Retirement Income Goal',fmt(r.monthlyIncomeTarget),'Monthly target'],['◷','Years to Retirement',String(years),'Target age '+r.retireAge]])+
+tabs(48,['Overview','Accounts','Projections','Contribution Plan','Withdrawal Plan','Scenario Analysis','Milestones','Documents','Settings'])+
+'<div class="pr-grid">'+panel('Retirement Goal','<div class="pr-donut-wrap"><div class="pr-donut"><div class="pr-hole"><b>'+percent(proj,goal)+'%</b><small>of indicative goal</small></div></div><div class="pr-legend">'+[['Target age',r.retireAge],['Years to go',years],['Fund goal',fmt(goal)],['Projected fund',fmt(proj)]].map(x=>'<div class="pr-legend-row"><span class="grow">'+esc(x[0])+'</span><b>'+esc(x[1])+'</b></div>').join('')+'</div></div>'+bar(proj,goal))+
+panel('Retirement Fund Projection',chart('area',12)+notice('Illustrative investment growth: not a guarantee of future returns.'))+
+panel('Income in Retirement (Monthly)',donut([['Pension Income',100000],['Personal Investments',120000],['Property Income',50000],['Other',80000]],350000))+
+panel('Retirement Accounts',[
+['Personal Pension',3200000],['NSSF / Retirement Scheme',1000000],['SACCO Savings',1800000],['Investment Portfolio',2500000]
+].map(x=>row('▧',x[0],'Illustrative retirement asset',fmt(x[1]))).join(''))+
+panel('Contribution Plan',detailsPairs([['Current Monthly Contribution',fmt(r.monthly)],['Annual Contribution',fmt(r.monthly*12)],['Target Retirement Age',r.retireAge],['Assumed Annual Return',r.annualReturn+'%']])+action('Adjust Contributions','editRetirement','primary'))+
+panel('Quick Actions',[['Adjust Contribution','editRetirement'],['See Projections','retirementProjection'],['Compare Scenarios','retirementScenario'],['Estimate Income Goal','editRetirement'],['Review Accounts','retirementAccounts']].map(x=>row('◈',x[0],'Retirement planning','',x[1])).join(''))+
+panel('Retirement Readiness Analysis',[['Savings Rate',75],['Investment Diversification',65],['Income Replacement',59],['Retirement Planning',78]].map(([n,v])=>'<div class="pr-row"><span class="grow"><b>'+n+'</b>'+bar(v,100)+'</span><strong>'+v+'%</strong></div>').join(''))+
+panel('Key Milestones','<div class="pr-timeline">'+[['2026','Retirement plan review'],['2030','Review annual contributions'],['2035','Midpoint checkpoint'],['2045','Rebalance portfolios'],['2054','Approach retirement target']].map(x=>'<div><b>'+x[0]+'</b><small>'+x[1]+'</small></div>').join('')+'</div>')+
+panel('What-if Scenarios',detailsPairs([['Base projected value',fmt(proj)],['Conservative growth (4%)',fmt(proj*.75)],['Optimistic growth (8%)',fmt(proj*1.35)]])+action('Change scenario','retirementScenario'))+
+panel('Retirement Advisor',notice('Financial assumptions require review of inflation, investment fees, taxation and risk. Do not rely on projections as personalized investment advice.',true)+row('✓','Increase savings gradually','Check cash obligations first')+row('◷','Review annually','Keep goal assumptions current'))+
+'</div>')}
+function estateTotal(){return state().estate.assets.reduce((a,x)=>a+Number(x[1]),0)}
+function estateTable(){return table(['Beneficiary','Relationship','Share','Role','Status','Actions'],state().estate.beneficiaries.map(b=>'<tr><td>'+esc(b.name)+'</td><td>'+esc(b.relationship)+'</td><td>'+b.share+'%</td><td>'+esc(b.status)+'</td><td>'+pill('Not legally verified','warn')+'</td><td>'+action('Edit','beneficiary:'+b.id)+'</td></tr>'))}
+function screen49(){const e=state().estate,total=estateTotal(),share=e.beneficiaries.reduce((n,b)=>n+b.share,0),ready=e.checklist.filter(x=>x[1]).length;
+return shell(49,metrics([['▣','Total Estate Value',fmt(total),'Illustrative asset registry'],['♙','Primary Beneficiaries',String(e.beneficiaries.length),'Demo placeholders'],['▦','Estate Plan Status',Math.round(ready/Math.max(1,e.checklist.length)*100)+'%','Checklist complete'],['◷','Last Review','15 Aug 2026','Illustrative date']])+
+tabs(49,['Overview','Assets & Liabilities','Beneficiaries','Will & Legal Documents','Trusts & Structures','Insurance Planning','Taxes & Reminders','Settings'])+
+'<div class="pr-grid">'+panel('Estate Overview',donut(e.assets,total))+
+panel('Primary Beneficiaries',estateTable(),action('Add Beneficiary','addBeneficiary'))+
+panel('Key Documents',e.documents.map((d,i)=>row('▤',d.name,'Document metadata only',pill(d.status,d.status==='Not uploaded'?'warn':''),'estateDocument:'+i)).join(''))+
+panel('Asset Distribution Plan',e.beneficiaries.map((b,i)=>'<div class="pr-row"><span class="grow"><b>'+esc(b.name)+'</b><small>'+b.share+'% (indicative only)</small>'+bar(b.share,100,palette[i])+'</span><strong>'+fmt(total*b.share/100)+'</strong></div>').join(''))+
+panel('Estate Planning Checklist',e.checklist.map((c,i)=>'<label class="pr-check"><input type="checkbox" data-prcheck="'+i+'" '+(c[1]?'checked':'')+'><span>'+esc(c[0])+'</span></label>').join(''))+
+panel('Estimated Tax & Probate Impact',detailsPairs([['Gross estate value',fmt(total)],['Example administrative provision',fmt(total*.02)],['Net before legal adjustments',fmt(total*.98)]])+notice('Do not interpret this as a Kenyan estate/inheritance tax computation; legal and tax review required.',true))+
+panel('What-if Scenarios','<div class="pr-mini-grid">'+[['Current Plan',fmt(total)],['10% Asset Fall',fmt(total*.9)],['20% Asset Growth',fmt(total*1.2)],['Debt Review',fmt(debtTotal())]].map(x=>'<div class="pr-mini"><b>'+x[1]+'</b>'+x[0]+'</div>').join('')+'</div>')+
+panel('Asset Distribution Checks',detailsPairs([['Assigned percentage',share+'%'],['Unassigned / overassigned',Math.abs(100-share)+'%'],['Asset groups',e.assets.length]])+notice(share===100?'Shares total 100%, but they have no legal force.':'Shares must total 100% before any draft could be considered.'))+
+panel('AI Estate Advisor',notice('This is not a will, trust, power of attorney, beneficiary designation or substitute for a Kenyan succession-law professional.',true)+row('◷','Consult a licensed attorney','Discuss a legally valid estate plan')+row('▥','Keep sensitive documents offline','Do not upload legal IDs here'))+
+'</div>')}
+
+/* HANDLERS */
 })();
