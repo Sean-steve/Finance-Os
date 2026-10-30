@@ -12,7 +12,7 @@ browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const page=await browser.newPage({viewport:{width:1536,height:1024},deviceScaleFactor:1});page.setDefaultTimeout(6500);
 const results=[];
 for(let i=1;i<=60;i++){
-if(i===22)continue;
+const proxy=i===22;
 await page.goto(base+'/rebuild.html#screen/'+i,{waitUntil:'domcontentloaded'});
 await page.locator('#app').first().waitFor();
 const screenshot=(await page.screenshot({type:'png'})).toString('base64');
@@ -26,12 +26,12 @@ c.drawImage(ref,0,0,384,256);const a=c.getImageData(0,0,384,256).data;
 c.clearRect(0,0,384,256);c.drawImage(coded,0,0,384,256);const b=c.getImageData(0,0,384,256).data;
 let total=0,count=0;for(let p=0;p<a.length;p+=4){total+=Math.abs(a[p]-b[p])+Math.abs(a[p+1]-b[p+1])+Math.abs(a[p+2]-b[p+2]);count+=3}
 return +(total/count).toFixed(2)
-},{id:i,base64:screenshot});
-results.push({screen:i,previous:old[i]??null,now:score,change:old[i]===undefined?null:+(score-old[i]).toFixed(2)});
+},{id:proxy?21:i,base64:screenshot});
+results.push({screen:i,reference:proxy?21:i,proxy,previous:old[i]??null,now:score,change:old[i]===undefined?null:+(score-old[i]).toFixed(2)});
 console.log('VISUAL',i,score,old[i]!==undefined?'previous='+old[i]+' delta='+(score-old[i]).toFixed(2):'');
 }
-const sorted=results.slice().sort((a,b)=>b.now-a.now),before=results.filter(x=>x.previous!=null);
-const summary={measured:results.length,mean:+(results.reduce((a,x)=>a+x.now,0)/results.length).toFixed(2),priorityChanges:before,highest:sorted.slice(0,15)};
+const originals=results.filter(x=>!x.proxy),sorted=originals.slice().sort((a,b)=>b.now-a.now),before=originals.filter(x=>x.previous!=null);
+const summary={measured:originals.length,mean:+(originals.reduce((a,x)=>a+x.now,0)/originals.length).toFixed(2),screen22AdaptedAgainst21:results.find(x=>x.proxy)?.now,priorityChanges:before,highest:sorted.slice(0,15)};
 fs.writeFileSync(path.join(out,'visual-delta-after.json'),JSON.stringify({summary,results},null,2));
 console.log('VISUAL SUMMARY',JSON.stringify(summary));
 }finally{await browser?.close();server.kill('SIGTERM')}
