@@ -170,5 +170,61 @@ function screen31(){
  panel('AI Insights & Recommendations',alertPanelContent())+'</div></div>')
 }
 
-/* REMAINING_32_34 */
+
+function cashItems(){return [
+ ...state().incomes.filter(x=>x.status==='Active').map(x=>({kind:'Income',name:x.name,category:x.category,amount:x.amount,date:x.expected})),
+ ...state().bills.filter(x=>x.status!=='Paid').map(x=>({kind:'Expense',name:x.name,category:x.category,amount:-x.amount,date:x.due}))
+].sort((a,b)=>a.date.localeCompare(b.date))}
+function cashTable(kind){return table(['Date','Description','Category','Amount','Status'],cashItems().filter(x=>kind==='All'||x.kind===kind).map(x=>'<tr><td>'+safe(x.date)+'</td><td>'+safe(x.name)+'</td><td>'+safe(x.category)+'</td><td style="color:'+(x.amount>=0?'#079666':'#cb4257')+'">'+(x.amount>=0?'+':'−')+money(x.amount)+'</td><td>'+tag(x.kind==='Income'?'Expected':'Upcoming')+'</td></tr>'))}
+function screen32(){
+const income=vals(),bills=outstanding(),spend=monthExpenses(),cash=ctx.model.accounts.slice(0,3).reduce((n,x)=>n+Number(x[1]),0);
+return shell(32,metric([['▣','Total Inflows',money(income),'Monthly estimate'],['↘','Total Outflows',money(spend+bills),'Expenses + tracked obligations'],['▥','Net Cash Flow',money(income-spend-bills),'Illustrative'],['◷','Projected Closing Balance',money(cash+income-spend-bills),'Unverified projection']])+
+'<div class="cf-toolbar">'+tabs(['Daily','Weekly','Monthly','Yearly'],v.cashTab,'cashTab')+bc('Previous','cashPrev')+bc('Next','cashNext')+nav('Forecast & Runway',33,'green')+'</div>'+
+'<div class="cf-grid"><section class="cf-panel cf-col2"><div class="cf-head"><h2>Cash Flow Timeline</h2>'+bc('Current Month','cashToday')+'</div>'+graph('split',12)+'<div class="cf-legend">🟢 Inflows　🔴 Outflows　🟦 Closing Balance</div></section>'+
+panel('Account Balance Projection',graph('area',8))+
+panel('Upcoming Inflows',cashTable('Income'))+
+panel('Upcoming Outflows',cashTable('Expense'))+
+panel('Cash Flow Insights',alertPanelContent())+
+panel('Daily Cash Flow Summary',table(['Day','Inflow','Outflow','Net'],Array.from({length:9},(_,i)=>'<tr><td>Oct '+(16+i)+'</td><td>'+money(8000+i*800)+'</td><td>'+money(3500+i*360)+'</td><td>'+money(4500+i*440)+'</td></tr>')))+
+panel('Cash Flow Distribution',donut([['Income',income],['Bills',bills],['Expenses',spend]],income+bills+spend))+
+panel('Upcoming Financial Obligations',state().bills.filter(x=>x.status!=='Paid').slice(0,5).map(b=>row('◷',b.name,b.due,money(b.amount),'bill:'+b.id)).join(''))+'</div>')}
+function scenarioControls(){
+const s=state().scenario;
+return '<form data-cfform="scenario" class="cf-form"><div class="cf-fields"><label class="cf-label">Income Growth (% per month)<input class="cfinput" name="incomeGrowth" type="number" min="-50" max="100" value="'+s.incomeGrowth+'" required></label><label class="cf-label">Expense Growth (% per month)<input class="cfinput" name="expenseGrowth" type="number" min="-50" max="100" value="'+s.expenseGrowth+'" required></label><label class="cf-label">Forecast horizon<select class="cf-select" name="horizon">'+[3,6,9,12].map(n=>'<option '+(s.horizon===n?'selected':'')+' value="'+n+'">'+n+' months</option>').join('')+'</select></label><label class="cf-label">Minimum Buffer (KES)<input class="cfinput" name="minimum" type="number" min="0" value="'+s.minimum+'"></label></div><button class="cf-btn green" type="submit">Recalculate Forecast</button></form>'
+}
+function screen33(){
+const projections=forecastData(),last=projections.at(-1),low=Math.min(...projections.map(x=>x.cash)),breach=projections.filter(x=>x.cash<state().scenario.minimum);
+const base=ctx.model.accounts.slice(0,3).reduce((n,x)=>n+Number(x[1]),0);
+return shell(33,metric([['▣','Current Cash Position',money(base),'Manual personal accounts'],['▥','Projected Ending Balance',money(last.cash),'Selected horizon'],['✓','Runway Indicator',breach.length?'Needs attention':'Within buffer',breach.length+' forecast breaches'],['◈','Cash Flow Headroom',money(Math.max(0,low-state().scenario.minimum)),'Worst projected period']])+
+'<div class="cf-grid"><section class="cf-panel cf-col2"><div class="cf-head"><h2>Cash Flow Forecast (Next '+state().scenario.horizon+' Months)</h2>'+bc('Export Forecast','forecastExport')+'</div>'+graph('split',12)+'<div class="cf-legend">🟩 Projected inflow　🟥 Outflow　🟦 Ending balance</div></section>'+
+panel('Financial Runway Projection',graph('area',9)+mtext('Assumes all planned income arrives and obligations are paid.'))+
+panel('Projected Income & Expenses',table(['Month','Income','Expenses','Bills','Net','Cash Balance'],projections.map(x=>'<tr><td>'+safe(x.month)+'</td><td>'+money(x.income)+'</td><td>'+money(x.expenses)+'</td><td>'+money(x.obligations)+'</td><td>'+money(x.net)+'</td><td>'+money(x.cash)+'</td></tr>')))+
+panel('Forecast Scenarios',tabs(['Baseline','Conservative','Optimistic'],v.forecastScenario,'scenario')+scenarioControls())+
+panel('Runway & Risk Analysis',row('⚑','Months below cash buffer','Minimum '+money(state().scenario.minimum),breach.length+' months')+
+row('◷','Lowest projected balance','Across this scenario',money(low))+row('✓','Emergency Reserve Goal','Plan ahead',money(state().scenario.buffer))+nav('Recovery Plan',34,'green'))+
+panel('Cash Flow Distribution',donut([['Income',vals()],['Bills',outstanding()],['Expenses',monthExpenses()]],vals()+outstanding()+monthExpenses()))+
+panel('Upcoming Obligations',state().bills.filter(x=>x.status!=='Paid').slice(0,5).map(b=>row('▣',b.name,b.due,money(b.amount))).join(''))+
+panel('Financial Insights',alertPanelContent())+'</div>')}
+function screen34(){
+const projections=forecastData(),low=Math.min(...projections.map(x=>x.cash)),shortfall=Math.max(0,state().scenario.minimum-low),rec=state().shortfall;
+const tasks=[
+['Defer non-essential purchases','Review discretionary purchases','defer'],
+['Collect outstanding receivables','Confirm expected client invoices','collect'],
+['Reduce short-term expenses','Review category spending','reduce'],
+['Protect minimum cash buffer','Keep essential obligations funded','buffer'],
+['Review subscription spend','Pause unused recurring services','subscriptions'],
+['Reforecast weekly','Update actual financial assumptions','forecast']
+];
+return shell(34,metric([['⚑','Projected Cash Shortfall',money(shortfall),'Forecast, not bank verified'],['▦','Time to Risk',projections.findIndex(x=>x.cash<state().scenario.minimum)>=0?(projections.findIndex(x=>x.cash<state().scenario.minimum)+1)+' months':'No breach','Scenario dependent'],['↘','Recovery Target',money(rec.target),'Manually chosen'],['◈','Current Cash',money(ctx.model.accounts.slice(0,3).reduce((n,x)=>n+Number(x[1]),0)),'Demo accounts']])+
+'<div class="cf-grid"><section class="cf-panel cf-col2"><div class="cf-head"><h2>Cash Position & Shortfall Forecast</h2>'+nav('Full Forecast',33)+'</div>'+graph('split',12)+mtext('Projected numbers are estimates. Unrecorded commitments and delayed income affect runway.',shortfall?'danger':'')+'</section>'+
+panel('Shortfall Distribution',donut([['Bills',outstanding()],['Housing',80000],['Utilities',11300],['Other',21000]],outstanding()+112300))+
+panel('Primary Shortfall Drivers',state().bills.filter(x=>x.status!=='Paid').slice(0,6).map(b=>row('⚑',b.name,b.due,money(b.amount))).join(''))+
+panel('Emergency Cash Recovery Actions',tasks.map(([name,detail,key])=>'<div class="cf-row"><input type="checkbox" data-cfrecovery="'+safe(key)+'" aria-label="Complete '+safe(name)+'" '+(rec.completed.includes(key)?'checked':'')+'><span class="cf-grow"><b>'+safe(name)+'</b><small>'+safe(detail)+'</small></span>'+tag(rec.completed.includes(key)?'Complete':'Open')+'</div>').join(''))+
+panel('Recovery Plan Timeline','<div class="cf-timeline">'+tasks.slice(0,5).map((x,i)=>'<div><b>'+safe(x[0])+'</b><small>Step '+(i+1)+' — review</small></div>').join('')+'</div>')+
+panel('Cash Recovery Projection',graph('area',8))+
+panel('Recovery Opportunities',alertPanelContent())+
+panel('Financial Recovery Settings','<form data-cfform="recovery" class="cf-form"><label class="cf-label">Recovery Target (KES)<input name="target" class="cfinput" type="number" min="0" value="'+rec.target+'"></label><label class="cf-label">Notes<input name="notes" class="cfinput" value="'+safe(rec.notes)+'"></label><button class="cf-btn green" type="submit">Save Recovery Plan</button></form>')+
+panel('Recovery Progress','<div class="cf-health" style="--p:'+Math.round(rec.completed.length/tasks.length*100)+'%"><div><b>'+Math.round(rec.completed.length/tasks.length*100)+'%</b><small>Tasks reviewed</small></div></div>'+nav('Forecast Cash Flow',33))+'</div>')}
+
+/* HANDLERS_TO_INSERT */
 })();
