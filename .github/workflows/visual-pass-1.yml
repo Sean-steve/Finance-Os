@@ -27,6 +27,13 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Budget/editor, detail screens and regression
         run: node tests/visual-repair-budget22.cjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image comparison support
+        run: python -m pip install Pillow==11.3.0
+      - name: Measure repaired screen visual deltas
+        run: python tests/visual-metrics-qa.py
       - name: QA images and report
         if: always()
         uses: actions/upload-artifact@v4
