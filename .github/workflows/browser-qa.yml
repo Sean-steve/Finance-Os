@@ -48,6 +48,8 @@ jobs:
         run: node tests/rebuild-batch43-49.cjs
       - name: Validate wealth and investment reconstruction Screens 50–55
         run: node tests/rebuild-batch50-55.cjs
+      - name: Full 60-route QA for financial health, advisor, reporting, integrations and privacy
+        run: node tests/rebuild-batch56-60.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs
