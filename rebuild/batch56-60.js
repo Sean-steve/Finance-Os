@@ -186,5 +186,94 @@ panel('Goal Progress & Advisor Notes',model().goals.slice(0,4).map(g=>'<div clas
 panel('Recent Questions',ch.filter(x=>x.kind==='user').slice(-4).reverse().map(x=>item('◷',x.text.slice(0,55),'Local chat history')).join('')||info('Ask a question to build a local chat history.'))+
 '</div></div>')}
 
-/* SCREENS_58_60 */
+
+function reportTypes(){return [
+['Income Statement','Income, expenses and financial surplus','income'],
+['Expense Report','Spending categories and transaction activity','expenses'],
+['Cash Flow Statement','Income, expenses and cash-position context','cashflow'],
+['Net Worth Report','Asset, liability and net-worth snapshot','networth'],
+['Investment Performance Report','Holdings, cost basis and estimated unrealized returns','investments'],
+['Debt Repayment Report','Current principal balances and repayment obligations','debt'],
+['Tax Summary Report','Recorded tax-planning placeholders','tax'],
+['Goal Progress Report','Savings targets and amounts saved','goals'],
+['Budget Performance','Category allocations and planning estimates','budget'],
+['Custom Report','All major finance summaries from local demo records','custom']
+]}
+function reportData(type){
+const h=health();let rows=[['Metric','Amount (KES)'],['Monthly income',income()],['Monthly expenditure',expenses()],['Cash flow headroom',income()-expenses()]];
+if(type==='Expense Report'||type==='Budget Performance'){rows=[['Category','Amount (KES)'],...model().expenses.map(x=>[x[0],Number(x[1])])];if(type==='Budget Performance')rows.push(['Budget Target',model().spendV2?.budgetLimit||0])}
+if(type==='Net Worth Report')rows=[['Metric','Amount (KES)'],['Total Assets',totalAssets()],['Total Debts',debts()],['Net Worth',nw()],['Personal Cash',cash()]];
+if(type==='Investment Performance Report')rows=[['Holding','Estimated Value (KES)'],...(model().wealthV2?.holdings||[]).map(x=>[x.name,x.shares*x.price])];
+if(type==='Debt Repayment Report')rows=[['Debt','Outstanding Principal (KES)'],...(model().protectionV2?.debts||[]).map(x=>[x.name,x.balance])];
+if(type==='Goal Progress Report')rows=[['Goal','Amount Saved (KES)','Target (KES)'],...model().goals.map(g=>[g[0],g[1],g[2]])];
+if(type==='Tax Summary Report')rows=[['Tax Metric','Amount (KES)'],['Estimated tax liability',model().protectionV2?.taxes?.estimatedTax||0],['Recorded tax paid',model().protectionV2?.taxes?.paid||0]];
+return rows;
+}
+function reportHistory(){const reports=state().reports.filter(x=>ui.reportFilter==='All'||x.type===ui.reportFilter).filter(x=>x.type.toLowerCase().includes(ui.reportSearch.toLowerCase()));
+return table(['Report Name','Type','Period','Generated','Actions'],reports.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(x.type)+'</td><td>'+esc(x.period)+'</td><td>'+esc(x.date)+'</td><td>'+button('Export CSV','reportExport:'+x.id)+'　'+button('View','reportView:'+x.id)+'</td></tr>'))}
+function screen58(){const h=health();const st=state(),hist=st.reports;
+return shell(58,metric([['▥','Total Income',money(income()),'Recorded monthly'],['▣','Total Expenses',money(expenses()),'Recorded monthly'],['↑','Net Savings Potential',money(income()-expenses()),'Pre-commitment surplus'],['◉','Net Worth',money(nw()),'Shared wealth ledger'],['◆','Health Score',h.score+'/100','Local model']])+
+tabs(58,['Overview','Income Reports','Expense Reports','Cash Flow Reports','Investment Reports','Tax Reports','Goal Progress Reports','Custom Reports'])+
+'<div class="gv-toolbar">'+select('Reporting Period','period',['Last 30 Days','Last 3 Months','Last 6 Months','Last 12 Months'],ui.reportPeriod)+
+button('Generate Report','generateReport','primary')+'</div>'+
+'<div class="gv-grid">'+panel('Financial Performance Overview',plot('bars',12)+
+info('Chart series are illustrative; exported snapshots use local records only.'),button('Last 12 Months','reportTime'))+
+panel('Income vs Expense Breakdown',donut([{name:'Income',value:income()},{name:'Expenses',value:expenses()}],income()+expenses())+
+rows([['Monthly Income',money(income())],['Monthly Expenses',money(expenses())],['Remaining Headroom',money(income()-expenses())]]))+
+panel('Quick Reports',reportTypes().slice(0,9).map(([name,desc],i)=>item('▤',name,desc,'','reportType:'+i)).join(''))+
+panel('Key Financial Ratios',mini([[h.rate.toFixed(1)+'%','Savings rate'],[(debts()/Math.max(1,totalAssets())).toFixed(2),'Debt/assets'],[(cash()/Math.max(1,expenses())).toFixed(1),'Cash months']])+rows([['Net worth',money(nw())],['Recorded debt',money(debts())],['Financial health',h.score+'/100']]))+
+panel('Report History',reportHistory()+info('History stores local report metadata. Reports are snapshots generated from the current browser demo records.'),button('Generate New Report','generateReport'))+
+panel('Scheduled Reports',reportSchedule())+
+panel('Financial Review Notes',[
+['✓','Income and expenses reviewed','Cash flow headroom: '+money(income()-expenses())],
+['◷','Tax planning records','Check official requirements before filing'],
+['◆','Debt and investment positions','Use shared demo values with caution']
+].map(x=>item(x[0],x[1],x[2])).join(''))+
+panel('Insights from Reports',healthTips().slice(0,3).map(x=>item(x[0],x[1],x[2],'','navigate:'+x[3])).join(''))+
+panel('Export & Share',[
+['CSV Report','reportCsv'],['Download JSON Summary','reportJson'],['Print / Save as PDF','reportPrint']
+].map(x=>item('↓',x[0],'Local export, no sharing service','',x[1])).join(''))+
+'</div>')}
+function reportSchedule(){const settings=state().reportsSettings;return [
+['monthly','Monthly Financial Summary','Stored schedule preference, not delivered'],
+['weekly','Weekly Spend Review','Requires notification infrastructure'],
+['billReview','Bill & Obligation Report','No automated email or scheduler'],
+['goalReview','Goal Progress Report','Review manually in this prototype']
+].map(([key,title,desc])=>toggle(key,title,desc,!!settings[key],'reports')).join('')+info('No background job or email provider is configured. These switches only store the desired schedule.')}
+function integrAccounts(){const st=state().integrations;
+return table(['Institution / Service','Account Name','Type','Demo Status','Last Sync','Actions'],st.filter(x=>ui.providerCategory==='All'||x.category===ui.providerCategory).filter(x=>x.provider.toLowerCase().includes(ui.providerSearch.toLowerCase())).map((x,i)=>'<tr><td><b>'+esc(x.provider)+'</b></td><td>'+esc(x.type)+' Example</td><td>'+esc(x.category)+'</td><td>'+tag(x.demo?'Demo prepared':'Not connected',x.demo?'blue':'warn')+'</td><td>Never — no API</td><td>'+button(x.demo?'Manage':'Preview','provider:'+x.id)+'</td></tr>'))}
+function providerTiles(){return state().integrations.filter(x=>ui.providerCategory==='All'||x.category===ui.providerCategory).filter(x=>x.provider.toLowerCase().includes(ui.providerSearch.toLowerCase())).map(x=>
+'<div class="gv-provider"><span class="gv-icon blue">▣</span><span class="grow"><b>'+esc(x.provider)+'</b><small>'+esc(x.category)+'</small></span>'+
+'<button data-gv="provider:'+x.id+'" type="button">Preview</button></div>').join('')}
+function syncPrefs(){const s=state().integrationsPrefs;return [
+['notifications','Demo Sync Preferences','Enable demo-only notifications preference'],
+['demoAutoSync','Automatic Sync','Unavailable until a real connector is installed'],
+['categoryRules','Transaction Categories','Remember manual category choices'],
+['importDuplicates','Check Import Duplicates','Preference for future statement imports'],
+['securityAlerts','Sync Security Alerts','No live security event source'],
+['activityNotifications','Account Activity Notices','Not delivered externally']
+].map(([k,title,desc])=>toggle(k,title,desc,!!s[k],'integration')).join('')}
+function screen59(){const st=state(),configured=st.integrations.filter(x=>x.demo).length,healthCount=0;
+return shell(59,metric([['🔗','Connected Accounts','0','No verified provider connections'],['◷','Last Sync','Never','No live sync workers'],['▥','Total Synced Balance',money(0),'Authoritative balance only'],['◆','Data Security','Not configured','Static browser prototype'],['↻','Sync Status','Unavailable','Real API not connected']])+
+tabs(59,['All Integrations','Bank Accounts','Investment Accounts','Payment Services','Crypto & Digital Assets','Property & Assets','Insurance & Policies','Accounting & Business','Other Services','Settings'])+
+'<div class="gv-toolbar">'+select('Category','category',['All','Banks','Investment','Payments','Accounting'],ui.providerCategory)+
+'<input placeholder="Search institutions…" aria-label="Search integrations" data-gvsearch="provider" value="'+esc(ui.providerSearch)+'">'+button('Connect Account','connectInfo','primary')+'</div>'+
+'<div class="gv-grid"><section class="gv-panel gv-span2"><div class="gv-head"><h2>Available Connection Templates</h2>'+tag(configured+' demo-ready · 0 real connections','warn')+'</div>'+integrAccounts()+'</section>'+
+panel('Available Integrations', '<div class="gv-provider-grid">'+providerTiles()+'</div>')+
+panel('Account Sync Settings',syncPrefs())+
+panel('Data & Security',[
+['◆','No OAuth tokens','This frontend cannot authorize access to bank accounts.'],
+['▤','Browser-only sample data','Financial fixtures remain in localStorage.'],
+['◷','No automatic synchronizer','No background worker or API connection exists.'],
+['✓','Manual statement import','Use the statement import screen if needed.']
+].map(x=>item(x[0],x[1],x[2])).join('')+nav('Statement Import',13))+
+panel('Sync Activity',st.syncLog.slice(0,7).map(x=>item('◷',x.event,x.at,x.status)).join('')||info('No actual synchronization history.'))+
+panel('Connection Health','<div class="gv-health-orb" style="--p:0%"><div><b>0%</b><small>Verified connections</small></div></div>'+
+mini([['0','Connected'],[String(st.integrations.length),'Templates'],[String(configured),'Demo prepared']])+info('No service has been authenticated or had data synchronized.'))+
+panel('Provider Onboarding Notes',item('①','Review provider permissions','Connectors must use official APIs and user consent.')+
+item('②','Authorize through OAuth where available','Do not paste passwords or banking tokens here.')+
+item('③','Verify data retention and deletion','Encrypted storage and server audit are required before production.'))+
+'</div>')}
+
+/* SCREEN_60 */
 })();
