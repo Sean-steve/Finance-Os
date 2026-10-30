@@ -23,6 +23,7 @@ async function main(){
     await page.locator('[data-cfform="income"] [name="amount"]').fill('23000');
     await page.locator('[data-cfform="income"] button[type="submit"]').click();
     assert.ok((await saved()).incomeFlowV2.incomes.find(x=>x.name==='QA Income Stream'&&x.amount===23000));
+    assert.ok((await saved()).incomes.some(x=>x[0]==='QA Income Stream'&&x[1]===23000),'Income should sync to legacy dashboard');
     await go(27);await go(28);await page.locator('[data-cfsearch="income"]').fill('QA Income');
     assert.ok(await page.getByText('QA Income Stream',{exact:true}).count()>0);
   });
@@ -46,6 +47,7 @@ async function main(){
     await page.locator('[data-cfform="payBill"] button[type="submit"]').click();
     let s=(await saved()).incomeFlowV2;assert.equal(s.bills.find(x=>x.id===bill.id).status,'Paid');
     assert.ok(s.paymentHistory.some(x=>x.billId===bill.id));
+    assert.ok((await saved()).bills.some(x=>x[0]==='QA Internet Bill'&&x[2]===0),'Bill status must be shared with legacy views');
     assert.match(await page.locator('[role="status"]').innerText(),/simulated.*NOT.*completed/i);
   });
   await check('Bill reminders persist but external autopay is not activated',async()=>{
