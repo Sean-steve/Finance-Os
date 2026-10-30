@@ -33,5 +33,45 @@ return '<div class="be22"><div class="be22-hero"><div><small>Budgets　›　Cre
 '<p class="be22-caption">Screen 22 follows the approved Screen 21 Finance OS editor layout; no separate Screen 22 screenshot was supplied.</p></div>';
 }
 
-/* HANDLERS */
+
+function syncInputs(){const form=document.querySelector('[data-be22-form="budget"]');if(!form)return;
+draft.name=String(form.elements.name.value||draft.name).trim();
+draft.month=String(form.elements.month.value||draft.month);
+const value=Number(form.elements.limit.value);if(Number.isFinite(value)&&value>0)draft.limit=value}
+function change(e){prepare();const el=e.target;
+if(el.matches?.('[data-be22-cat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){syncInputs();draft.categories[el.dataset.be22Cat]=value;notice='Category allocation updated. Save to apply changes throughout Finance OS.';ctx.render()}return true}
+if(el.matches?.('[data-be22-rollover]')){syncInputs();draft.rollover[el.dataset.be22Rollover]=el.checked;ctx.render();return true}
+if(el.matches?.('[data-be22-rule]')){syncInputs();draft.rules[el.dataset.be22Rule]=el.checked;ctx.render();return true}
+if(el.matches?.('[data-be22-threshold]')){syncInputs();draft.rules.alertThreshold=Number(el.value);ctx.render();return true}
+return false}
+function click(e){const el=e.target.closest?.('[data-be22]');if(!el)return false;
+e.preventDefault();prepare();syncInputs();
+const raw=el.dataset.be22,i=raw.indexOf(':'),key=i===-1?raw:raw.slice(0,i),arg=i===-1?'':raw.slice(i+1);notice='';
+switch(key){
+case 'step':step=Number(arg);break;
+case 'period':draft.period=arg;break;
+case 'preset':{const amount=Number(arg);if(amount>0)draft.limit=amount;break}
+case 'even':{const per=Math.floor(draft.limit/items.length);items.forEach((c,i)=>draft.categories[c[0]]=per+(i===items.length-1?draft.limit-per*items.length:0));notice='Categories distributed to match your budget target.';break}
+case 'reset':items.forEach(c=>draft.categories[c[0]]=c[3]);draft.limit=300000;notice='Default category allocations restored.';break;
+case 'quick':{
+if(arg==='lastMonth')draft.name='Copied from Previous Month Budget';
+if(arg==='template')items.forEach(c=>draft.categories[c[0]]=c[3]);
+if(arg==='suggested'){const fractions=[.4,.15,.10,.08,.06,.05,.04,.04,.03,.05];items.forEach((c,i)=>draft.categories[c[0]]=Math.round(fractions[i]*draft.limit))}
+notice='Preset added to your draft. Review amounts before saving.';break}
+case 'template':notice='Budget template retained in this browser draft. Save Budget to apply it.';break;
+case 'category':notice='Edit the '+arg+' allocation directly in the row.';break;
+case 'goals':ctx.navigate(37);return true;
+case 'cancel':draft=null;ctx.navigate(21);return true;
+case 'save':{
+if(!draft.name){notice='A budget name is required.';break}
+if(draft.limit<=0||!Number.isFinite(draft.limit)){notice='Enter a positive budget limit.';break}
+if(Math.abs(sum()-draft.limit)>.01){notice='Category allocations must equal the total target before saving. Difference: '+fmt(draft.limit-sum())+'.';break}
+const data=store();data.budgetName=draft.name;data.budgetMonth=draft.month;data.budgetPeriod=draft.period;data.budgetLimit=draft.limit;data.categories={...draft.categories};data.rollover={...draft.rollover};data.rules={...draft.rules};
+ctx.save();notice='Budget saved to the shared Finance OS planning records. No real funds have moved.';step=3;break}
+default:notice='Local prototype action; no bank or external service contacted.';break
+}
+ctx.render();return true}
+function submit(e){if(e.target.dataset?.be22Form!=='budget')return false;e.preventDefault();syncInputs();step=1;notice='Budget details updated in this draft. Continue to allocate by category and save.';ctx.render();return true}
+window.FinanceBudget22={init,render,click,change,submit};
+
 })();
