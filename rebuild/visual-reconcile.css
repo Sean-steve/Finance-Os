@@ -92,7 +92,10 @@ body{color:var(--fo-ink);background:#f9fbfa}
 @media(max-width:1050px){.auth-showcase{grid-template-columns:minmax(0,1fr) minmax(0,250px)}.auth-mobile-demo{display:none}.auth-state-examples{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.auth-reconstruction{padding:7px}.auth-showcase{display:block}.auth-viewport-title{font-size:11px}.auth-desktop-demo .auth-wrap{height:auto;min-height:900px;display:flex;flex-direction:column;padding-bottom:0}.auth-desktop-demo .auth-story{height:385px;min-height:385px;padding:20px}.auth-desktop-demo .auth-intro{margin:26px 0}.auth-desktop-demo .auth-intro h1{font-size:27px}.auth-desktop-demo .auth-intro em{font-size:20px}.auth-desktop-demo .auth-intro p{font-size:11px}.auth-desktop-demo .auth-feature{display:none}.auth-desktop-demo .auth-story blockquote{display:none}.auth-desktop-demo .auth-login{padding:25px 20px;min-height:490px}.auth-desktop-demo .auth-login-header{margin:10px 0}.auth-desktop-demo .auth-foot{position:static;display:block}.auth-tablet-demo,.auth-mobile-demo{display:none}.auth-state-examples{grid-template-columns:1fr 1fr;gap:5px}.auth-state-examples>div{height:auto;min-height:125px;padding:7px}}
 /* Screen 08 and 11: reduce duplicated metric/header height while preserving existing functional tabs */
-.bpage:has(.b-account-banner) .btop>.b-metrics{display:none}
+.bpage:has(.b-account-banner) .btop>.b-kpis{display:none}
+.bpage:has(.b-account-banner):not(:has(.b-detail-title))>.banner{height:0;min-height:0;padding:0;margin:0;border:0;overflow:hidden}
+.bpage:has(.b-account-banner):not(:has(.b-detail-title))>.btop{margin-top:0}
+.bpage:has(.b-detail-title)>.banner{height:118px}
 .bpage:has(.b-account-banner) .b-account-banner{min-height:108px;padding:16px 23px;background:linear-gradient(90deg,rgba(0,35,46,.92),rgba(8,67,67,.62)),url('../assets/screen-08.webp');background-size:auto,170% 800%;background-position:center,64% 8%}
 .bpage:has(.b-account-banner) .b-cols{gap:10px}
 .bpage:has(.b-account-banner) .b-panel{padding:11px}
