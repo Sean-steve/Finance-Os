@@ -23,8 +23,8 @@ async function main(){
   const headings=new Set();
   for(let n=16;n<=26;n++){
    await route(n);
-   assert.equal(await page.locator('.spend-page').count(),1);
-   assert.ok(await page.locator('.sp-panel').count()>=3,'not enough components screen '+n);
+   if(n===22){assert.equal(await page.locator('.bd22-screen').count(),1);assert.ok(await page.locator('.bd22-panel').count()>=3,'new Budget Studio panels absent');}
+   else{assert.equal(await page.locator('.spend-page').count(),1);assert.ok(await page.locator('.sp-panel').count()>=3,'not enough components screen '+n);}
    assert.equal(await page.locator('.reference-shade').count(),0);
    headings.add(await page.locator('.banner h1').innerText());
    await page.screenshot({path:path.join(art,'screen-'+n+'-desktop.png'),fullPage:true});
@@ -47,8 +47,8 @@ async function main(){
   assert.equal((await persisted()).spendV2.categories.Housing,130000);
   await page.locator('[data-sp="saveBudget"]').click();
   await route(22);
-  assert.equal(await page.locator('input[data-spcat="Housing"]').inputValue(),'130000');
-  assert.ok(await page.getByText(/original.*reference.*missing|no supplied approved reference/i).count()>0);
+  assert.equal(await page.locator('input[data-budget22cat="Housing"]').inputValue(),'130000');
+  assert.ok(await page.getByText(/no separate original screenshot|original screenshot was not supplied/i).count()>0);
  });
  await check('Budget allocations distribute evenly and settings persist',async()=>{
   await route(21);
