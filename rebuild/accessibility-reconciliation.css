@@ -57,3 +57,9 @@
 #app :is(.cf-status.warn,.cf-row .cf-status.warn,.cap-panel .warn) {
   color:#795015 !important;
 }
+
+/* Last four measured color-contrast groups: baseline screens 04, 05, 53 and 56. */
+#app .main :is(.budget-row span,.obligation-item small,.muted,b > small,
+                .we-panel p,.gv-row > span:nth-child(4)) {
+ color:#405760 !important;
+}
