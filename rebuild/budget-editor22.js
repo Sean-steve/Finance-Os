@@ -39,11 +39,29 @@ function syncInputs(){const form=document.querySelector('[data-be22-form="budget
 draft.name=String(form.elements.name.value||draft.name).trim();
 draft.month=String(form.elements.month.value||draft.month);
 const value=Number(form.elements.limit.value);if(Number.isFinite(value)&&value>0)draft.limit=value}
+
+function refreshDraftSummary(){
+ const total=sum();
+ const hole=document.querySelector('.be22-pie>div b');
+ if(hole)hole.textContent=fmt(total);
+ const pieEl=document.querySelector('.be22-pie');
+ if(pieEl){let from=0;const stops=items.map(x=>{const next=from+Number(draft.categories[x[0]]||0)/Math.max(1,total)*100;const color=x[2]+' '+from.toFixed(3)+'% '+next.toFixed(3)+'%';from=next;return color});pieEl.style.background='conic-gradient('+stops.join(',')+')'}
+ for(const [index,c] of items.entries()){
+  const amount=Number(draft.categories[c[0]]||0),share=Math.round(100*amount/Math.max(1,total));
+  const legend=document.querySelectorAll('.be22-legend>div')[index];
+  if(legend){legend.querySelector('em').textContent=share+'%';legend.querySelector('strong').textContent=fmt(amount)}
+  const row=document.querySelectorAll('.be22-table tbody tr:not(.be22-sum)')[index];
+  if(row){const cells=row.querySelectorAll('td');cells[3].textContent=share+'%';cells[4].querySelector('i').style.width=share+'%';cells[5].textContent=fmt(amount)}
+ }
+ const totalRow=document.querySelector('.be22-table .be22-sum');
+ if(totalRow){const cells=totalRow.querySelectorAll('td');cells[2].textContent=fmt(total);cells[3].textContent=Math.round(total/Math.max(1,draft.limit)*100)+'% of target';cells[4].querySelector('i').style.width=Math.min(100,total/Math.max(1,draft.limit)*100)+'%';cells[5].textContent=fmt(total)}
+}
+
 function change(e){prepare();const el=e.target;
-if(el.matches?.('[data-be22-cat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){syncInputs();draft.categories[el.dataset.be22Cat]=value;notice='Category allocation updated. Save to apply changes throughout Finance OS.';ctx.render()}return true}
-if(el.matches?.('[data-be22-rollover]')){syncInputs();draft.rollover[el.dataset.be22Rollover]=el.checked;ctx.render();return true}
-if(el.matches?.('[data-be22-rule]')){syncInputs();draft.rules[el.dataset.be22Rule]=el.checked;ctx.render();return true}
-if(el.matches?.('[data-be22-threshold]')){syncInputs();draft.rules.alertThreshold=Number(el.value);ctx.render();return true}
+if(el.matches?.('[data-be22-cat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){syncInputs();draft.categories[el.dataset.be22Cat]=value;notice='Category allocation updated. Save to apply changes throughout Finance OS.';refreshDraftSummary()}return true}
+if(el.matches?.('[data-be22-rollover]')){syncInputs();draft.rollover[el.dataset.be22Rollover]=el.checked;return true}
+if(el.matches?.('[data-be22-rule]')){syncInputs();draft.rules[el.dataset.be22Rule]=el.checked;return true}
+if(el.matches?.('[data-be22-threshold]')){syncInputs();draft.rules.alertThreshold=Number(el.value);return true}
 return false}
 function click(e){const el=e.target.closest?.('[data-be22]');if(!el)return false;
 e.preventDefault();prepare();syncInputs();
