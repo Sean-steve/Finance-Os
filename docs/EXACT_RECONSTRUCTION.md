@@ -33,7 +33,7 @@
 | 19 — Merchant & Lifestyle Analysis | screen-19.webp | `rebuild.html#screen/19` | **Coded DOM; pixel-match approval pending** |
 | 20 — Spending Leak Detector | screen-20.webp | `rebuild.html#screen/20` | **Coded DOM; pixel-match approval pending** |
 | 21 — Create / Edit Budget (reference label) | screen-21.webp | `rebuild.html#screen/21` | **Coded DOM; pixel-match approval pending** |
-| 22 — Create / Edit Budget (provisional) | **Missing approved source** | `rebuild.html#screen/22` | **Coded DOM; pixel-match approval pending / provisional** |
+| 22 — Budget Studio / Create & Edit Budget | **New design derived from approved Screen 21; no separate source** | `rebuild.html#screen/22` | **Distinct native DOM, live allocation validation, shared save/discard; visual approval pending** |
 | 23 — Daily & Weekly Spending Allowance | screen-23.webp | `rebuild.html#screen/23` | **Coded DOM; pixel-match approval pending** |
 | 24 — Spending Guardrails & Purchase Approval Check | screen-24.webp | `rebuild.html#screen/24` | **Coded DOM; pixel-match approval pending** |
 | 25 — Subscriptions & Recurring Expenses | screen-25.webp | `rebuild.html#screen/25` | **Coded DOM; pixel-match approval pending** |
@@ -199,3 +199,14 @@ npm install --no-save playwright@1.56.1
 npx playwright install chromium
 node tests/rebuild-qa.cjs
 ```
+
+## Visual fidelity correction pass 1 (30 October 2026)
+
+- **Screen 22 created as a separate full-featured native UI**, not duplicated from Screen 21: ten editable budget categories, live donut, category share, rollover toggles, alert preferences, saved templates, balance allocation, validation and explicit save/discard into shared `spendV2`. Its visual language is derived from the approved source for Screen 21; there is no separate Screen 22 screenshot to compare against.
+- **Screen 08 Account Details** refactored to use one account hero, one tab bar, source-matched four panel top row, recent transactions and account alerts without duplicate global KPI/hero.
+- **Screen 11 Transaction Details** refactored with transaction hero, identity card, six fact cells, overview/receipt/actions panels and notes. Original edit/categorization handlers remain in place.
+- **Screen 21 Budget Editor** preserves the source-aligned layout, avoiding an experimental reflow that increased measured differences. It adds a contextual link to the separate Screen 22 Studio.
+- **Screen 40 Affordability Simulator** restores the approved three-column layout (simulator/results/purchase summary), including the original decorative vehicle photograph cropped from the supplied source image; charts and forms remain real DOM.
+- **Screens 29 and 33** received forecast-layout and chart-line corrections while preserving the original workflows. Screen 40 underwent a second source-led three-column layout calibration after the initial experiment worsened its visual delta.
+- Quantitative comparison uses 384×256 downsampled RGB MAE from a **fresh isolated browser session** for baseline and final coded captures. Clean measured improvements: Screen 08 **36.45→21.05** (−15.40), Screen 11 **33.55→22.98** (−10.57), Screen 21 **22.82→22.79** (−0.03), Screen 29 **28.96→28.03** (−0.93), Screen 33 **29.92→29.85** (−0.07), and Screen 40 **31.63→31.27** (−0.36). Six of six measured screens improved. See `tests/visual-metrics-qa.py` and branch QA artifact.
+- No untouched screen is claimed visually corrected. Pixel-perfect sign-off for all 59 supplied original designs remains pending beyond this measured repair batch.

@@ -52,7 +52,7 @@ const monthDue=()=>state().bills.filter(b=>b.status==='Upcoming'||b.status==='Ov
 const horizon=()=>Math.min(12,Math.max(3,Number(state().scenario.horizon)||6));
 function shell(n,content){
 const [title,description]=titles[n];
-return '<div class="cfpage"><section class="banner"><div><div class="banner-date">Finance　›　'+(n<=29?'Income':n<=31?'Bills & Financial Obligations':'Cash Flow & Financial Planning')+'</div><h1>'+safe(title)+'</h1><p>'+safe(description)+'</p></div><div class="banner-quote">“Every shilling planned<br>builds your future<br>financial confidence.”</div></section><div class="cfinner">'+(v.notice?'<div class="cf-notice" role="status">'+safe(v.notice)+'</div>':'')+content+'<div class="cf-muted" style="padding:12px">Coded reference-led mockup · Figures are illustrative, stored locally, not connected to payment providers. '+bc('Compare approved Screen '+n,'reference')+'</div></div>'+modal()+'</div>';
+return '<div class="cfpage cf-screen-'+n+'"><section class="banner"><div><div class="banner-date">Finance　›　'+(n<=29?'Income':n<=31?'Bills & Financial Obligations':'Cash Flow & Financial Planning')+'</div><h1>'+safe(title)+'</h1><p>'+safe(description)+'</p></div><div class="banner-quote">“Every shilling planned<br>builds your future<br>financial confidence.”</div></section><div class="cfinner">'+(v.notice?'<div class="cf-notice" role="status">'+safe(v.notice)+'</div>':'')+content+'<div class="cf-muted" style="padding:12px">Coded reference-led mockup · Figures are illustrative, stored locally, not connected to payment providers. '+bc('Compare approved Screen '+n,'reference')+'</div></div>'+modal()+'</div>';
 }
 function graph(kind='bars',series=7){
 let svg='<svg class="cf-plot" viewBox="0 0 440 180" role="img" aria-label="Illustrative financial '+safe(kind)+' chart"><defs><linearGradient id="cfgrad" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#2ab788" stop-opacity=".20"/><stop offset="1" stop-color="#2ab788" stop-opacity="0"/></linearGradient></defs>';
@@ -68,6 +68,7 @@ for(let i=0;i<series;i++){
  }
  svg+='<text x="'+(x-9)+'" y="177" font-size="10" fill="#667f87">'+labels[i]+'</text>'
 }
+if(kind==='split'){const projected=data.map(([x,y],i)=>(i?'L':'M')+x+' '+Math.max(18,136-i*8-Math.sin(i*.7)*4)).join(' ');svg+='<path d="'+projected+'" fill="none" stroke="#2b89d9" stroke-width="2.8" stroke-linejoin="round"/>';data.forEach(([x,y],i)=>svg+='<circle cx="'+x+'" cy="'+Math.max(18,136-i*8-Math.sin(i*.7)*4)+'" r="2.6" fill="#2b89d9"/>')}
 if(kind==='line'||kind==='area'){let points=data.map((p,i)=>(i?'L':'M')+p.join(' ')).join(' ');if(kind==='area')svg+='<path d="'+points+' L'+data.at(-1)[0]+' 162 L'+data[0][0]+' 162 Z" fill="url(#cfgrad)"/>';svg+='<path d="'+points+'" fill="none" stroke="#13a776" stroke-width="3"/>'}
 return svg+'</svg>';
 }

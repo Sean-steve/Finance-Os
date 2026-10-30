@@ -122,3 +122,9 @@ These six coded interfaces share browser-local asset, investment, debt and perso
 [Financial Health](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/56) · [AI Financial Advisor (local scripted)](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/57) · [Financial Reports](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/58) · [Integrations Preview](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/59) · [Settings & Privacy](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/60).
 
 Five coded interfaces provide local health scoring, rule-based financial guidance, CSV/JSON report exports, provider preview listings and editable demo privacy/profile settings. **There are no real AI, banking, identity, MFA, billing or security integrations.** The browser-local demo data can be downloaded or deleted. All **60 routes have coded reconstructions**; exact pixel-by-pixel match to the supplied designs still requires a separate final review (Screen 22 source image missing).
+
+## Visual Repair Pass 1 — Original UI reconciliation and native Screen 22
+
+[Create / Edit Budget — Budget Studio](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/22) uses the same Finance OS visual system as approved Screen 21. It is now a **distinct functional editor**, not a duplicate route: edit category allocations, rollover, period, alert rules, preview and balance totals, and save to the shared spending model.
+
+The first measured visual repair batch also reconstructs Account Details (08), Transaction Details (11), Screen 21 budget placement and Screen 40 affordability layout. Every route remains native HTML/CSS; no screenshots are substituted for functioning content. **Full 59-reference pixel certification is not yet claimed.**

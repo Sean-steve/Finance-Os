@@ -30,7 +30,7 @@ function txTable(rows=txRows(),count=50){return '<div class="b-tablewrap"><table
 function acctCards(){return data().accounts.map((a,i)=>({a,i})).filter(({i})=>view.accountList.startsWith('Bank')?i<3:view.accountList.startsWith('Mobile')?i===1:view.accountList.startsWith('Business')?(i===3||i===4):view.accountList.startsWith('Loans')?false:true).map(({a,i})=>'<button type="button" class="b-account-card '+(i===view.account?'selected':'')+'" data-baction="account:'+i+'"><span class="b-round '+tint[i%5]+'">'+['▣','▥','♜','▤','◆','◈'][i%6]+'</span><b>'+safe(a[0])+'</b><small>'+safe(a[2])+'</small><span class="b-large">'+fmt(a[1])+'</span><span class="b-trend">↗ '+(i+2)+'.2% this month</span>'+graphMini()+'</button>').join('')}
 function graphMini(){return '<svg viewBox="0 0 140 30" class="b-mini-plot" aria-hidden="true"><path d="M1 26 L16 23 L29 25 L42 17 L55 18 L68 15 L82 18 L97 7 L110 11 L124 5 L139 3" stroke="#0c9b73" stroke-width="2" fill="none"/></svg>'}
 function shell(n,body,metrics=[]){const [title,subtitle]=titles[n];let hero='<div class="banner"><div><div class="banner-date">Tuesday, 14 October 2026</div><h1>'+safe(title)+'</h1><p>'+safe(subtitle)+'</p></div><div class="banner-quote">“'+(n===15?'Accurate books today<br>smarter decisions tomorrow.':n===12?'Accurate records today<br>better decisions tomorrow.':'A plan today<br>prevents financial stress tomorrow.')+'”</div></div>';
-return '<div class="bpage">'+hero+'<div class="btop">'+stats(metrics)+(view.notice?'<div class="b-note" role="status">'+safe(view.notice)+'</div>':'')+body+'<div class="b-muted" style="margin:13px 0">Approved design: <button class="b-btn" data-baction="reference">Compare screenshot '+String(n).padStart(2,'0')+' ↗</button> · Local illustrative records, not bank-connected. No real funds move.</div></div>'+modal()+'</div>'}
+return '<div class="bpage bscreen-'+n+'">'+hero+'<div class="btop">'+stats(metrics)+(view.notice?'<div class="b-note" role="status">'+safe(view.notice)+'</div>':'')+body+'<div class="b-muted" style="margin:13px 0">Approved design: <button class="b-btn" data-baction="reference">Compare screenshot '+String(n).padStart(2,'0')+' ↗</button> · Local illustrative records, not bank-connected. No real funds move.</div></div>'+modal()+'</div>'}
 const calendarEvents=[
  {d:1,title:'House Rent',amount:80000,type:'bill',icon:'⌂'},
  {d:3,title:'Car Service',amount:8000,type:'action',icon:'▣'},
@@ -70,11 +70,35 @@ const body= '<div class="b-screen-toolbar">'+tabs(['All Accounts ('+data().accou
 '<div class="b-bottom-cols">'+card('Recent Account Activity',txTable(txRows(),5))+card('Account Insights',row('♛','Your total balance is up 5.2%','Compared to last month','','View all','')+row('▥','M-Pesa balance grew 8.2%','Your most active account','','View details','blue')+row('◆','You could consolidate your finances','Review your account structure','','Explore','orange'))+'</div>';
 return shell(7,body,[['▣',fmt(balance),'Total Balance','Across '+data().accounts.length+' accounts'],['◈',fmt(data().accounts[0][1]),'Cash & Current','On track'],['◆',fmt(280000),'Savings','Growing'],['▤',fmt(254800),'Cash & Mobile','Available']])}
 function accountDetail(){
-const a=data().accounts[view.account]||data().accounts[0];
-const related=data().transactions.map((t,i)=>({t,i})).filter(x=>x.t[3].toLowerCase().includes(a[0].split(' ')[0].toLowerCase())||(view.account===0&&x.t[3]==='KCB'));
-return shell(8,'<div class="b-account-banner"><div><small>Accounts　›　'+safe(a[0])+'</small><h2>▣ '+safe(a[0])+'　⌄</h2><small>'+safe(a[2])+' · '+(view.account<3?'Bank':'Manual')+' Account</small></div><div class="b-actions">'+btn('Transfer','transferFromDetail','primary')+btn('Pay Bill','billFromDetail')+btn('Edit account','editAccount')+'</div></div>'+
-tabs(['Overview','Transactions','Statements','Spending Analysis','Recurring Payments','Linked Goals','Settings'],view.accountTab,'accountDetail')+
-(view.accountTab==='Transactions'?card('Recent Account Transactions',txTable(related)):view.accountTab==='Settings'?card('Account Settings',row('⚙','Account label',a[0],'','Edit')+row('◆','Account scope',view.account>2?'Business':'Personal','')+row('▣','Balance verification','Manual demo · not connected','')+btn('Edit account','editAccount')):view.accountTab==='Statements'?card('Statements & Imports',link('Import statement',13,'primary')+'<p class="b-muted">No bank feed is connected; locally imported CSV can be reviewed.</p>'): '<div class="b-cols"><div class="b-left"><div class="b-cols even">'+card('Current Balance','<div style="font-size:24px;font-weight:800">'+fmt(a[1])+'</div><div class="b-good">↑ 5.2% vs last month</div>'+row('▤','Account Type','Current / Savings',a[2]))+card('Balance Trend',graph())+'</div><div class="b-cols even">'+card('Cash Flow This Month',bars())+card('Quick Actions','<div class="b-actions">'+btn('Transfer Money','transferFromDetail','primary')+btn('Record transaction','newTx')+btn('Import statement','importFromDetail')+btn('View all transactions','accountTransactions')+'</div>')+'</div>'+card('Recent Transactions',txTable(related,8))+'</div><aside class="b-right">'+card('Quick Actions',btn('Transfer Money','transferFromDetail','primary')+' '+btn('Pay / Bill','billFromDetail')+' '+btn('Download Statement','importFromDetail'))+card('Account Insights & Alerts',row('✦','Spending is in control','No unusual activity recorded','','','')+row('◆','Low balance alert','Set alert thresholds','','','blue'))+card('Linked & Recurring Items',row('⌂','Rent and utilities','Scheduled payments','','','orange'))+'</aside></div>'),[['▣',fmt(a[1]),'Current Balance','Manual balance'],['▥',fmt(420000),'Inflow this month','Illustrative'],['▤',fmt(200000),'Outflow this month','Illustrative'],['◆','5','Quick actions','Manage account']])}
+const a=data().accounts[view.account]||data().accounts[0],key=a[0].split(' ')[0].toLowerCase();
+const related=data().transactions.map((t,i)=>({t,i})).filter(x=>String(x.t[3]).toLowerCase().includes(key)||(view.account===0&&x.t[3]==='KCB'));
+const isPrimary=view.account===0;
+const overview='<div class="b8-panels">'+
+card('Current Balance','<div class="b8-balance">'+fmt(a[1])+'</div><p class="b-good">↑ 4.2%　+ KES 25,100 this month</p>'+
+[['Available for spending',fmt(a[1])],['Account type',view.account<3?'Current Account':'Manual Account'],['Account number',a[2]],['Bank',isPrimary?'KCB Bank Kenya':a[0]],['Last updated','14 Oct 2026, 08:24 AM']].map(p=>'<div class="b-list-pair"><span>'+safe(p[0])+'</span><strong>'+safe(p[1])+'</strong></div>').join(''))+
+card('Balance Trend',graph()+'<div class="b8-legend">Illustrative account trend · Last 30 days</div>')+
+card('Cash Flow <small>(This Month)</small>','<div class="b8-flow-values"><div><strong>'+fmt(420000)+'</strong><small>Total Inflow</small><b>↑ 12%</b></div><div><strong>'+fmt(394900)+'</strong><small>Total Outflow</small><b class="red">↓ 6%</b></div></div>'+bars()+'<div class="b8-flow-net">Net Flow　<b>'+fmt(25100)+'</b></div>')+
+card('Quick Actions',[
+['⌁','Transfer Money','transferFromDetail'],['▤','Pay Bill','billFromDetail'],['▣','Request Statement','importFromDetail'],['✎','Edit Account Details','editAccount'],['◷','Set Alerts','editAccount']
+].map(a=>'<button class="b8-action" data-baction="'+a[2]+'"><span>'+a[0]+'</span><b>'+a[1]+'</b><em>›</em></button>').join(''))+'</div>';
+const transactions=card('Recent Transactions','<div class="b8-tran-toolbar">'+btn('Search & Filter','accountTransactions')+' '+btn('Export CSV','exportCsv')+'</div>'+txTable(related,8));
+const bottom='<div class="b8-bottom">'+card('Spending by Category <small>(This Month)</small>',dough())+
+card('Monthly Comparison',bars())+card('Account Insights',
+row('⌂','Your balance is up 4.2%','Illustrative trend','','','')+
+row('↑','Groceries spending is 18% lower','Compared to last month','','','blue')+
+row('♜','Review your monthly savings','Consider setting up a savings goal','','','orange'))+'</div>';
+const side=card('Account Limits & Alerts',[
+['Daily spending limit','KES 15,000 / 50,000',30],
+['Monthly budget (All categories)','57% consumed',57]
+].map(x=>'<div class="b8-limit"><small>'+x[0]+'</small><b>'+x[1]+'</b><div class="b-progress" style="--c:#20b986"><i style="--p:'+x[2]+'%"></i></div></div>').join('')+
+row('◈','Low balance alert','Notify me when balance below KES 20,000','','','blue')+
+row('◆','Large transaction alert','Notify above KES 50,000','','','orange'));
+return '<div class="bpage bscreen-8"><div class="b8-hero"><div><div class="b8-breadcrumb">Accounts　›　'+safe(a[0])+'</div><div class="b8-ident"><span class="b8-brand">'+(isPrimary?'KCB':'▣')+'</span><div><h1>'+safe(a[0])+' <span class="b8-verified">✓</span></h1><p>'+(view.account<3?'Bank Account':'Manual Account')+'　·　'+safe(a[2])+'</p></div></div></div><div class="b-actions">'+btn('⌁ Transfer','transferFromDetail','primary')+btn('▤ Pay Bill','billFromDetail')+btn('⋮','editAccount')+'</div></div>'+
+'<div class="b8-top-tabs">'+tabs(['Overview','Transactions','Statements','Spending Analysis','Recurring Payments','Linked Goals','Settings'],view.accountTab,'accountDetail')+'</div>'+
+'<div class="b8-content">'+(view.accountTab==='Transactions'?transactions:view.accountTab==='Settings'?card('Account Settings',row('⚙','Account label',a[0],'','Edit')+row('◆','Account scope',view.account>2?'Business':'Personal','')+btn('Edit account','editAccount')):view.accountTab==='Statements'?card('Statements & Imports',link('Import statement',13,'primary')+'<p class="b-muted">Bank API not connected; import CSV locally.</p>'):
+overview+'<div class="b8-secondary">'+transactions+side+'</div>'+bottom)+
+'<div class="b-muted" style="padding:12px">Local demonstration data; no account is verified or connected. '+btn('Approved design ↗','reference')+'</div></div>'+modal()+'</div>';}
+
 function connect(){
 const types=[['▣','Bank Account','Current or savings accounts'],['▥','Mobile Money','M-Pesa, Airtel Money'],['▤','Credit / Debit Card','Visa, Mastercard'],['♜','Investment Account','Stocks, funds, SACCOs'],['♙','Loan / Credit Account','Borrowing balances'],['◆','Savings Account','Goal-linked savings'],['▣','Cash Account','Cash or petty cash'],['◉','Other Financial Account','Custom tracking']];
 const providers=['M-Pesa','KCB','Equity Bank','Co-op Bank','Absa Bank','NCBA','Standard Chartered','I&M Bank','Stanbic','DTB','Airtel Money','Other'];
@@ -86,19 +110,34 @@ return shell(10,'<div class="b-screen-toolbar">'+tabs(['All Transactions','Incom
 
 
 function transactionDetails(){
-let t=data().transactions[view.tx]||data().transactions[0],amount=Number(t[4]),expense=amount<0;
-return shell(11,'<div class="b-account-banner"><div class="b-detail-title"><span class="b-round">▣</span><div><small>Transactions › Transaction Details</small><h2>'+safe(t[1])+'</h2><small>'+safe(t[3])+' · '+safe(t[2])+'</small></div></div><div class="b-actions"><strong style="font-size:22px">'+(expense?'−':'+')+fmt(amount)+'</strong>'+tag('Completed')+'</div></div>'+
-'<div class="b-cols"><div class="b-left">'+tabs(['Overview','Receipt & Evidence','Category & Rules','Linked Items','History','Related Transactions'],view.txDetailTab,'txDetails')+
-'<div class="b-cols even">'+card('Transaction Information',[
-['Transaction',t[1]],['Merchant',t[1]],['Date',t[0]],['Category',t[2]],['Account',t[3]],['Type',expense?'Expense':'Income'],['Amount',(expense?'−':'+')+fmt(amount)],['Status','Completed'],['Reference','DEMO-TXN-'+String(view.tx+1).padStart(5,'0')]
-].map(x=>'<div class="b-list-pair"><span>'+safe(x[0])+'</span><strong>'+safe(x[1])+'</strong></div>').join(''))+
-card('Spending Context',bars()+'<div class="b-twostats"><div class="b-account-mini"><small>Category this month</small><b>'+fmt(Math.abs(amount)*12)+'</b></div><div class="b-account-mini"><small>Related transactions</small><b>'+data().transactions.filter(x=>x[2]===t[2]).length+'</b></div></div>')+'</div>'+
-card('Receipt & Evidence','<div class="b-note warning">Receipts and source documents will require authenticated encrypted storage. Local prototype only.</div>')+
-card('Related Transactions',txTable(data().transactions.map((v,i)=>({t:v,i})).filter(x=>x.t[2]===t[2]),7))+'</div>'+
-'<aside class="b-right">'+card('Actions','<div class="b-actions">'+btn('Edit transaction','editTx','primary')+btn('Change category','editTx')+btn('Mark reviewed','markReviewed')+link('View ledger',10)+'</div>')+
-card('Category',select('detailCategory',['Food & Groceries','Transport','Communication','Utilities','Subscriptions','Business Income','Other'],t[2],'Category')+btn('Save category','updateCategory','primary'))+
-card('Notes','<textarea class="b-input" rows="4" id="detailNotes" aria-label="Transaction notes" style="width:100%">'+safe(state().notes?.[view.tx]||'')+'</textarea>'+btn('Save Notes','saveNotes','primary'))+
-card('Audit & Metadata','<p class="b-muted">Created in the local demonstration ledger. No external banking authority verified this record.</p>')+'</aside></div>',[['▣',t[1],'Merchant / Description','Local ledger'],['▤',(expense?'−':'+')+fmt(amount),'Transaction amount','Recorded'],['◆',t[2],'Category','Editable'],['◈','Completed','Status','Demo record']])}
+const t=data().transactions[view.tx]||data().transactions[0],amount=Number(t[4]),expense=amount<0,neg=expense?'−':'+',related=data().transactions.map((x,i)=>({t:x,i})).filter(x=>x.t[2]===t[2]);
+const info=[
+['Merchant',t[1]],['Description',t[1]+' · Demo transaction'],['Amount',neg+fmt(amount)],
+['Date & Time',t[0]],['Account',t[3]],['Category',t[2]],['Subcategory',t[2]==='Communication'?'Airtime':'General'],
+['Transaction Type',expense?'Expense':'Income'],['Status','Completed (demo)'],['Reference','DEMO-MPESA-8F3T2K9'],
+['Transaction ID','DEMO-TXN-'+String(view.tx+1).padStart(5,'0')],['Channel','Local demo entry'],
+['Location','Nairobi, Kenya'],['Balance After','Requires bank verification']
+];
+const actions=[['✎','Edit Transaction','editTx'],['♧','Split Transaction','markReviewed'],['◇','Change Category','editTx'],['⇄','Mark as Transfer','markReviewed'],['◎','Add to Budget','markReviewed'],['▦','Create Recurring','markReviewed'],['▤','Attach Receipt','markReviewed'],['⚑','Report an Issue','markReviewed']];
+const body='<div class="b11-hero"><div class="b11-breadcrumb">Transactions　›　Transaction Details</div><h1>Transaction Details</h1><p>View all information, manage and categorize this transaction.</p><div class="b11-quote">“Small transactions today,<br>big clarity tomorrow.”</div></div>'+
+'<div class="b11-grid"><div class="b11-main"><div class="b11-identity"><div class="b11-brand">'+(t[3].toLowerCase().includes('mpesa')?'M':'▣')+'</div><div class="b11-identity-name"><h2>'+safe(t[1])+' <span class="b11-verified">✓</span></h2><p>'+safe(t[3])+'　·　'+safe(t[2])+'</p>'+tag(t[2])+'</div><div class="b11-value"><strong class="'+(expense?'negative':'')+'">'+neg+fmt(amount)+'</strong><small>'+safe(t[0])+'</small>'+tag('Completed')+'</div></div>'+
+'<div class="b11-facts">'+[
+['▣','Account',t[3]],['↘','Transaction Type',expense?'Expense':'Income'],['◇','Category',t[2]],
+['▤','Reference','DEMO-MPESA'],['#','Transaction ID','DEMO-TXN'],['⌂','Balance After','Unverified']
+].map(x=>'<div><span>'+x[0]+'</span><small>'+safe(x[1])+'</small><b>'+safe(x[2])+'</b></div>').join('')+'</div>'+
+'<div class="b11-tabs">'+tabs(['Overview','Receipt & Evidence','Category & Rules','Linked Items','Notes','History','Related Transactions'],view.txDetailTab,'txDetails')+'</div>'+
+'<div class="b11-body">'+card('Transaction Information',info.map(x=>'<div class="b-list-pair"><span>'+safe(x[0])+'</span><strong>'+safe(x[1])+'</strong></div>').join(''))+
+card('Spending Context',bars()+'<div class="b11-spend-stats"><div><small>Total category spend</small><b>'+fmt(Math.abs(amount)*12)+'</b><small>Illustrative</small></div><div><small>Related transactions</small><b>'+related.length+'</b><small>Local records</small></div><div><small>Monthly average</small><b>'+fmt(Math.abs(amount)*8)+'</b><small>Illustrative</small></div></div>')+
+card('Receipt & Evidence','<div class="b11-receipt"><span>▣</span><div><b>No receipt attached</b><p>Secure document upload is unavailable in this browser demo.</p></div>'+btn('Attach receipt','markReviewed')+'</div>')+
+card('Related Transactions',txTable(related,5))+'</div></div>'+
+'<aside class="b11-side">'+card('Actions','<div class="b11-action-grid">'+actions.map(x=>'<button type="button" data-baction="'+x[2]+'"><span>'+x[0]+'</span>'+x[1]+'</button>').join('')+'</div>')+
+card('Category',tag(t[2])+' '+btn('Change','editTx')+'<div class="b11-category-sub"><label>Subcategory</label>'+select('detailCategory',['Food & Groceries','Transport','Communication','Utilities','Subscriptions','Business Income','Other'],t[2],'Category')+btn('Save Category','updateCategory','primary')+'</div>')+
+card('Notes','<textarea class="b-input" id="detailNotes" rows="4" aria-label="Transaction notes" style="width:100%;resize:vertical">'+safe(state().notes?.[view.tx]||'')+'</textarea>'+btn('Save Notes','saveNotes','primary'))+
+card('Audit & Metadata','<div class="b-list-pair"><span>Created</span><strong>'+safe(t[0])+'</strong></div><div class="b-list-pair"><span>Source</span><strong>Local demonstration</strong></div><div class="b-list-pair"><span>Imported</span><strong>Not verified</strong></div><div class="b-list-pair"><span>External ID</span><strong>None</strong></div>')+'</aside></div>'+
+'<div class="b-muted" style="padding:12px">Illustrative transaction, not a bank statement. '+btn('Compare approved source ↗','reference')+'</div>';
+return '<div class="bpage bscreen-11">'+body+modal()+'</div>';
+}
+
 function transactionEditor(){
 let t=view.txMode==='edit'?(data().transactions[view.tx]||data().transactions[0]):null;
 let draft=view.draft||{};

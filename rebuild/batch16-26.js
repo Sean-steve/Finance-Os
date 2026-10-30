@@ -166,7 +166,8 @@ panel('Budget Rules & Alerts','<div class="sp-tag-list">'+[
 ['Pause alerts for this budget','Optional','paused']].map(([name,desc,key])=>'<div><span class="sp-icon">⚙</span><span style="flex:1"><b>'+esc(name)+'</b><small style="display:block">'+esc(desc)+'</small></span>'+(key==='alertThreshold'?'<select class="sp-select" data-spchange="alertThreshold" aria-label="Budget alert threshold">'+[60,70,80,90,100].map(v=>'<option '+(rules.alertThreshold===v?'selected':'')+' value="'+v+'">'+v+'%</option>').join('')+'</select>':'<input class="sp-switch" type="checkbox" data-sprule="'+key+'" aria-label="'+esc(name)+'" '+(rules[key]?'checked':'')+'>')+'</div>').join('')+'</div>')+
 panel('Budget Goals',r('◎','Stay within budget','Keep spending below '+fmt(target),fmt(Math.max(0,target-spent))+' left')+bar(spent,target));
 const desc=n===22?note('Screen 22 has no supplied approved reference image. This editable reconstruction is provisional and awaits visual sign-off.',true):'';
-return shell(n,desc+stepper+'<div class="sp-budget-form"><div class="sp-left">'+budgetDetails+'</div><aside class="sp-right">'+quick+right+'</aside></div>');
+const budgetActions=n===21?'<div class="sp-buttons" style="justify-content:flex-end;margin:8px 0">'+to('Open Budget Studio — Screen 22',22,'green')+'</div>':'';
+return shell(n,desc+stepper+'<div class="sp-budget-form"><div class="sp-left">'+budgetDetails+'</div><aside class="sp-right">'+quick+right+'</aside></div>'+budgetActions);
 }
 function screen23(){
 const allowance=config().allowance;const usedDay=3000,usedWeek=allowance.weekly*.64;
