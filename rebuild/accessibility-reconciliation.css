@@ -36,3 +36,24 @@
 #app .side-link.selected > span,
 #app .banner,#app .banner p,
 #app .banner h1,#app .banner-date { color:#fff; }
+
+/* Second-pass measured fixes from full-reconciliation axe WCAG findings. */
+#app :is(.chart-axis,.chart-axis > span,.safe-legend small,.safe-legend span,
+  button[data-baction^="account:"] small,.b-trend,.b-good,
+  .sp-mini,.sp-red,.sp-budget-line > span,
+  .cf-status,.cf-table td,.cf-table td > em,
+  .cf-row .cf-status,.cf-row .bad,.cf-panel .bad,
+  .cap-panel .warn,
+  .we-positive,.we-negative,.we-asset-header small,
+  .gv-mini > div,.gv-mini > div small,.gv-mini > div b) {
+  color:#3f565f !important;
+}
+#app :is(.b-good,.we-positive,.cf-status,.cf-row .cf-status) {
+  color:#006943 !important;
+}
+#app :is(.we-negative,.sp-red,.cf-panel .bad,.cf-row .bad) {
+  color:#9f2d48 !important;
+}
+#app :is(.cf-status.warn,.cf-row .cf-status.warn,.cap-panel .warn) {
+  color:#795015 !important;
+}
