@@ -81,7 +81,7 @@ function render(){
  document.title=names[current]+' · Finance OS coded reconstruction';
  const app=E('app');
  const body=current===1?auth():header()+'<div class="app-shell">'+side()+'<main id="main" tabindex="-1" class="main">'+(current>=56&&current<=60?window.FinanceGovernance.render(current):current>=50&&current<=55?window.FinanceWealth.render(current):current>=43&&current<=49?window.FinanceProtection.render(current):current>=35&&current<=42?window.FinanceCapital.render(current):current>=27&&current<=34?window.FinanceIncomeFlow.render(current):current===22?window.FinanceBudget22.render():current>=16&&current<=26?window.FinanceSpend.render(current):current>=6&&current<=15?window.FinanceBatch.render(current):current===2?onboarding():current===3?profile():current===5?safeToSpend():command())+'</main></div>';
- app.innerHTML=body+toolbar()+(compare?'<div class="reference-shade"><div class="reference-dialog"><header><b>Approved screenshot · Screen '+String(current).padStart(2,'0')+'</b><button data-action="compare">Close ✕</button></header><img alt="Approved design reference for comparison" src="assets/screen-'+String(current).padStart(2,'0')+'.webp"></div></div>':'')+modal();
+ app.innerHTML=body+toolbar()+(compare?'<div class="reference-shade"><div class="reference-dialog"><header><b>Approved screenshot · Screen '+String(current).padStart(2,'0')+'</b><button data-action="compare">Close ✕</button></header><img alt="Approved design reference for comparison" src="assets/screen-'+String(current===22?21:current).padStart(2,'0')+'.webp"></div></div>':'')+modal();
 }
 document.addEventListener('click',e=>{
  if(window.FinanceGovernance?.actClick(e))return;
