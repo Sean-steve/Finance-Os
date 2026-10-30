@@ -92,3 +92,9 @@ This is a **demo**, not a secure online banking application.
 [Open Screen 16 — Spending Intelligence](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/16) · [Screen 21 — Budget Editor](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/21) · [Screen 25 — Subscriptions](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/25) · [Screen 26 — Recovery](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/26).
 
 Eleven distinct screen layouts are coded with local demo workflows, charts, filters and form controls. Pixel-by-pixel visual approval is still outstanding. The original Screen 22 screenshot is missing, so that editor is provisional. Financial-provider connections, actual payment restrictions and subscription cancellations are **not** active. [Track exact reconstruction status](docs/EXACT_RECONSTRUCTION.md).
+
+## Screens 27–34 — Coded Income & Cash Flow
+
+[Income Dashboard](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/27) · [Income Sources](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/28) · [Bills](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/30) · [Bill Details](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/31) · [Cash Flow Forecast](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/33) · [Shortfall Recovery](https://sean-steve.github.io/Finance-Os/rebuild.html#screen/34)
+
+Eight real coded views with local-demo income and bill edits, simulated payment records, scenario forecasting and recovery actions. Visual screenshot acceptance pending. No live banking or mobile money payment integrations.
