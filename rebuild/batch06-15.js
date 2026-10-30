@@ -87,8 +87,9 @@ return shell(10,'<div class="b-screen-toolbar">'+tabs(['All Transactions','Incom
 
 function transactionDetails(){
 let t=data().transactions[view.tx]||data().transactions[0],amount=Number(t[4]),expense=amount<0;
+const meta='<div class="b11-meta">'+[['Account',t[3]],['Transaction Type',expense?'Expense':'Income'],['Category',t[2]],['Reference','DEMO-'+String(view.tx+1).padStart(5,'0')],['Transaction ID','txn-'+String(view.tx+1).padStart(7,'0')],['Balance After','Demo balance']].map(([label,value],i)=>'<div><span class="b11-meta-icon">'+['▣','↓','▤','▧','#','▣'][i]+'</span><span><small>'+safe(label)+'</small><b>'+safe(value)+'</b></span></div>').join('')+'</div>';
 return shell(11,'<div class="b-account-banner"><div class="b-detail-title"><span class="b-round">▣</span><div><small>Transactions › Transaction Details</small><h2>'+safe(t[1])+'</h2><small>'+safe(t[3])+' · '+safe(t[2])+'</small></div></div><div class="b-actions"><strong style="font-size:22px">'+(expense?'−':'+')+fmt(amount)+'</strong>'+tag('Completed')+'</div></div>'+
-'<div class="b-cols"><div class="b-left">'+tabs(['Overview','Receipt & Evidence','Category & Rules','Linked Items','History','Related Transactions'],view.txDetailTab,'txDetails')+
+meta+'<div class="b-cols"><div class="b-left">'+tabs(['Overview','Receipt & Evidence','Category & Rules','Linked Items','History','Related Transactions'],view.txDetailTab,'txDetails')+
 '<div class="b-cols even">'+card('Transaction Information',[
 ['Transaction',t[1]],['Merchant',t[1]],['Date',t[0]],['Category',t[2]],['Account',t[3]],['Type',expense?'Expense':'Income'],['Amount',(expense?'−':'+')+fmt(amount)],['Status','Completed'],['Reference','DEMO-TXN-'+String(view.tx+1).padStart(5,'0')]
 ].map(x=>'<div class="b-list-pair"><span>'+safe(x[0])+'</span><strong>'+safe(x[1])+'</strong></div>').join(''))+
