@@ -85,6 +85,13 @@ assert.equal(await page.locator('.b11-facts>div').count(),6);
 assert.equal(await page.locator('.b11-action-grid>button').count(),8);
 await page.screenshot({path:path.join(out,'screen-11-desktop.png'),fullPage:true});
 });
+await check('Screen 40 matches simulator/results/summary three-column hierarchy',async()=>{
+await go(40);
+assert.ok(await page.locator('#cap-purchase').count()>0);
+const boxes=await page.evaluate(()=>[...document.querySelectorAll('.cap-page:has(#cap-purchase) .cap-grid > :nth-child(-n+3)')].map(x=>({x:Math.round(x.getBoundingClientRect().x),y:Math.round(x.getBoundingClientRect().y)})));
+assert.equal(boxes.length,3);assert.equal(boxes[0].y,boxes[1].y);assert.equal(boxes[1].y,boxes[2].y);assert.ok(boxes[0].x<boxes[1].x&&boxes[1].x<boxes[2].x);
+await page.screenshot({path:path.join(out,'screen-40-desktop.png'),fullPage:true});
+});
 await check('Existing transaction edit action still navigates to Screen 12',async()=>{
 await go(11);await page.locator('[data-baction="editTx"]').first().click();
 assert.equal(new URL(page.url()).hash,'#screen/12');
