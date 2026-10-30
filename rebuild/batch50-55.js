@@ -84,5 +84,67 @@ function shell(n,body){return '<div class="we-page"><section class="banner"><div
 '<p class="we-note warn">All valuations, securities and prices are illustrative. No verified banking or brokerage feed. Personal financial records are stored in this browser only. '+button('Compare Approved Screen '+n,'reference')+'</p></div>'+dialog()+'</div>'}
 function incomeNotice(){return note('Business bank accounts and saved-goal allocations are excluded from personal cash to avoid double counting. Debt balances are read from the shared debt workspace. Figures are not audited.')}
 
-/* SCREENS_50_55 */
+
+function assetBreakdown(){return assetBuckets().map((a,i)=>item(['⌂','▣','◈','▰','▤','◆'][i]||'◎',a.name,'Recorded demo asset category',money(a.value),'category:'+a.name,['','blue','purple','','blue',''][i]||'')).join('')}
+function liabilityBreakdown(){return debtData().map((d,i)=>item(['⌂','▰','♙','▤','◈','▥'][i]||'◎',d.name,d.lender,money(d.balance),'viewDebt:'+d.id,i===0?'red':i%2?'blue':'')).join('')}
+function assetChart(){const b=assetBuckets();let out='<svg viewBox="0 0 430 170" class="we-chart" role="img" aria-label="Asset and liability category comparison">';
+for(let yy of [28,66,104,142])out+='<line x1="20" y1="'+yy+'" x2="423" y2="'+yy+'" stroke="#e7efeb"/>';
+for(let i=0;i<Math.min(6,b.length);i++){const x=38+i*65,height=b[i].value/Math.max(1,assetsTotal())*150,liab=i<debtData().length?debtData()[i].balance/Math.max(1,liabilities())*80:0;
+out+='<rect x="'+x+'" y="'+(145-height)+'" height="'+height+'" width="13" fill="#11b98d"/><rect x="'+(x+15)+'" y="'+(145-liab)+'" height="'+liab+'" width="13" fill="#ee7b90"/><text x="'+(x-4)+'" y="163" font-size="9" fill="#75868f">'+['Real','Invest','Business','Vehicle','Cash','Other'][i]+'</text>'}
+return out+'</svg>'}
+function screen50(){const assets=assetsTotal(),debts=liabilities(),worth=networth(),target=50000000;
+return shell(50,kpis([
+['▥','Net Worth',money(worth),'Based on demo asset values'],['▤','Total Assets',money(assets),'Includes investments and personal cash'],['▣','Total Liabilities',money(debts),'Shared debt workspace'],['◉','Net Worth Goal (2030)',money(target),pct(worth,target)+'% of illustrative goal']
+])+tabs(50,['Overview','Assets','Liabilities','Net Worth Trend','Allocation','Goals & Projections','Accounts','Insights','Settings'])+
+'<div class="we-grid">'+panel('Net Worth Trend',plot('area',12),button('Last 24 Months ▾','time:Last 24 Months'))+
+panel('Asset Allocation',donut(assetBuckets(),assets),goto('View Details',51))+
+'<section class="we-panel we-col2"><div class="we-title"><h2>Asset Breakdown</h2>'+goto('View All',51)+'</div>'+assetBreakdown()+'</section>'+
+panel('Liability Breakdown',liabilityBreakdown(),goto('View Debt Centre',43))+
+panel('Net Worth by Category',assetChart(),goto('View All',51))+
+panel('Financial Position Summary',mini([[money(assets),'Assets'],[money(debts),'Liabilities'],[money(worth),'Net worth'],[pct(worth,assets)+'%','Equity share']])+incomeNotice())+
+panel('Key Wealth Metrics',mini([[money(worth),'Net Worth'],[(assets/Math.max(1,debts)).toFixed(1),'Asset/Debt Ratio'],[money(personalCash()),'Personal Liquidity'],[money(investTotal()),'Investments']]))+
+panel('AI Insights & Recommendations',item('✓','Build a monthly wealth review','Reconcile actual valuations before decisions','', 'insight')+item('◉','Avoid goal double counting','Saved-goal buckets are earmarks, not new assets','', 'insight')+
+item('↑','Diversification review','Spread exposure across asset classes','', 'insight')+goto('Wealth Growth & Risk',55))+'</div>')}
+function assetsAndLiabilitiesTable(){const parts=assetBuckets(),debt=debtBuckets();
+return table(['#','Category','Current Value','Change','Account'],parts.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(a.name)+'</td><td>'+money(a.value)+'</td><td class="we-positive">Planning estimate</td><td>'+button('Details','category:'+a.name)+'</td></tr>'))+
+'<h3 style="margin:12px 0 5px;font-size:11px">Liabilities</h3>'+
+table(['Debt','Lender','Outstanding','Interest','Action'],debtData().map(d=>'<tr><td>'+esc(d.name)+'</td><td>'+esc(d.lender)+'</td><td>'+money(d.balance)+'</td><td>'+d.rate+'%</td><td>'+button('Open','viewDebt:'+d.id)+'</td></tr>'))}
+function screen51(){const assets=assetsTotal(),debt=liabilities(),worth=networth();
+return shell(51,kpis([
+['▤','Total Assets',money(assets),'Personal demo holdings'],['▣','Total Liabilities',money(debt),'Shared debt register'],['▥','Net Position',money(worth),'Assets less liabilities'],['⚖','Asset to Liability Ratio',(assets/Math.max(1,debt)).toFixed(1),'Illustrative leverage measure']
+])+tabs(51,['Overview','Assets','Liabilities','Account Connections','Valuation & Equity','Trends & Analysis','Documents','Settings'])+
+'<div class="we-grid">'+panel('Assets Breakdown',donut(assetBuckets(),assets),goto('View Asset Detail',52))+
+panel('Liabilities Breakdown',donut(debtBuckets(),debt),goto('View Liabilities',43))+
+panel('Net Position Trend',plot('area'),button('Last 24 Months ▾','time:Last 24 Months'))+
+'<section class="we-panel we-col2"><div class="we-title"><h2>Top Assets</h2>'+button('+ Add Asset','newAsset','primary')+'</div>'+
+table(['#','Asset','Category','Current Value','Growth','Action'],[...state().assets.map(a=>({...a})),{id:'portfolio',name:'Investment Portfolio',kind:'Investments',value:investTotal(),annualGrowth:12.6}].sort((a,b)=>b.value-a.value).map((a,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(a.name)+'</td><td>'+esc(a.kind)+'</td><td>'+money(a.value)+'</td><td class="'+(a.annualGrowth<0?'we-negative':'we-positive')+'">'+(a.annualGrowth||0)+'%</td><td>'+button('View',a.id==='portfolio'?'portfolio':'asset:'+a.id)+'</td></tr>'))+'</section>'+
+panel('Top Liabilities',table(['#','Debt','Balance','APR','Action'],debtData().map((d,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(d.name)+'</td><td>'+money(d.balance)+'</td><td>'+d.rate+'%</td><td>'+button('View','viewDebt:'+d.id)+'</td></tr>')))+
+panel('Asset vs Liability Comparison',assetChart())+
+panel('Equity Position',table(['Asset Group','Value','Liability','Net Equity'],[['Property',state().assets.filter(x=>x.kind==='Real Estate').reduce((s,x)=>s+x.value,0),debtData().filter(x=>x.kind==='Home Loan').reduce((s,x)=>s+x.balance,0)],['Investments',investTotal(),0],['Vehicles',state().assets.filter(x=>x.kind==='Vehicle').reduce((s,x)=>s+x.value,0),debtData().filter(x=>x.kind==='Car Loan').reduce((s,x)=>s+x.balance,0)]].map(x=>'<tr><td>'+x[0]+'</td><td>'+money(x[1])+'</td><td>'+money(x[2])+'</td><td>'+money(x[1]-x[2])+'</td></tr>')))+
+panel('Quick Actions',[['Add New Asset','newAsset'],['Add New Liability','newLiability'],['Update Asset Value','valuation'],['Review Asset Documents','assetDocs'],['Run Net Worth Analysis','netWorth'],['Download Portfolio Report','exportWealth']].map(x=>item('▤',x[0],'Planning workspace','',x[1])).join(''))+
+panel('AI Insights & Recommendations',note('Recorded values are user estimates. Cross-screen totals update immediately when debt balances or investments change.')+item('✓','Review concentrated holdings','Portfolio allocation can affect risk')+item('◷','Revalue assets periodically','Track when an appraisal was last obtained'))+
+'</div>')}
+function assetList(){let assets=state().assets.filter(x=>ui.assetFilter==='All'||x.kind===ui.assetFilter).filter(x=>x.name.toLowerCase().includes(ui.assetSearch.toLowerCase()));
+return '<div class="we-toolbar"><input placeholder="Search assets…" aria-label="Search asset list" value="'+esc(ui.assetSearch)+'" data-wesearch="asset"></div>'+
+tabs(520,['All','Real Estate','Vehicle','Business','Other'])+
+'<div class="we-asset-list">'+assets.map(a=>'<button type="button" class="we-asset-item '+(selAsset()?.id===a.id?'selected':'')+'" data-we="asset:'+a.id+'"><span class="we-asset-thumb">'+esc(a.icon)+'</span><span class="grow"><b>'+esc(a.name)+'</b><small>'+esc(a.kind)+'</small></span><b>'+money(a.value)+'</b></button>').join('')+'</div>'}
+function assetDetailPanel(){let a=selAsset();if(!a)return note('No asset selected.');
+const initial=Number(a.purchase||0),gain=a.value-initial;
+return '<div class="we-asset-header"><div><strong>'+esc(a.icon)+'　'+esc(a.name)+'</strong><small>'+esc(a.kind)+'　·　'+esc(a.location||'Location not recorded')+'</small></div><div class="we-actions">'+tag(a.type)+tag(a.status,'blue')+button('Actions ▾','assetActions')+'</div></div>'+
+'<section class="we-panel" style="margin-bottom:9px"><div class="we-title"><h2>Asset Financial Overview</h2>'+button('Edit Asset','editAsset')+'</div>'+mini([[money(a.value),'Current Value'],[money(a.purchase),'Purchase Price'],[signed(gain),'Estimated Gain'],[(a.annualGrowth||0)+'%','Annual Change']])+'</section>'+
+tabs(52,['Overview','Valuation','Financials','Documents','Maintenance','Insurance','Rental / Income','History','Notes'])+
+'<div class="we-grid"><div class="we-col2">'+panel('Valuation & Market Analysis',plot('area',8)+
+mini([[money(Math.round(a.value*.95)),'Low Estimate'],[money(a.value),'Estimated'],[money(Math.round(a.value*1.05)),'High Estimate']])+button('Update Valuation','valuation','primary'))+'</div>'+
+panel('Asset Media','<div class="we-property-hero" role="img" aria-label="Illustrative property visual">'+esc(a.icon)+'</div><div class="we-photo-grid">'+Array.from({length:8},(_,i)=>'<span>'+(['⌂','▥','◈','△'][i%4])+'</span>').join('')+'</div>'+note('Illustrative iconography; no original asset photography or file storage.'))+
+panel('Asset Details',rows([['Type',a.type],['Location',a.location],['Size',a.size||'Not applicable'],['Purchase Date',a.date],['Purchase Price',money(a.purchase)],['Status',a.status],['Notes',a.notes||'None']])+button('Edit Details','editAsset'))+
+panel('Value Projection',plot('line',10)+mini([[money(a.value*1.3),'Optimistic'],[money(a.value*1.05),'Conservative'],[(a.annualGrowth||0)+'%','Annual Change'],[money(gain),'Gain']]))+
+panel('Quick Actions',[['Update Valuation','valuation'],['Add Note','assetNote'],['Documents','assetDocs'],['Review Insurance','assetInsurance'],['Review Liabilities','assetDebt'],['Compare with Market','market']].map(x=>item('◉',x[0],'Local workspace','',x[1])).join(''))+
+panel('Recent Activity',state().assetValuations.filter(x=>x.assetId===a.id).slice(-5).reverse().map(x=>item('↑','Valuation edited',x.date,money(x.value))).join('')||notice('No recorded valuation activity'))+
+'</div>'}
+function screen52(){const a=selAsset(),all=state().assets;return shell(52,'<div class="we-side-asset">'+
+'<aside class="we-panel"><div class="we-title"><h2>My Assets</h2>'+button('+ Add Asset','newAsset','primary')+'</div>'+assetList()+
+'<div class="we-note">Personal assets: '+all.length+' · External valuation feeds unavailable.</div></aside>'+
+'<div>'+assetDetailPanel()+'</div></div>')}
+
+/* SCREENS_53_55 */
 })();
