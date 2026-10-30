@@ -45,7 +45,8 @@ allowanceWeek:'This Week',guard:'All Rules',purchase:25000,subscriptionFilter:'A
 selectedSub:null,modal:null,recoveryFilter:'All',notice:'',health:'Needs Improvement'};
 const initState=()=>({
  categories:Object.fromEntries(C.map(x=>[x[0],x[1]])),
- budgetName:'October 2026 Budget',budgetPeriod:'Monthly',budgetLimit:300000,
+ budgetName:'October 2026 Budget',budgetPeriod:'Monthly',budgetMonth:'October 2026',budgetLimit:300000,
+ budgetRollover:{Housing:true,Utilities:true,'Health & Medical':true},
  rules:{alertThreshold:80,weeklyDigest:true,unusual:true,paused:false},
  allowance:{daily:4500,weekly:28000,locked:0},
  subscriptions:seedSubs.map(x=>({...x})),
@@ -61,7 +62,7 @@ const initState=()=>({
 });
 function init(ctx){bridge=ctx;if(!bridge.model.spendV2){bridge.model.spendV2=initState();bridge.save()}const p=bridge.model.spendV2;
 if(!p.subscriptions)p.subscriptions=seedSubs.map(s=>({...s}));if(!p.guardrails)p.guardrails=initState().guardrails;
-if(!p.recovery)p.recovery={completed:[],targetReduction:75000,notes:''};if(!p.leakStatus)p.leakStatus={};if(!p.rules)p.rules=initState().rules;}
+if(!p.recovery)p.recovery={completed:[],targetReduction:75000,notes:''};if(!p.budgetRollover)p.budgetRollover={Housing:true,Utilities:true,'Health & Medical':true};if(!p.budgetMonth)p.budgetMonth='October 2026';if(!p.leakStatus)p.leakStatus={};if(!p.rules)p.rules=initState().rules;}
 const model=()=>bridge.model,config=()=>model().spendV2;
 const save=msg=>{ui.notice=msg||'';bridge.save();bridge.render()};
 const nav=n=>bridge.navigate(Number(n));
@@ -147,26 +148,65 @@ panel('Unused Services',subs.filter(s=>!s.essential).map(s=>r('◌',s.name,'Mark
 panel('AI Recommendations',advisorTips())+'</div>')}
 
 
+
 function budgetBuilder(n){
 const total=budgetTotal(),target=Number(config().budgetLimit),categories=cats(),spent=198450;
 const steps=['Basic Details','Category Allocation','Rules & Settings','Review & Save'];
-const stepper='<div class="sp-stepper">'+steps.map((name,i)=>'<div class="sp-step '+(i===ui.budgetStep?'current':'')+'"><span class="sp-n">'+(i+1)+'</span><span><b>'+name+'</b><small>'+['Set budget type and amount','Allocate and customize','Alerts and automation','Confirm and activate'][i]+'</small></span></div>').join('')+'</div>';
-const budgetRows='<div class="sp-budget-line sp-budget-header"><span></span><span>Category</span><span>Allocation (KES)</span><span>%</span><span>Share</span><span class="sp-monthly">Monthly Limit</span><span>Rollover</span></div>'+categories.map((c,i)=>'<div class="sp-budget-line"><span style="color:'+c.color+'">'+c.icon+'</span><span>'+esc(c.name)+'</span><input type="number" step="100" min="0" data-spcat="'+esc(c.name)+'" value="'+c.value+'" aria-label="'+esc(c.name)+' allocation in KES"><span>'+pct(c.value,total)+'%</span>'+bar(c.value,total,c.color)+'<span class="sp-monthly">'+fmt(c.value)+'</span><input type="checkbox" class="sp-switch" aria-label="Allow rollover for '+esc(c.name)+'" '+(i===0||i===3||i===5?'checked':'')+'></div>').join('');
-const summary='<div class="sp-budget-line"><b>Σ</b><b>Total</b><strong>'+fmt(total)+'</strong><strong>'+pct(total,total)+'%</strong>'+bar(total,total)+'<strong class="sp-monthly">'+fmt(total)+'</strong></div>';
+const stepper='<div class="sp-stepper sp-budget-steps" aria-label="Budget creation progress">'+steps.map((name,i)=>'<button type="button" data-sp="budgetStep:'+i+'" class="sp-step '+(i===ui.budgetStep?'current':'')+'" aria-current="'+(i===ui.budgetStep?'step':'false')+'"><span class="sp-n">'+(i+1)+'</span><span><b>'+name+'</b><small>'+['Set budget type and amount','Allocate and customize','Alerts and automation','Confirm and activate'][i]+'</small></span></button>').join('')+'</div>';
+const suffix=n===22?'data-be22-cat':'data-spcat';
+const pctString=v=>total>0?Math.round(v/total*100):0;
+const rowsHtml=categories.map((c,i)=>{
+const rollover=!!(config().budgetRollover||{})[c.name];
+return '<div class="sp-budget-line sp-budget-category" data-budget-category="'+esc(c.name)+'">'+
+'<span class="sp-budget-category-icon" style="--category-color:'+c.color+'">'+c.icon+'</span>'+
+'<span class="sp-budget-category-label">'+esc(c.name)+'</span>'+
+'<input type="number" inputmode="numeric" step="100" min="0" '+suffix+'="'+esc(c.name)+'" value="'+c.value+'" aria-label="'+esc(c.name)+' allocation (KES)">'+
+'<span>'+pctString(c.value)+'%</span>'+bar(c.value,Math.max(1,target),c.color)+
+'<span class="sp-monthly">KES '+Math.round(c.value).toLocaleString('en-KE')+'</span>'+
+'<input type="checkbox" class="sp-switch" data-sprollover="'+esc(c.name)+'" aria-label="Roll over unused '+esc(c.name)+' budget" '+(rollover?'checked':'')+'>'+
+'<button type="button" class="sp-budget-row-action" data-sp="budgetCategoryAction:'+esc(c.name)+'" aria-label="Review '+esc(c.name)+' allocation">⋯</button></div>';
+}).join('');
+const categoryHeader='<div class="sp-budget-line sp-budget-header"><span></span><span>Category</span><span>Allocation (KES)</span><span>% of Budget</span><span>Share</span><span class="sp-monthly">Monthly Limit</span><span>Rollover</span><span>Actions</span></div>';
+const sum='<div class="sp-budget-line sp-budget-total"><span></span><b>Total</b><strong>KES '+Math.round(total).toLocaleString('en-KE')+'</strong><strong>'+pctString(total)+'%</strong><span></span><strong class="sp-monthly">KES '+Math.round(total).toLocaleString('en-KE')+'</strong><span></span><span></span></div>';
+const budgetForm='<form id="sp-budget-form" data-spform="budget"><div class="sp-budget-fields">'+
+'<label class="sp-field">Budget Name <span aria-hidden="true">*</span><input name="name" id="sp-budget-name" required value="'+esc(config().budgetName)+'"></label>'+
+'<label class="sp-field">Period <span aria-hidden="true">*</span><select name="period" aria-label="Budget month">'+['October 2026','November 2026','December 2026','January 2027'].map(x=>'<option '+(config().budgetMonth===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'+
+'<div><label class="sp-field">Budget Type <span aria-hidden="true">*</span></label>'+tab(['Monthly','Weekly','Yearly','Custom Range'],config().budgetPeriod,'budgetPeriod')+'</div>'+
+'<label class="sp-field">Total Budget Amount (KES) <span aria-hidden="true">*</span><input name="total" type="number" min="1" required value="'+target+'">'+
+'<span class="sp-budget-preset-buttons">'+['KES 100K','KES 250K','KES 500K','Custom'].map((x,i)=>sb(x,'budgetAmount:'+i)).join('')+'</span></label></div></form>';
+const quick='<div class="sp-budget-quick"><h3>Quick Setup</h3>'+[
+['✧','Use Template','Start from a ready-made budget','template'],
+['◷','Copy from Last Month','Use your previous budget','lastMonth'],
+['✿','AI Recommended','Create a budget based on your spending','aiBudget']
+].map(([icon,title,desc,act])=>'<button type="button" class="sp-budget-quick-option" data-sp="budgetQuick:'+act+'"><span class="sp-budget-quick-icon">'+icon+'</span><span><b>'+title+'</b><small>'+desc+'</small></span><span aria-hidden="true">›</span></button>').join('')+'</div>';
+const budgetDetails='<section class="sp-panel sp-budget-details"><div class="sp-panel-title"><h2>1. Budget Details</h2></div><div class="sp-budget-top-grid">'+budgetForm+quick+'</div></section>';
+const categoriesPanel='<section class="sp-panel sp-budget-allocations"><div class="sp-panel-title"><h2>2. Allocate by Category</h2><div class="sp-buttons">'+sb('Distribute Evenly','spreadBudget')+sb('Reset','resetBudget')+'</div></div>'+categoryHeader+rowsHtml+sum+
+'<div class="sp-budget-actions"><button type="button" class="sp-btn" data-sp="budgetCancel">Cancel</button>'+
+'<span></span>'+sb('Save as Template','saveTemplate')+sb('➜  Save Budget','saveBudget','green')+'</div></section>';
+const previewData=categories.map(c=>({name:c.name,value:c.value,color:c.color}));
+let start=0;const stops=previewData.map(c=>{const next=start+c.value/Math.max(1,total)*100;const v=c.color+' '+start.toFixed(3)+'% '+next.toFixed(3)+'%';start=next;return v;});
+const donutBudget='<div class="sp-budget-preview-chart"><div class="sp-budget-donut" style="background:conic-gradient('+stops.join(',')+')"><div class="sp-budget-donut-hole"><b>KES '+Math.round(total).toLocaleString('en-KE')+'</b><small>Total Budget</small></div></div>'+
+'<div class="sp-budget-preview-legend">'+previewData.map(c=>'<div><i style="background:'+c.color+'"></i><span>'+esc(c.name)+'</span><span>'+pctString(c.value)+'%</span><b>KES '+Math.round(c.value).toLocaleString('en-KE')+'</b></div>').join('')+'</div></div>';
+const preview=panel('Budget Preview',donutBudget,'<select class="sp-select" aria-label="Budget preview period"><option>Monthly View</option></select>');
+const projection=panel('Monthly Projection','<div class="sp-budget-projection">'+
+'<div><b>KES '+Math.round(target).toLocaleString('en-KE')+'</b><small>Budget</small></div>'+
+'<div><b>KES '+Math.round(spent).toLocaleString('en-KE')+'</b><small>Projected Spend</small></div>'+
+'<div><b>KES '+Math.round(Math.max(0,target-spent)).toLocaleString('en-KE')+'</b><small>Expected Leftover</small></div></div>'+
+bar(spent,target)+
+'<p class="sp-budget-projection-caption">Based on your current spending patterns</p>');
 const rules=config().rules;
-const budgetDetails=panel('1. Budget Details','<form id="sp-budget-form" data-spform="budget"><div class="sp-fields"><label class="sp-field">Budget Name *<input name="name" id="sp-budget-name" required value="'+esc(config().budgetName)+'"></label><label class="sp-field">Period *<select name="period">'+['October 2026','November 2026','December 2026','January 2027'].map(s=>'<option>'+s+'</option>').join('')+'</select></label><div><label class="sp-field">Budget Type *</label>'+tab(['Monthly','Weekly','Yearly','Custom Range'],config().budgetPeriod,'budgetPeriod')+'</div><label class="sp-field">Total Budget Amount (KES) *<input name="total" type="number" min="1" value="'+target+'" required></label></div><div class="sp-buttons" style="margin-top:10px">'+['KES 100K','KES 250K','KES 500K','Custom'].map((x,i)=>sb(x,'budgetAmount:'+i)).join('')+'</div></form>')+
-panel('2. Allocate by Category',budgetRows+summary+'<div class="sp-buttons" style="margin-top:12px;justify-content:flex-end">'+sb('Distribute Evenly','spreadBudget')+sb('Reset','resetBudget')+sb('Save as Template','saveTemplate')+sb('Save Budget','saveBudget','green')+'</div>');
-const quick=panel('Quick Setup',[['✦','Use Template','Start from a ready-made budget','template'],['◷','Copy from Last Month','Use your previous budget','lastMonth'],['✿','AI Recommended','Suggested splits (not a connected AI service)','aiBudget']].map(([i,t,d,a])=>'<div class="sp-stat-row"><span>'+i+'　<b>'+t+'</b><small style="display:block">'+d+'</small></span>'+sb('Choose','budgetQuick:'+a)+'</div>').join(''));
-const right=panel('Budget Preview',donut(total)+note('Your categories currently total '+fmt(total)+'. Entered overall limit: '+fmt(target)+(total!==target?' — allocations differ from the overall target.':''),total!==target))+
-panel('Monthly Projection','<div class="sp-tiny-card-grid"><div class="sp-tiny-card"><b>'+fmt(target)+'</b>Budget</div><div class="sp-tiny-card"><b>'+fmt(spent)+'</b>Projected Spend</div><div class="sp-tiny-card"><b>'+fmt(Math.max(0,target-spent))+'</b>Expected Leftover</div><div class="sp-tiny-card">↓ 34%<br>Illustrative</div></div>'+bar(spent,target))+
-panel('Budget Rules & Alerts','<div class="sp-tag-list">'+[
-['Alert when spending reaches',String(rules.alertThreshold)+'% of category limit','alertThreshold'],
-['Send weekly budget summary','Enabled','weeklyDigest'],
-['Alert on unusual spending','Enabled','unusual'],
-['Pause alerts for this budget','Optional','paused']].map(([name,desc,key])=>'<div><span class="sp-icon">⚙</span><span style="flex:1"><b>'+esc(name)+'</b><small style="display:block">'+esc(desc)+'</small></span>'+(key==='alertThreshold'?'<select class="sp-select" data-spchange="alertThreshold" aria-label="Budget alert threshold">'+[60,70,80,90,100].map(v=>'<option '+(rules.alertThreshold===v?'selected':'')+' value="'+v+'">'+v+'%</option>').join('')+'</select>':'<input class="sp-switch" type="checkbox" data-sprule="'+key+'" aria-label="'+esc(name)+'" '+(rules[key]?'checked':'')+'>')+'</div>').join('')+'</div>')+
-panel('Budget Goals',r('◎','Stay within budget','Keep spending below '+fmt(target),fmt(Math.max(0,target-spent))+' left')+bar(spent,target));
-const desc=n===22?note('Screen 22 has no supplied approved reference image. This editable reconstruction is provisional and awaits visual sign-off.',true):'';
-return shell(n,desc+stepper+'<div class="sp-budget-form"><div class="sp-left">'+budgetDetails+'</div><aside class="sp-right">'+quick+right+'</aside></div>');
+const alerts=panel('Budget Rules & Alerts',
+'<div class="sp-budget-rules">'+[
+['🔔','Alert me when spending reaches','alertThreshold'],
+['✉','Send weekly budget summary','weeklyDigest'],
+['⚠','Alert me on unusual spending','unusual'],
+['⇄','Pause alerts for this budget','paused']
+].map(([icon,label,key])=>'<div><span class="sp-budget-rule-icon">'+icon+'</span><span class="sp-budget-rule-title">'+esc(label)+'</span>'+
+(key==='alertThreshold'?'<select class="sp-select" data-spchange="alertThreshold" aria-label="Budget threshold">'+[60,70,80,90,100].map(v=>'<option value="'+v+'" '+(rules.alertThreshold===v?'selected':'')+'>'+v+'%</option>').join('')+'</select>':'')+
+'<input class="sp-switch" type="checkbox" data-sprule="'+key+'" aria-label="'+esc(label)+'" '+(rules[key]?'checked':'')+'></div>').join('')+'</div>',sb('Edit','budgetStep:2'));
+const goals=panel('Budget Goals','<div class="sp-budget-goal"><span class="sp-budget-goal-icon">◎</span><div><b>Stay within budget</b><small>Keep total spending under KES '+target.toLocaleString('en-KE')+'</small>'+bar(spent,target)+'<small>'+pct(spent,target)+'% used · KES '+Math.round(Math.max(0,target-spent)).toLocaleString('en-KE')+' left</small></div></div>',to('Link Goal',37));
+const screen22Note=n===22?'<p class="sp-budget-variant-note">Screen 22 uses the supplied Create/Edit Budget visual from Screen 21 as its design reference; no separate Screen 22 screenshot was supplied.</p>':'';
+return shell(n,stepper+screen22Note+'<div class="sp-budget-form sp-budget-reference-layout"><div class="sp-left">'+budgetDetails+categoriesPanel+'</div><aside class="sp-right">'+preview+projection+alerts+goals+'</aside></div>');
 }
 function screen23(){
 const allowance=config().allowance;const usedDay=3000,usedWeek=allowance.weekly*.64;
@@ -276,9 +316,12 @@ switch(name){
    if(key==='recovery')ui.recoveryFilter=val;
    save();break}
  case 'budgetAmount':{const amounts=[100000,250000,500000,budgetTotal()];config().budgetLimit=amounts[Number(arg)]??budgetTotal();save('Budget target updated. Adjust category allocations as needed.');break}
+ case 'budgetStep':ui.budgetStep=Number(arg);save();break;
+ case 'budgetCancel':nav(21);break;
+ case 'budgetCategoryAction':ui.modal='Review the allocation and rollover rule for '+arg+'. Edit its amount directly in the category table.';save();break;
  case 'spreadBudget':{const total=config().budgetLimit,items=C.map(c=>c[0]),n=items.length,base=Math.floor(total/n);items.forEach((c,i)=>config().categories[c]=base+(i===n-1?total-base*n:0));save('Budget distributed evenly across categories.');break}
  case 'resetBudget':{config().categories=Object.fromEntries(C.map(c=>[c[0],c[1]]));config().budgetLimit=300000;save('Restored illustration budget allocations.');break}
- case 'saveBudget':{const form=$('#sp-budget-form');const fd=form?new FormData(form):null;config().budgetName=String(fd?.get('name')||config().budgetName);config().budgetLimit=Number(fd?.get('total')||config().budgetLimit);config().budgetPeriod=String(config().budgetPeriod);save('Budget saved locally. It is now used by spending and allowance screens.');break}
+ case 'saveBudget':{const form=$('#sp-budget-form');const fd=form?new FormData(form):null;config().budgetName=String(fd?.get('name')||config().budgetName);config().budgetLimit=Number(fd?.get('total')||config().budgetLimit);config().budgetPeriod=String(config().budgetPeriod);config().budgetMonth=String(fd?.get('period')||config().budgetMonth||'October 2026');save('Budget saved locally. It is now used by spending and allowance screens.');break}
  case 'saveTemplate':save('Budget template stored in browser demo state.');break;
  case 'budgetQuick':{
   if(arg==='template'){config().categories=Object.fromEntries(C.map(c=>[c[0],c[1]]));config().budgetLimit=300000}
@@ -298,7 +341,8 @@ return true;
 }
 function handleChange(e){
 const el=e.target;
-if(el.matches?.('[data-spcat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){config().categories[el.dataset.spcat]=value;bridge.save();bridge.render()}return true}
+if(el.matches?.('[data-spcat], [data-be22-cat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){config().categories[el.dataset.spcat||el.dataset.be22Cat]=value;bridge.save();bridge.render()}return true}
+if(el.matches?.('[data-sprollover]')){config().budgetRollover??={};config().budgetRollover[el.dataset.sprollover]=el.checked;save('Budget rollover preference updated locally.');return true}
 if(el.matches?.('[data-sprule]')){config().rules[el.dataset.sprule]=el.checked;save('Budget alert preference saved in this browser.');return true}
 if(el.matches?.('[data-spguard]')){const g=config().guardrails.find(x=>x.id===el.dataset.spguard);if(g){g.active=el.checked;save('Guardrail rule updated (demo only).')}return true}
 if(el.matches?.('[data-sprecovery]')){const completed=new Set(config().recovery.completed);if(el.checked)completed.add(el.dataset.sprecovery);else completed.delete(el.dataset.sprecovery);config().recovery.completed=[...completed];save('Recovery checklist updated.');return true}
@@ -320,7 +364,7 @@ function handleSubmit(e){
 const form=e.target;if(!form.dataset.spform)return false;
 e.preventDefault();const d=Object.fromEntries(new FormData(form));
 switch(form.dataset.spform){
- case 'budget':{let total=Number(d.total);if(total<=0){save('Enter a positive total budget amount.');break}config().budgetLimit=total;config().budgetName=String(d.name||'Monthly Budget');save('Budget details saved locally. Category allocations can be adjusted below.');break}
+ case 'budget':{let total=Number(d.total);if(total<=0){save('Enter a positive total budget amount.');break}config().budgetLimit=total;config().budgetName=String(d.name||'Monthly Budget');config().budgetMonth=String(d.period||'October 2026');save('Budget details saved locally. Category allocations can be adjusted below.');break}
  case 'allowance':{const a=Number(d.daily),w=Number(d.weekly),locked=Number(d.locked||0);if([a,w,locked].some(v=>!Number.isFinite(v)||v<0)){save('Enter non-negative limits.');break}config().allowance={daily:a,weekly:w,locked};save('Daily and weekly spending allowance updated.');break}
  case 'purchase':{
   const amt=Number(d.amount),merchant=String(d.merchant||''),category=String(d.category||''),location=String(d.location||'');
