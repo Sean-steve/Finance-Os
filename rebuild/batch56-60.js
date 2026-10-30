@@ -389,5 +389,57 @@ const csvRows=records=>records.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+
 function exportReport(type,id){const report=state().reports.find(x=>x.id===id),rows=report?.rows||reportData(type||ui.reportType||'Income Statement');download('finance-os-'+(report?.type||type||'finance').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-demo.csv',csvRows(rows),'text/csv;charset=utf-8');audit('Export Report',report?.name||type||'Financial Snapshot');save('Local report CSV generated. Figures are illustrative.')}
 function render(n){switch(Number(n)){case 56:return screen56();case 57:return screen57();case 58:return screen58();case 59:return screen59();case 60:return screen60();default:return ''}}
 
+
+function actClick(e){
+const el=e.target.closest?.('[data-gv],[data-gvnav]');if(!el)return false;
+if(el.dataset.gvnav){e.preventDefault();goto(el.dataset.gvnav);return true}
+const raw=el.dataset.gv,cmd=raw.split(':')[0],arg=raw.slice(cmd.length+1);ui.notice='';
+switch(cmd){
+case 'reference':location.href='index.html#screen/'+bridge.screen();break;
+case 'tab':{const i=arg.indexOf(':'),k=arg.slice(0,i),val=arg.slice(i+1);ui.tabs[k]=val;ui.settingTab=val;save();break}
+case 'navigate':goto(arg);break;
+case 'prompt':{
+ const prompts=['How much can I save monthly?','What is my debt situation?','How can I afford a house?','Review my investments'];
+ const question=prompts[Number(arg)]||'What is my financial health?';
+ state().chat.push({kind:'user',text:question,at:'Local'},{kind:'assistant',text:deterministicAnswer(question),at:'Rule-based'});audit('Advisor Prompt','Local scripted question selected');save();break}
+case 'advisor':{const options={cashflow:'How is my cash flow?',savings:'How much can I save?',debt:'What is my debt situation?',investments:'Review my investments'};const question=options[arg]||'Review my financial health';state().chat.push({kind:'user',text:question,at:'Local'},{kind:'assistant',text:deterministicAnswer(question),at:'Rule-based'});save();break}
+case 'generateReport':ui.reportType=ui.reportType||'Income Statement';ui.modal='report';save();break;
+case 'reportType':ui.reportType=reportTypes()[Number(arg)]?.[0]||'Income Statement';ui.modal='report';save();break;
+case 'reportExport':exportReport(null,arg);break;
+case 'reportView':ui.reportId=arg;ui.modal='reportView';save();break;
+case 'reportCsv':exportReport(ui.reportType||'Income Statement');break;
+case 'reportJson':{download('finance-os-financial-summary-demo.json',JSON.stringify({generatedAt:new Date().toISOString(),status:'illustrative',income:income(),expenses:expenses(),cash:cash(),debt:debts(),netWorth:nw(),healthScore:health().score},null,2),'application/json;charset=utf-8');audit('Export Summary','JSON local snapshot');save('JSON financial summary downloaded.');break}
+case 'reportPrint':window.print();break;
+case 'reportTime':ui.reportPeriod='Last 12 Months';save();break;
+case 'provider':ui.selectedProvider=arg;ui.modal='provider';save();break;
+case 'providerPrepare':{const p=state().integrations.find(x=>x.id===ui.selectedProvider);if(p){p.demo=!p.demo;state().syncLog.unshift({at:new Date().toISOString(),event:p.provider+' demo template '+(p.demo?'prepared':'reset'),status:'Local only'});audit('Integration Preview',p.provider+' demo template '+(p.demo?'prepared':'cleared'))}ui.modal=null;save('Demo template updated. No real connection or sync exists.');break}
+case 'connectInfo':case 'integrations':goto(59);break;
+case 'editProfile':ui.modal='profile';save();break;
+case 'theme':{state().security.theme=arg;document.body.classList.toggle('alt-theme',arg==='Dark');audit('Appearance',arg+' selected');save('Appearance preference saved locally.');break}
+case 'exportData':{download('finance-os-browser-demo-backup.json',JSON.stringify({exportedAt:new Date().toISOString(),warning:'Local demo record; keep the file private.',data:model()},null,2),'application/json;charset=utf-8');audit('Export Data','Downloaded local demo JSON');save('Browser demo records exported. Keep your JSON private.');break}
+case 'deleteData':ui.modal='deleteConfirm';save();break;
+case 'deleteConfirm':localStorage.removeItem('finance-os-exact-rebuild-demo-v1');location.href='rebuild.html#screen/1';location.reload();break;
+case 'security':case 'privacy':case 'system':ui.modal='unavailable';save();break;
+case 'auditExport':download('finance-os-local-audit-demo.csv',csvRows([['Date','Action','Detail'],...state().audit.map(x=>[x.at,x.event,x.detail])]),'text/csv;charset=utf-8');save('Local audit CSV downloaded; no server audit exists.');break;
+case 'closeModal':ui.modal=null;save();break;
+default:ui.modal='unavailable';save();break;
+}
+return true;
+}
+function actChange(e){
+const el=e.target;if(!el.matches?.('[data-gvtoggle]'))return false;
+const [mode,key]=el.dataset.gvtoggle.split(':');
+const target=mode==='reports'?state().reportsSettings:mode==='integration'?state().integrationsPrefs:state().security;
+if(Object.prototype.hasOwnProperty.call(target,key)){target[key]=el.checked;audit('Demo Preference',mode+':'+key+' = '+el.checked);save('Preference saved locally. No automatic emails, notifications or connection services started.')}
+return true;
+}
+function actInput(e){
+const el=e.target,key=el.dataset?.gvsearch;if(!key)return false;
+if(key==='provider')ui.providerSearch=el.value;
+if(key==='report')ui.reportSearch=el.value;
+const pos=el.selectionStart;bridge.render();const next=$('[data-gvsearch="'+key+'"]');if(next){next.focus();next.setSelectionRange(pos,pos)}
+return true;
+}
+
 /* ACTION_HANDLERS */
 })();
