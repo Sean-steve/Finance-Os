@@ -27,6 +27,8 @@ jobs:
         run: node tests/visual-screen22-qa.cjs
       - name: Test existing spending workflows 16–26
         run: node tests/rebuild-batch16-26.cjs
+      - name: Measure visual deltas against all 59 approved screenshots
+        run: node tests/visual-parity-score.cjs
       - name: Archive screenshots and results
         if: always()
         uses: actions/upload-artifact@v4
@@ -35,5 +37,6 @@ jobs:
           path: |
             qa-artifacts/visual-screen22
             qa-artifacts/batch16-26
+            qa-artifacts/visual-parity
           if-no-files-found: ignore
           retention-days: 14
