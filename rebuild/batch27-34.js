@@ -1,0 +1,141 @@
+
+(()=>{
+'use strict';
+let ctx;
+const $=s=>document.querySelector(s),safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>'KES '+Math.abs(Math.round(Number(n)||0)).toLocaleString('en-KE');
+const titles={27:['Income Dashboard','Your income, growth and earning performance at a glance.'],28:['Income Sources','Track every source of income, monitor trends and explore opportunities to grow.'],29:['Income Planning & Forecasting','Plan future income, test scenarios and track your earning goals.'],30:['Bills & Financial Obligations','Manage your bills, due dates and obligations. Never miss a payment.'],31:['Bill Details & Payment','View bill details, make payments, track history and manage settings.'],32:['Cash Flow Timeline','Understand where money comes from, where it goes and what is coming next.'],33:['Cash Flow Forecast & Financial Runway','Project your cash position, prepare for obligations and protect your runway.'],34:['Cash Shortfall Recovery','Identify upcoming cash gaps and build a practical plan to recover.']};
+const defaults={
+ incomes:[
+ {id:'inc1',name:'Nflake Technologies',category:'Business Income',frequency:'Monthly',amount:180000,previous:165000,account:'KCB Main Account',status:'Active',expected:'2026-11-05',growth:9},
+ {id:'inc2',name:'Haven Oasis Realty',category:'Business Income',frequency:'Monthly',amount:120000,previous:115000,account:'Equity Account',status:'Active',expected:'2026-11-10',growth:4},
+ {id:'inc3',name:'Freelance & Consulting',category:'Freelance',frequency:'Variable',amount:62000,previous:48000,account:'KCB Main Account',status:'Active',expected:'2026-11-18',growth:29},
+ {id:'inc4',name:'Trading & Investments',category:'Investments',frequency:'Variable',amount:45000,previous:36500,account:'Equity Account',status:'Active',expected:'2026-11-24',growth:23},
+ {id:'inc5',name:'Rental Income',category:'Property',frequency:'Monthly',amount:30000,previous:30000,account:'KCB Main Account',status:'Active',expected:'2026-11-01',growth:0},
+ {id:'inc6',name:'Other Income',category:'Other',frequency:'Variable',amount:13000,previous:11000,account:'M-Pesa',status:'Active',expected:'2026-11-26',growth:18}
+ ],
+ bills:[
+ {id:'b1',name:'Kenya Power',category:'Utilities',amount:8500,due:'2026-10-20',account:'KCB Main Account',status:'Overdue',reminder:true,autopay:false,customer:'1234 5678 901',period:'01 Sep 2026 – 30 Sep 2026',previous:8000},
+ {id:'b2',name:'House Rent',category:'Housing',amount:80000,due:'2026-11-01',account:'KCB Main Account',status:'Upcoming',reminder:true,autopay:false,customer:'RENT-2026-11',period:'01 Nov 2026 – 30 Nov 2026',previous:80000},
+ {id:'b3',name:'Nairobi Water',category:'Utilities',amount:2800,due:'2026-11-03',account:'M-Pesa',status:'Upcoming',reminder:false,autopay:false,customer:'WATER-7891',period:'Oct 2026',previous:2900},
+ {id:'b4',name:'Safaricom Home Internet',category:'Utilities',amount:3500,due:'2026-11-07',account:'M-Pesa',status:'Upcoming',reminder:true,autopay:false,customer:'HOME-5674',period:'Nov 2026',previous:3500},
+ {id:'b5',name:'Medical Insurance',category:'Insurance',amount:7800,due:'2026-11-10',account:'KCB Main Account',status:'Upcoming',reminder:true,autopay:false,customer:'INS-5542',period:'Nov 2026',previous:7800},
+ {id:'b6',name:'Nflake Server',category:'Business',amount:12000,due:'2026-11-12',account:'Equity Account',status:'Upcoming',reminder:false,autopay:false,customer:'SRV-1234',period:'Nov 2026',previous:12000},
+ {id:'b7',name:'Netflix',category:'Subscriptions',amount:1200,due:'2026-11-15',account:'KCB Main Account',status:'Upcoming',reminder:false,autopay:false,customer:'SUB-2340',period:'Nov 2026',previous:1200},
+ {id:'b8',name:'Car Insurance',category:'Insurance',amount:18500,due:'2026-11-19',account:'KCB Main Account',status:'Upcoming',reminder:true,autopay:false,customer:'CAR-INS-789',period:'2026/2027',previous:17000}
+ ],
+ scenario:{incomeGrowth:5,expenseGrowth:3,horizon:6,buffer:100000,minimum:75000},
+ shortfall:{completed:[],actions:[],target:150000,notes:''},
+ paymentHistory:[], billDrafts:[], alerts:[],
+};
+let v={period:'Last 6 months',incomeType:'All Sources',incomeTab:'All Sources',incomeSearch:'',incomeDetail:null, billTab:'All Bills',billSearch:'',billFilter:'All',billId:'b1',billDetailTab:'Overview',paymentMode:'MPESA',cashTab:'Daily',forecastScenario:'Baseline',forecastHorizon:6,modal:null,notice:'',selectedDate:'2026-10-20',groupBy:'Monthly',recoveryTab:'All'};
+function init(bridge){
+ctx=bridge;
+if(!ctx.model.incomeFlowV2){ctx.model.incomeFlowV2=structuredClone(defaults);ctx.save()}
+const s=state();for(const k of ['incomes','bills','scenario','shortfall','paymentHistory','billDrafts','alerts'])if(!s[k])s[k]=structuredClone(defaults[k]);
+}
+const state=()=>ctx.model.incomeFlowV2;
+const save=(message='')=>{v.notice=message;ctx.save();ctx.render()},go=n=>ctx.navigate(Number(n));
+const bc=(label,act,cls='')=>'<button type="button" class="cf-btn '+cls+'" data-cfa="'+safe(act)+'">'+safe(label)+'</button>';
+const nav=(label,n,cls='')=>'<button type="button" class="cf-btn '+cls+'" data-cfnav="'+n+'">'+safe(label)+'</button>';
+const tag=(status)=>'<span class="cf-status '+(/overdue|risk|unpaid|failed|blocked/i.test(status)?'bad':/upcoming|pending|planned/i.test(status)?'warn':/manual|forecast/i.test(status)?'blue':'')+'">'+safe(status)+'</span>';
+const panel=(title,body,actions='')=>'<section class="cf-panel"><div class="cf-head"><h2>'+safe(title)+'</h2><div class="cf-actions">'+actions+'</div></div>'+body+'</section>';
+const metric=(arr)=>'<div class="cf-metrics">'+arr.map(([icon,label,value,info])=>'<div class="cf-metric"><span class="cf-metric-icon">'+icon+'</span><div><small>'+safe(label)+'</small><strong>'+safe(value)+'</strong><em>'+safe(info||'')+'</em></div></div>').join('')+'</div>';
+const mtext=(s,type='')=>'<div class="cf-notice '+type+'">'+safe(s)+'</div>';
+const progress=(n,max,color='#15ac7a')=>'<div class="cf-progress" style="--p:'+Math.max(0,Math.min(100,Math.round(n/Math.max(1,max)*100)))+'%;--c:'+color+'"><i></i></div>';
+const row=(ico,title,desc,value='',action='',color='')=>'<div class="cf-row"><span class="cf-round '+color+'">'+ico+'</span><span class="cf-grow"><b>'+safe(title)+'</b><small>'+safe(desc)+'</small></span><strong>'+safe(value)+'</strong>'+(action?bc('View','view:'+action):'')+'</div>';
+const tabs=(labels,active,key)=>'<div class="cf-tabs">'+labels.map(n=>'<button type="button" class="'+(active===n?'on':'')+'" data-cfa="tab:'+key+':'+safe(n)+'">'+safe(n)+'</button>').join('')+'</div>';
+const table=(cols,items)=>'<div class="cf-tablebox"><table class="cf-table"><thead><tr>'+cols.map(x=>'<th>'+safe(x)+'</th>').join('')+'</tr></thead><tbody>'+items.join('')+'</tbody></table></div>';
+const vals=()=>state().incomes.filter(s=>s.status==='Active').reduce((sum,item)=>sum+Number(item.amount),0);
+const monthExpenses=()=>ctx.model.expenses.reduce((sum,item)=>sum+Number(item[1]||0),0);
+const outstanding=()=>state().bills.filter(b=>b.status!=='Paid').reduce((sum,b)=>sum+Number(b.amount),0);
+const monthDue=()=>state().bills.filter(b=>b.status==='Upcoming'||b.status==='Overdue').reduce((sum,b)=>sum+Number(b.amount),0);
+const horizon=()=>Math.min(12,Math.max(3,Number(state().scenario.horizon)||6));
+function shell(n,content){
+const [title,description]=titles[n];
+return '<div class="cfpage"><section class="banner"><div><div class="banner-date">Finance　›　'+(n<=29?'Income':n<=31?'Bills & Financial Obligations':'Cash Flow & Financial Planning')+'</div><h1>'+safe(title)+'</h1><p>'+safe(description)+'</p></div><div class="banner-quote">“Every shilling planned<br>builds your future<br>financial confidence.”</div></section><div class="cfinner">'+(v.notice?'<div class="cf-notice" role="status">'+safe(v.notice)+'</div>':'')+content+'<div class="cf-muted" style="padding:12px">Coded reference-led mockup · Figures are illustrative, stored locally, not connected to payment providers. '+bc('Compare approved Screen '+n,'reference')+'</div></div>'+modal()+'</div>';
+}
+function graph(kind='bars',series=7){
+let svg='<svg class="cf-plot" viewBox="0 0 440 180" role="img" aria-label="Illustrative financial '+safe(kind)+' chart"><defs><linearGradient id="cfgrad" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#2ab788" stop-opacity=".20"/><stop offset="1" stop-color="#2ab788" stop-opacity="0"/></linearGradient></defs>';
+for(let y of [28,67,107,149])svg+='<line x1="25" x2="439" y1="'+y+'" y2="'+y+'" stroke="#e9efec"/>';
+let labels=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];let data=[];
+for(let i=0;i<series;i++){
+ const x=38+i*390/Math.max(1,series-1),h=57+Math.sin(i*.75+1)*20+i*3;
+ data.push([x,160-h]);
+ if(kind==='bars'||kind==='split'||kind==='stack') {
+  if(kind==='split')svg+='<rect x="'+(x-8)+'" y="'+(160-h)+'" width="9" height="'+h+'" rx="2" fill="#43c08d"/><rect x="'+(x+3)+'" y="'+(160-(h*.63+Math.cos(i)*9))+'" width="9" height="'+(h*.63+Math.cos(i)*9)+'" rx="2" fill="#f47785"/>';
+  else if(kind==='stack'){let y=160;for(let j=0;j<4;j++){let height=16+j*4+Math.sin(i+j)*3;y-=height;svg+='<rect x="'+(x-10)+'" y="'+y+'" width="19" height="'+height+'" fill="'+['#35bf8a','#2799da','#ae68df','#efac59'][j]+'"/>'}}
+  else svg+='<rect x="'+(x-8)+'" y="'+(160-h)+'" width="17" height="'+h+'" rx="2" fill="#37bc86"/>';
+ }
+ svg+='<text x="'+(x-9)+'" y="177" font-size="10" fill="#667f87">'+labels[i]+'</text>'
+}
+if(kind==='line'||kind==='area'){let points=data.map((p,i)=>(i?'L':'M')+p.join(' ')).join(' ');if(kind==='area')svg+='<path d="'+points+' L'+data.at(-1)[0]+' 162 L'+data[0][0]+' 162 Z" fill="url(#cfgrad)"/>';svg+='<path d="'+points+'" fill="none" stroke="#13a776" stroke-width="3"/>'}
+return svg+'</svg>';
+}
+const shades=['#2ab789','#299edd','#a86cda','#efb253','#ef7488','#94aab6'];
+function donut(items,total){return '<div class="cf-chart-flex"><div class="cf-donut"><div class="hole"><b>'+money(total)+'</b><small>Total</small></div></div><ul>'+items.slice(0,6).map((x,i)=>'<li><span><i style="--color:'+shades[i%6]+'"></i>'+safe(x[0])+'</span><strong>'+Math.round(Number(x[1])/Math.max(1,total)*100)+'%</strong></li>').join('')+'</ul></div>'}
+function incomeTable(){
+let list=state().incomes.filter(s=>v.incomeType==='All Sources'||s.category===v.incomeType).filter(s=>s.name.toLowerCase().includes(v.incomeSearch.toLowerCase()));
+return table(['Source','Type','Frequency','Monthly Income','Previous','Growth','Status','Action'],
+list.map(s=>'<tr><td><b>'+safe(s.name)+'</b></td><td>'+safe(s.category)+'</td><td>'+safe(s.frequency)+'</td><td>'+money(s.amount)+'</td><td>'+money(s.previous)+'</td><td style="color:#068d64">↑ '+safe(s.growth)+'%</td><td>'+tag(s.status)+'</td><td>'+bc('Manage','income:'+s.id)+'</td></tr>'))}
+function billsTable(){
+let list=state().bills.filter(b=>v.billFilter==='All'||v.billFilter==='All Bills'||b.status===v.billFilter).filter(b=>b.name.toLowerCase().includes(v.billSearch.toLowerCase()));
+return table(['Bill / Service','Category','Amount','Due Date','Payment Method','Status','Actions'],
+list.map(b=>'<tr><td><b>'+safe(b.name)+'</b><small style="display:block;color:#88959a">'+safe(b.customer)+'</small></td><td>'+safe(b.category)+'</td><td>'+money(b.amount)+'</td><td>'+safe(b.due)+'</td><td>'+safe(b.account)+'</td><td>'+tag(b.status)+'</td><td>'+bc('Details','bill:'+b.id)+'</td></tr>'))}
+function alertPanel(){return panel('AI Financial Insights & Recommendations',
+row('✦','Income is trending upward','Expected monthly growth is positive','','', 'purple')+
+row('◷','Review upcoming obligations','Avoid late fees by tracking due dates','','','red')+
+row('▣','Keep emergency reserves','Cash estimates exclude unrecorded liabilities','','','blue')+
+mtext('Rule-based prototype suggestions. No AI or banking connection is running.'))}
+function screen27(){
+const income=vals(),current=income,top=state().incomes.slice().sort((a,b)=>b.amount-a.amount);
+return shell(27,metric([['▣','Total Income',money(income),'↑ 12% vs last month'],['◈','Average Monthly Income',money(income),'Across income streams'],['▥','Highest Income Month',money(income+28000),'Illustrative'],['▤','Projected Next Month',money(Math.round(income*1.05)),'↑ 5% expected']])+
+'<div class="cf-grid">'+panel('Income Trend',graph('bars',7),bc('Last 7 months','period'))+
+panel('Income by Source (This Month)',donut(top.map(x=>[x.name,x.amount]),income))+
+panel('Income Sources',top.slice(0,5).map(s=>row('▣',s.name,s.category,money(s.amount),'income:'+s.id)).join(''),nav('View all',28))+
+panel('Income Overview',incomeTable(),nav('All Sources',28))+
+panel('Income Growth',graph('split',7)+mtext('This chart uses a demonstration series, not a verified bank feed.'))+
+panel('Income Insights',top.slice(0,4).map((s,i)=>row('↑',s.name,'Previous period: '+money(s.previous),'+'+s.growth+'%')).join(''))+
+panel('Monthly Income Breakdown',graph('stack',7))+
+panel('Upcoming Income',state().incomes.map(s=>row('▧',s.name,s.expected,money(s.amount))).join(''),nav('Plan income',29))+
+panel('Income Goals',state().incomes.slice(0,4).map(s=>'<div class="cf-row"><span class="cf-grow"><b>'+safe(s.name)+'</b><small>Goal: '+money(s.amount*1.1)+'</small>'+progress(s.amount,s.amount*1.1)+'</span>'+tag('On track')+'</div>').join(''))+
+'</div>')}
+function screen28(){const total=vals(),sources=state().incomes;
+return shell(28,metric([['▣','Total Monthly Income',money(total),'All active sources'],['▤','Active Income Sources',String(sources.filter(s=>s.status==='Active').length),'Recorded'],['▥','Average Per Source',money(total/Math.max(1,sources.length)),'This month'],['◈','Income Growth','+12.5%','Illustrative vs last month']])+
+'<div class="cf-grid"><section class="cf-panel cf-col2"><div class="cf-head"><h2>Income Sources</h2><div class="cf-actions">'+bc('+ Add Income Source','newIncome','green')+'</div></div>'+
+tabs(['All Sources','Business Income','Freelance','Investments','Property','Other'],v.incomeType,'incomeType')+
+'<div class="cf-toolbar"><input class="cfsearch" data-cfsearch="income" placeholder="Search income sources…" aria-label="Search income sources" value="'+safe(v.incomeSearch)+'">'+bc('Export CSV','incomeExport')+'</div>'+incomeTable()+'</section>'+
+panel('Income by Source',donut(sources.map(s=>[s.name,s.amount]),total))+
+panel('Monthly Income Trends',graph('stack',7))+
+panel('Income Goals & Targets',sources.slice(0,4).map(s=>'<div class="cf-row"><span class="cf-grow"><b>'+safe(s.name)+'</b><small>Goal '+money(Math.round(s.amount*1.2))+'</small>'+progress(s.amount,s.amount*1.2)+'</span>'+tag('On track')+'</div>').join(''))+
+panel('Upcoming Income',sources.slice(0,5).map(s=>row('◈',s.name,s.expected,money(s.amount))).join(''))+
+panel('Revenue Breakdown by Type',donut([['Business Income',300000],['Freelance',62000],['Investments',45000],['Property',30000],['Other',13000]],total))+
+alertPanel()+
+panel('Income Opportunities',sources.filter(s=>s.growth>0).map(s=>row('↑',s.name,'Growth estimate: '+s.growth+'%')).join(''))+'</div>')}
+function forecastData(){
+const s=state().scenario,total=vals(),spend=monthExpenses(),months=Number(s.horizon);
+let cash=ctx.model.accounts.filter((a,i)=>i<3).reduce((a,x)=>a+Number(x[1]),0),rows=[];
+for(let i=0;i<months;i++){let income=total*Math.pow(1+Number(s.incomeGrowth)/100,i+1),expenses=spend*Math.pow(1+Number(s.expenseGrowth)/100,i+1);
+let commitments=i===0?outstanding():monthDue()*Math.pow(1.01,i),net=income-expenses-commitments;cash+=net;
+rows.push({month:['Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'][i],income:Math.round(income),expenses:Math.round(expenses),obligations:Math.round(commitments),net:Math.round(net),cash:Math.round(cash)})}
+return rows
+}
+function screen29(){const m=forecastData(),total=vals(),goal=Math.round(total*1.25);
+return shell(29,metric([['▣','Projected Monthly Income',money(Math.round(total*1.05)),'↑ 5% growth scenario'],['◈','Income Goal',money(goal),'Target monthly'],['▥','Goal Progress',Math.round(total/goal*100)+'%','Current vs target'],['▤','Expected Growth',money(Math.round(total*.05)),'Illustrative next month']])+
+'<div class="cf-grid">'+panel('Income Forecast & Growth',graph('stack',12))+
+panel('Forecast Summary',row('▧','Projected Next Month', '5% illustrative growth',money(total*1.05))+
+row('◈','6-Month Revenue Target','Based on repeatable streams',money(total*6.5))+
+row('↑','Growth opportunity','Income growth sensitivity', '5%')+
+row('▤','Income at risk','Unconfirmed income not guaranteed',money(35000)))+
+panel('Income Gap Analysis',graph('bars',3)+mtext('Projected income and target amounts are editable assumptions.'))+
+panel('Expected Income by Source',incomeTable(),nav('Manage Sources',28))+
+panel('Income Growth Opportunities',row('↑','Freelance consulting','Increase client retention and recurring work',money(20000))+
+row('◈','Rental income','Review occupancy and costs',money(15000))+
+row('▣','Business income','Increase predictable contract work',money(25000)))+
+panel('Income Scenarios',scenarioControls())+
+panel('Monthly Income Projections',table(['Month','Projected Income','Growth'],m.map(x=>'<tr><td>'+safe(x.month)+'</td><td>'+money(x.income)+'</td><td style="color:#098765">+'+state().scenario.incomeGrowth+'%</td></tr>')))+
+panel('Income Allocation Targets',donut([['Essentials',160000],['Savings',130000],['Investments',90000],['Discretionary',70000]],450000))+
+panel('Financial Planning Recommendations',alertPanelContent())+'</div>')}
+function alertPanelContent(){return row('✓','Build predictable income','Track the expected payment dates of clients')+row('◷','Plan for variable earnings','Keep a conservative income estimate')+row('◆','Preserve a cash buffer','Do not treat unconfirmed income as available cash')}
+
+/* REMAINING_30_34 */
+})();
