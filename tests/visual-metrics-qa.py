@@ -10,7 +10,7 @@ from PIL import Image, ImageChops, ImageStat
 BASE=Path(__file__).resolve().parent.parent
 captures=BASE/'qa-artifacts'/'visual-pass-1'
 reference=BASE/'assets'
-baseline={8:36.45,11:33.55,21:22.82,40:31.63}
+baseline={8:36.45,11:33.55,21:22.82,29:28.96,33:29.92,40:31.63}
 details=[]
 for n,prior in baseline.items():
     a=reference/f'screen-{n:02}.webp'
