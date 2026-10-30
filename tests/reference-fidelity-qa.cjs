@@ -27,6 +27,9 @@ try{
   visited.add(title);
   if(i===22){assert.ok(await page.locator('#save-budget').count()>0,'Screen 22 reconstructed budget editor absent');continue}
   await page.locator('#canvas img').waitFor();
+  // Hash-only navigation resolves before the newly assigned image finishes decoding.
+  // Validate the requested screen asset, not the old or still-loading image node.
+  await page.waitForFunction(screen=>{const im=document.querySelector('#canvas img');const asset='screen-'+String(screen).padStart(2,'0')+'.webp';return im&&im.getAttribute('src')?.includes(asset)&&im.complete&&im.naturalWidth===1536&&im.naturalHeight===1024;},i,{timeout:15000});
   assert.equal(await page.locator('#canvas img').evaluate(x=>x.naturalWidth),1536,'Broken original image '+i);
   assert.ok(await page.locator('#canvas img').evaluate(x=>x.complete),'Incomplete original image '+i);
  }
