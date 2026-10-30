@@ -36,7 +36,7 @@ jobs:
           mkdir -p ./site/src ./site/assets ./site/rebuild
           cp index.html app.html rebuild.html ./site/
           cp src/app.js src/styles.css ./site/src/
-          cp rebuild/app.js rebuild/styles.css rebuild/batch06-15.js rebuild/batch06-15.css rebuild/batch16-26.js rebuild/batch16-26.css rebuild/batch27-34.js rebuild/batch27-34.css rebuild/batch35-42.js rebuild/batch35-42.css rebuild/batch43-49.js rebuild/batch43-49.css rebuild/batch50-55.js rebuild/batch50-55.css rebuild/batch56-60.js rebuild/batch56-60.css rebuild/reconciliation-a11y.css ./site/rebuild/
+          cp rebuild/app.js rebuild/styles.css rebuild/batch06-15.js rebuild/batch06-15.css rebuild/batch16-26.js rebuild/batch16-26.css rebuild/budget-screen22.js rebuild/budget-screen22.css rebuild/batch27-34.js rebuild/batch27-34.css rebuild/batch35-42.js rebuild/batch35-42.css rebuild/batch43-49.js rebuild/batch43-49.css rebuild/batch50-55.js rebuild/batch50-55.css rebuild/batch56-60.js rebuild/batch56-60.css rebuild/reconciliation-a11y.css ./site/rebuild/
           cp assets/*.webp ./site/assets/
           touch ./site/.nojekyll
       - uses: actions/configure-pages@v5
