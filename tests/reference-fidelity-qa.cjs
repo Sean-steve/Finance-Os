@@ -26,7 +26,10 @@ try{
   assert.ok(title.includes('Approved design'),'Bad screen title '+i);
   visited.add(title);
   if(i===22){assert.ok(await page.locator('#save-budget').count()>0,'Screen 22 reconstructed budget editor absent');continue}
-  await page.locator('#canvas img').waitFor();
+  await page.locator('#canvas img').waitFor({state:'visible'});
+  // An <img> element can appear before its WebP has decoded; naturalWidth=0 then.
+  // Wait for this exact source and the image decode before treating it as broken.
+  await page.waitForFunction(expected=>{const img=document.querySelector('#canvas img');return img&&img.complete&&img.naturalWidth===1536&&img.naturalHeight===1024&&img.currentSrc.includes(expected)},'screen-'+String(i).padStart(2,'0')+'.webp',{timeout:12000});
   assert.equal(await page.locator('#canvas img').evaluate(x=>x.naturalWidth),1536,'Broken original image '+i);
   assert.ok(await page.locator('#canvas img').evaluate(x=>x.complete),'Incomplete original image '+i);
  }
