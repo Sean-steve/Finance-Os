@@ -579,9 +579,9 @@ function actSubmit(e){
    const old=state().rules.find(x=>x.id===ui.rule);
    if(ui.modal==='editRule'&&old)Object.assign(old,record);else state().rules.push({id:'r-'+Date.now(),...record});
    ui.modal=null;store('Allocation rule updated as a local demonstration.');break}
- case 'fund':case 'fundEmergency':case 'withdrawEmergency':{
+ case 'fund':case 'fundGoal':case 'fundEmergency':case 'withdrawEmergency':{
    const amount=Number(d.amount),withdraw=form.dataset.capform==='withdrawEmergency';
-   const eg=emergency();const g=form.dataset.capform==='fund'?goal():eg;
+   const eg=emergency();const g=['fund','fundGoal'].includes(form.dataset.capform)?goal():eg;
    const account=ctx.model.accounts.find(x=>x[0]===d.account);
    if(!g||!account||!Number.isFinite(amount)||amount<=0){store('Select an account and positive amount.');break}
    if(withdraw){if(amount>g.saved){store('Insufficient emergency savings for this simulated withdrawal.');break}g.saved-=amount;account[1]+=amount}
