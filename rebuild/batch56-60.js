@@ -275,5 +275,77 @@ item('②','Authorize through OAuth where available','Do not paste passwords or 
 item('③','Verify data retention and deletion','Encrypted storage and server audit are required before production.'))+
 '</div>')}
 
-/* SCREEN_60 */
+
+function profileDetails(){
+const profile=model().profile,setting=state().security;return '<div class="gv-row"><span class="gv-icon purple">♙</span><span class="grow"><b>'+esc(profile.name)+'</b><small>'+esc(profile.email||'Sample profile, email not set')+'</small></span>'+button('Edit Profile','editProfile')+'</div>'+
+rows([['Full Name',profile.name],['Email Address',profile.email||'Not entered'],['Phone Number',profile.phone||'Not entered'],['Timezone',setting.timezone],['Currency',setting.currency],['Language',setting.language],['Date Format',setting.dateFormat]])+
+'<div class="gv-actions">'+button('Light Theme','theme:Light',setting.theme==='Light'?'active':'')+button('Dark Theme','theme:Dark',setting.theme==='Dark'?'active':'')+button('System','theme:System',setting.theme==='System'?'active':'')+'</div>'+
+info('These settings are saved locally; no user account profile or authenticated session exists.')}
+function securityRows(){
+return [
+['⚑','Password','Not managed in this static prototype','password'],
+['◆','Two-Factor Authentication','Unavailable without a backend identity provider','mfa'],
+['▤','Biometric Login','No device-integrated authentication','biometric'],
+['◷','Login Notifications','Preference only; no login-alert service','notification'],
+['▣','Device Management','Only this browser\'s local demo state is visible','devices'],
+['☼','Session Timeout','Not enforced; frontend cannot secure a session','session'],
+['▤','Recovery Options','Requires an authenticated backend','recovery']
+].map(x=>item(x[0],x[1],x[2],'','security:'+x[3])).join('')}
+function privacyRows(){
+const set=state().security;return [
+item('◆','Data Usage','Browser-only local data; no cloud account','', 'privacy:data'),
+item('♧','Data Sharing','No third-party data sharing is configured','', 'privacy:sharing'),
+item('↓','Download My Data','Export the browser prototype state in JSON','', 'exportData'),
+item('▤','Delete My Demo Data','Permanently clear the Finance OS browser record','', 'deleteData','warn'),
+toggle('activityAnalytics','Optional usage analytics','Not enabled; preference stored locally',set.activityAnalytics),
+toggle('personalization','Personalization','Local guidance may use demo figures; no remote AI',set.personalization),
+item('▣','Cookies & Local Storage','Local storage is used for demo persistence','', 'privacy:cookies')
+].join('')}
+function notificationRows(){const set=state().security;return [
+['emailNotifications','Transaction Alerts','Browser-only preference, no email delivered'],
+['billReminders','Bill Reminders','No actual reminders scheduled'],
+['goalReminders','Goal Progress','No notification infrastructure installed'],
+['weeklyDigest','Financial Digest','Saved preference only'],
+['securityNotices','Security Alerts','No authenticated login events generated'],
+['productUpdates','Product Updates','No marketing service configured']
+].map(x=>toggle(x[0],x[1],x[2],!!set[x[0]])).join('')}
+function connectedSummary(){return [
+['Bank Account Providers','0 connected','KCB, Equity, Absa available as previews'],
+['Investment Providers','0 connected','No live brokerage integration'],
+['Mobile Money / Cards','0 connected','No M-Pesa or card permission obtained'],
+['Insurance Providers','0 connected','No linked policies'],
+['Property & Assets','0 connected','Local sample records only'],
+['Accounting & Business','0 connected','No financial data sync']
+].map(x=>item('▣',x[0],x[2],x[1],'integrations')).join('')}
+function auditTable(){
+const list=state().audit.slice(0,15),out=list.map(x=>'<tr><td>'+esc(new Date(x.at).toLocaleString('en-KE',{dateStyle:'short',timeStyle:'short'}))+'</td><td>Local user</td><td>'+esc(x.event)+'</td><td>'+esc(x.detail)+'</td><td>Local browser</td></tr>');
+return table(['Date & Time','Actor','Action','Details','Scope'],out.length?out:['<tr><td colspan="5">No local audit events yet. This is not an immutable server audit trail.</td></tr>']);
+}
+function systemRows(){return [
+item('◈','Subscription & Billing','No billing subscription is configured','', 'system:billing'),
+item('▣','Regional Settings','Currency and date preferences only','', 'editProfile'),
+item('⊕','API Access','No API keys can be created on GitHub Pages','', 'system:api'),
+item('⚙','Advanced Settings','Prototype has no backend services','', 'system:advanced'),
+item('▤','Data Retention','Clear local browser storage on request','', 'deleteData'),
+item('♧','Privacy Preferences','Settings are not provider-enforced','', 'privacy:sharing')
+].join('')}
+function screen60(){
+const set=state().security;
+return shell(60,metric([['◆','Account Security','Demo Only','No authenticated backend'],['▣','Data Privacy','Local Browser','Not encrypted by this app'],['▥','Connected Accounts','0','Verified integrations'],['♙','Active Sessions','Not Tracked','No server sessions'],['◷','Last Login','Unknown','Login service not connected']])+
+tabs(60,['Profile & Preferences','Security Settings','Privacy & Data Control','Connected Accounts','Notifications','User Management','Audit History','System Settings','Billing & Subscription'])+
+'<div class="gv-grid">'+panel('Profile & Preferences',profileDetails())+
+panel('Security Settings',info('A server-side identity provider is required for real passwords, MFA, session invalidation or security history.',true)+securityRows())+
+panel('Privacy & Data Control',privacyRows())+
+panel('Notifications',notificationRows())+
+panel('Connected Accounts',connectedSummary(),nav('Manage Preview Integrations',59))+
+panel('User Management',table(['Member','Role','Access','Actions'],[
+'<tr><td>'+esc(model().profile.name)+'</td><td>Local Demo Owner</td><td>'+tag('Browser only','blue')+'</td><td>—</td></tr>',
+'<tr><td>Example Family Member</td><td>View only (mock)</td><td>'+tag('Not invited','warn')+'</td><td>—</td></tr>',
+'<tr><td>Example Adviser</td><td>Adviser (mock)</td><td>'+tag('Not invited','warn')+'</td><td>—</td></tr>'
+])+info('Multi-user access permissions are not enforced. Do not assume anyone else can view this prototype.'))+
+'<section class="gv-panel gv-span2"><div class="gv-head"><h2>Audit History — Local Actions Only</h2>'+button('Export Audit','auditExport')+'</div>'+auditTable()+'</section>'+
+panel('System Settings',systemRows())+
+'</div>')}
+
+/* ACTION_HANDLERS */
 })();
