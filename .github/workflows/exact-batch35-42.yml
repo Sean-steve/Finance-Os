@@ -1,0 +1,35 @@
+name: Finance OS Screens 35-42 Reconstruction QA
+on:
+  push:
+    branches: ['reconstruction/exact-screens-35-42']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate frontend syntax
+        run: |
+          node --check rebuild/app.js
+          node --check rebuild/batch35-42.js
+          node --check tests/rebuild-batch35-42.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test all capital, savings and funding workflows
+        run: node tests/rebuild-batch35-42.cjs
+      - name: Upload screenshots and QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-35-42-qa
+          path: qa-artifacts/batch35-42
+          retention-days: 14
+          if-no-files-found: ignore
