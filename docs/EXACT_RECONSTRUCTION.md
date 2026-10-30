@@ -38,7 +38,15 @@
 | 24 — Spending Guardrails & Purchase Approval Check | screen-24.webp | `rebuild.html#screen/24` | **Coded DOM; pixel-match approval pending** |
 | 25 — Subscriptions & Recurring Expenses | screen-25.webp | `rebuild.html#screen/25` | **Coded DOM; pixel-match approval pending** |
 | 26 — Spending Review & Recovery Plan | screen-26.webp | `rebuild.html#screen/26` | **Coded DOM; pixel-match approval pending** |
-| 27–60 | 34 supplied reference images | `index.html#screen/NN` | **Not yet reconstructed in HTML/CSS** |
+| 27 — Income Dashboard | screen-27.webp | `rebuild.html#screen/27` | **Coded DOM / QA; visual approval pending** |
+| 28 — Income Sources | screen-28.webp | `rebuild.html#screen/28` | **Coded DOM / QA; visual approval pending** |
+| 29 — Income Planning & Forecasting | screen-29.webp | `rebuild.html#screen/29` | **Coded DOM / QA; visual approval pending** |
+| 30 — Bills & Financial Obligations | screen-30.webp | `rebuild.html#screen/30` | **Coded DOM / QA; visual approval pending** |
+| 31 — Bill Details & Payment | screen-31.webp | `rebuild.html#screen/31` | **Coded DOM / QA; visual approval pending** |
+| 32 — Cash Flow Timeline | screen-32.webp | `rebuild.html#screen/32` | **Coded DOM / QA; visual approval pending** |
+| 33 — Cash Flow Forecast & Financial Runway | screen-33.webp | `rebuild.html#screen/33` | **Coded DOM / QA; visual approval pending** |
+| 34 — Cash Shortfall Recovery | screen-34.webp | `rebuild.html#screen/34` | **Coded DOM / QA; visual approval pending** |
+| 35–60 | 26 supplied reference images | `index.html#screen/NN` | **Not yet reconstructed in HTML/CSS** |
 
 The unchanged approved-design viewer is the source of truth while the rebuilt pages are verified. The older generic functional prototype is available separately at `app.html`.
 
@@ -66,6 +74,15 @@ The unchanged approved-design viewer is the source of truth while the rebuilt pa
 - **Screen 22** has no supplied reference and is a provisional derivative of the Screen 21 budget form. It must not be signed off as exact.
 - Chromium tests capture screen screenshots at 1536px and 390px, financial state persistence, CSV export and 01–15 navigation regressions in `tests/rebuild-batch16-26.cjs`.
 - The JSX/DOM route status does **not** imply visual pixel-level approval. Final comparison, typography, chart geometry and per-control testing remain pending.
+
+## Screens 27–34 — income, obligations and runway
+
+- Eight screenshot-guided DOM renderers in `rebuild/batch27-34.js` and `rebuild/batch27-34.css`, using the same shared browser-local Finance OS model.
+- Income source creation/editing, illustrative income planning assumptions and scenario projections.
+- Bill list and details, editable local obligations, due dates, reminders and demo payment history. **No real M-Pesa STK request, debit, bank settlement or authoritative payment allocation.**
+- Cash-flow timeline, forecast scenarios, modelled cash runway, optional CSV export, and checklist-based shortfall recovery.
+- Scenario estimates are not authoritative: demo values can omit irregular expenses, incomplete incomes and liabilities. Payment simulations do **not** change bank balances.
+- Browser QA at 1536×1024 and mobile 390px, plus cross-batch regression. **Pixel-perfect visual sign-off remains outstanding**; source-specific chart assets, some secondary tabs, placement and typographic details require review.
 
 ## Rebuild implementation behavior
 
