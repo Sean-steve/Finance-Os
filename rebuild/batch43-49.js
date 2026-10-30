@@ -207,7 +207,8 @@ field('Annual Interest (%)','rate',d?.rate||12,'number','min="0" max="100" step=
 field('Next Due','next',d?.next||'2026-11-15','date','required')+'</div><button class="pr-btn primary" type="submit">Save Debt</button></form>';
 }else if(ui.modal==='payment'){title='Record Simulated Debt Payment';content='<form data-prform="payment" class="pr-form">'+
 select('Debt','debt',debts().map(x=>x.name),selectedDebt().name)+field('Payment (KES)','amount',selectedDebt().payment,'number','min="1" required')+
-notice('This reduces the local demo principal only. No money moves and no lender receipt is created.')+'<button class="pr-btn primary" type="submit">Record locally</button></form>'}
+select('Debit local cash account','account',ctx.model.accounts.slice(0,3).map(x=>x[0]),ctx.model.accounts[0][0])+
+notice('Simulated double-entry payment: the selected local cash balance and debt principal both decrease. No real money moves and no lender receipt is created.')+'<button class="pr-btn primary" type="submit">Record locally</button></form>'}
 else if(ui.modal==='tax'){title='Edit Tax Planning Estimates';const t=state().taxes;
 content='<form data-prform="tax" class="pr-form"><div class="pr-fields">'+field('Estimated Tax (KES)','estimatedTax',t.estimatedTax,'number','min="0" required')+
 field('Recorded Tax Paid (KES)','paid',t.paid,'number','min="0" required')+field('Potential Deductions (KES)','deductions',t.deductions,'number','min="0" required')+field('Estimated Filing Date','filingDate',t.filingDate,'date','required')+'</div>'+notice('Only illustrative values; no KRA connection or legal calculation.')+'<button class="pr-btn primary" type="submit">Save estimates</button></form>'}
@@ -271,8 +272,14 @@ if(!String(d.name).trim()||!String(d.lender).trim()||[balance,original,rate,paym
 const data={name:d.name,lender:d.lender,balance,original:Math.max(original,balance),rate,payment,next:d.next,dueDay:Number(d.next.slice(-2)),status:'On Track',kind:'Other Debt',term:0};
 const old=debts().find(x=>x.id===ui.editId);if(old)Object.assign(old,data);else debts().push({id:'d-'+Date.now(),...data});
 ui.modal=null;save('Debt recorded locally without any lender connection.');break}
-case 'payment':{const loan=debts().find(x=>x.name===d.debt);const amount=Number(d.amount);if(!loan||!Number.isFinite(amount)||amount<=0||amount>loan.balance){save('Payment must be positive and no more than the debt balance.');break}
-loan.balance=Math.max(0,loan.balance-amount);state().debtPayments.push({id:'pay-'+Date.now(),debtId:loan.id,date:today,amount});ui.debt=loan.id;ui.modal=null;save('Simulated principal payment saved locally. Cash accounts and lenders were not charged.');break}
+case 'payment':{const loan=debts().find(x=>x.name===d.debt);const amount=Number(d.amount);const account=ctx.model.accounts.slice(0,3).find(x=>x[0]===d.account);
+if(!loan||!account||!Number.isFinite(amount)||amount<=0||amount>loan.balance){save('Select a personal demo account and a valid principal amount.');break}
+if(amount>Number(account[1])){save('Insufficient demo cash balance. No payment or balance change occurred.');break}
+account[1]=Math.round((Number(account[1])-amount)*100)/100;
+loan.balance=Math.round((loan.balance-amount)*100)/100;
+state().debtPayments.push({id:'pay-'+Date.now(),debtId:loan.id,date:today,amount,account:account[0],simulated:true});
+ui.debt=loan.id;ui.modal=null;
+save('Local debt payment simulated: both demo cash and principal decreased. No bank or lender was charged.');break}
 case 'optimizer':{const value=Number(d.extra);if(!Number.isFinite(value)||value<0){save('Enter a non-negative extra monthly payment.');break}ui.extra=value;ui.strategy=d.strategy==='Minimum Payments'?'Minimum Payments':d.strategy;if(ui.strategy==='Minimum Payments')ui.extra=0;save('Repayment simulation recalculated.');break}
 case 'tax':{const t=state().taxes;for(const k of ['estimatedTax','paid','deductions']){let n=Number(d[k]);if(!Number.isFinite(n)||n<0){save('Tax estimate amounts must be non-negative.');return true}t[k]=n}t.filingDate=d.filingDate;ui.modal=null;save('Estimated tax values updated; no KRA filing or computation occurred.');break}
 case 'policy':{const coverage=Number(d.coverage),premium=Number(d.premium);if(!d.name?.trim()||!d.provider?.trim()||[coverage,premium].some(x=>!Number.isFinite(x)||x<0)){save('Invalid policy fields.');break}
