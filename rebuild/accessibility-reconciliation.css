@@ -1,0 +1,38 @@
+
+/* Full-screen WCAG 2.1 AA legibility fixes.
+   Only text on light panel surfaces is darkened; banner / selected-nav inverse text is preserved. */
+#app .aside-label { color:#485d65 !important; }
+#app .money-name small,
+#app .safe-keys > span,
+#app .b-kpi small,
+#app .sp-kpi small,
+#app .cf-metric small,
+#app .cap-kpi small,
+#app .pr-kpi small,
+#app .we-kpi small,
+#app .gv-kpi small { color:#4c5f69 !important; }
+#app .cf-metric em,
+#app .cap-kpi em,
+#app .pr-kpi em,
+#app .we-kpi em,
+#app .gv-kpi em { color:#006e4f !important; }
+#app :is(
+ .b-muted,.sp-muted,.cf-muted,.cap-muted,.pr-muted,.we-muted,.gv-muted,
+ .b-table th,.sp-table th,.cf-table th,.cap-table th,.pr-table th,.we-table th,.gv-table th,
+ .b-panel small,.sp-panel small,.cf-panel small,.cap-panel small,.pr-panel small,.we-panel small,.gv-panel small,
+ .b-row small,.sp-row small,.cf-row small,.cap-row small,.pr-row small,.we-row small,.gv-row small
+) { color:#485a63 !important; }
+#app .sp-budget-header > span { color:#43565f !important; }
+#app .we-tabs button:not(.on),#app .pr-tabs button:not(.selected),
+#app .cf-tabs button:not(.active),#app .gv-tabs button:not(.on) { color:#435b65 !important; }
+#app :is(.we-tag,.pr-tag,.cf-tag,.gv-tag,.cap-tag,.sp-tag) { color:#075f45; }
+#app :is(.we-tag.blue,.gv-tag.blue,.pr-tag.blue){color:#174f86;}
+#app :is(.we-tag.red,.gv-tag.bad,.pr-tag.bad){color:#9d2945;}
+#app :is(.we-tag.orange,.gv-tag.warn,.pr-tag.warn){color:#805312;}
+#app :is(.gv-mini,.we-mini,.pr-mini) { color:#53616a !important; }
+#app :is(.gv-legend,.we-legend,.pr-legend,.cf-legend,.cap-legend) { color:#485d64 !important; }
+/* Preserve high-contrast inverse text on selected links and dark headers. */
+#app .side-link.selected,
+#app .side-link.selected > span,
+#app .banner,#app .banner p,
+#app .banner h1,#app .banner-date { color:#fff; }
