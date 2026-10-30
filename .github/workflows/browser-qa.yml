@@ -50,6 +50,8 @@ jobs:
         run: node tests/rebuild-batch50-55.cjs
       - name: Full 60-route QA for financial health, advisor, reporting, integrations and privacy
         run: node tests/rebuild-batch56-60.cjs
+      - name: Verify new Budget Studio and corrected source layouts
+        run: node tests/visual-repair-budget22.cjs
       - name: Audit accessibility and color contrast
         if: success()
         run: node tests/accessibility-qa.cjs
