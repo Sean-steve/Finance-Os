@@ -139,7 +139,7 @@ panel('Asset Media','<div class="we-property-hero" role="img" aria-label="Illust
 panel('Asset Details',rows([['Type',a.type],['Location',a.location],['Size',a.size||'Not applicable'],['Purchase Date',a.date],['Purchase Price',money(a.purchase)],['Status',a.status],['Notes',a.notes||'None']])+button('Edit Details','editAsset'))+
 panel('Value Projection',plot('line',10)+mini([[money(a.value*1.3),'Optimistic'],[money(a.value*1.05),'Conservative'],[(a.annualGrowth||0)+'%','Annual Change'],[money(gain),'Gain']]))+
 panel('Quick Actions',[['Update Valuation','valuation'],['Add Note','assetNote'],['Documents','assetDocs'],['Review Insurance','assetInsurance'],['Review Liabilities','assetDebt'],['Compare with Market','market']].map(x=>item('◉',x[0],'Local workspace','',x[1])).join(''))+
-panel('Recent Activity',state().assetValuations.filter(x=>x.assetId===a.id).slice(-5).reverse().map(x=>item('↑','Valuation edited',x.date,money(x.value))).join('')||notice('No recorded valuation activity'))+
+panel('Recent Activity',state().assetValuations.filter(x=>x.assetId===a.id).slice(-5).reverse().map(x=>item('↑','Valuation edited',x.date,money(x.value))).join('')||note('No recorded valuation activity'))+
 '</div>'}
 function screen52(){const a=selAsset(),all=state().assets;return shell(52,'<div class="we-side-asset">'+
 '<aside class="we-panel"><div class="we-title"><h2>My Assets</h2>'+button('+ Add Asset','newAsset','primary')+'</div>'+assetList()+
@@ -210,5 +210,161 @@ item('◷','Update debt repayment plan','Net worth updates when you edit shared 
 item('◆','Review asset allocation','Choose an approach appropriate to your risks'))+
 '</div>')}
 
-/* HANDLERS */
+
+function dialog(){
+if(!ui.modal)return '';
+let title='',form='';
+if(ui.modal==='asset'){
+ const a=state().assets.find(x=>x.id===ui.editId);title=a?'Edit Asset':'Add Asset';
+ form='<form data-weform="asset" class="we-form"><div class="we-fields">'+field('Asset Name','name',a?.name||'','text','required')+
+ options('Category','kind',['Real Estate','Vehicle','Business','Other'],a?.kind||'Other')+
+ field('Current Value (KES)','value',a?.value||0,'number','min="0" required')+
+ field('Purchase Price (KES)','purchase',a?.purchase||0,'number','min="0" required')+
+ field('Annual Change (%)','annualGrowth',a?.annualGrowth||0,'number','step="0.1" min="-100" max="100" required')+
+ field('Purchase Date','date',a?.date||'2026-10-30','date','required')+
+ field('Location','location',a?.location||'Nairobi, Kenya')+field('Asset Type','type',a?.type||'Personal Asset')+
+ field('Status','status',a?.status||'Held')+field('Size / Notes','size',a?.size||'')+
+ '<label class="we-field wide">Notes<textarea name="notes">'+esc(a?.notes||'')+'</textarea></label></div><button class="we-btn primary" type="submit">Save Asset</button></form>';
+}else if(ui.modal==='valuation'){
+ const a=selAsset();title='Update Asset Valuation';
+ form='<form data-weform="valuation" class="we-form">'+note('This is a manual estimate, not a certified appraisal.')+
+ '<div class="we-fields">'+field('Asset','assetName',a?.name||'','text','readonly')+
+ field('New Market Value (KES)','value',a?.value||0,'number','min="0" required')+
+ field('Annual Change (%)','annualGrowth',a?.annualGrowth||0,'number','step=".1" min="-100" max="100" required')+
+ field('Valuation Date','date','2026-10-30','date','required')+'</div>'+
+ '<button type="submit" class="we-btn primary">Save Valuation</button></form>';
+}else if(ui.modal==='assetNote'){
+ title='Add Asset Note';form='<form data-weform="assetNote" class="we-form">'+field('Note','note','','text','required')+
+ '<button class="we-btn primary" type="submit">Save Local Note</button></form>';
+}else if(ui.modal==='holding'){
+ const h=state().holdings.find(x=>x.id===ui.editId);title=h?'Edit Investment Holding':'Add External Demo Holding';
+ form='<form data-weform="holding" class="we-form"><div class="we-fields">'+field('Security Name','name',h?.name||'','text','required')+
+ field('Ticker / Symbol','ticker',h?.ticker||'','text','required')+
+ options('Asset Class','kind',['Kenyan Equities','Global ETFs','Money Market Funds','Fixed Income','Real Estate (REITs)','Other Investments'],h?.kind||'Kenyan Equities')+
+ field('Units / Shares','shares',h?.shares??0,'number','min="0" step="0.0001" required')+
+ field('Estimated Price (KES)','price',h?.price??100,'number','min="0.01" step="0.01" required')+
+ field('Average Purchase Cost (KES)','avg',h?.avg??100,'number','min="0.01" step="0.01" required')+
+ field('One-day Change (%)','change',h?.change??0,'number','step=".1" min="-100" max="100" required')+
+ field('Platform','platform',h?.platform||'Manual Demo Portfolio')+'</div>'+
+ '<button class="we-btn primary" type="submit">Save Holding</button></form>';
+}else if(ui.modal==='trade'){
+ const h=selHolding();title=(ui.tradeSide==='buy'?'Simulated Buy':'Simulated Sell')+' — '+(h?.name||'Holding');
+ const availableAccounts=ctx.model.accounts.filter((x,i)=>i<=2||String(x[0]).toLowerCase().includes('cash wallet'));
+ form='<form data-weform="trade" class="we-form">'+note('No broker orders, settlements, or real payments. This moves value between the selected local cash account and investment position.',true)+
+ '<div class="we-fields"><div class="we-field">Side<strong>'+esc(ui.tradeSide.toUpperCase())+'</strong></div>'+
+ field('Quantity','shares',10,'number','min="0.0001" step="0.0001" required')+
+ field('Illustrative Price (KES)','price',h?.price||0,'number','min="0.01" step=".01" required')+
+ options('Local Cash Account','account',availableAccounts.map(x=>x[0]),availableAccounts[0]?.[0]||'')+'</div>'+
+ '<button class="we-btn primary" type="submit">Confirm Local Simulation</button></form>';
+}else if(ui.modal==='dividend'){
+const h=selHolding();title='Record Simulated Investment Income';
+form='<form data-weform="dividend" class="we-form">'+note('Records a fictional distribution in the local demo account. No provider or tax data is fetched.')+
+ field('Income per unit (KES)','perShare',0.5,'number','min="0" step=".01" required')+
+ options('Local Cash Account','account',ctx.model.accounts.slice(0,3).map(x=>x[0]),ctx.model.accounts[0][0])+
+ '<button class="we-btn primary" type="submit">Record Local Income</button></form>';
+}else if(ui.modal==='risk'){
+const r=state().riskPreferences;title='Wealth Scenario Assumptions';
+form='<form data-weform="risk" class="we-form"><div class="we-fields">'+
+options('Risk Tolerance','tolerance',['Conservative','Moderate','Growth','High Risk'],r.tolerance)+
+field('Planning Horizon (Years)','horizon',r.horizon,'number','min="1" max="40" required')+
+field('Annual Return Assumption (%)','annualReturn',r.annualReturn,'number','min="-30" max="35" step=".1" required')+
+field('Annual Volatility Assumption (%)','volatility',r.volatility,'number','min="0" max="80" step=".1" required')+
+field('Planned Monthly Contribution (KES)','monthlyAdd',r.monthlyAdd,'number','min="0" required')+'</div><button class="we-btn primary" type="submit">Save Scenario</button></form>';
+}else {title='Provider or Document Integration Unavailable';form=note('The prototype has no connected brokerage, title registry, property appraiser or secure document repository. No external action was taken.',true)}
+return '<div class="we-dialog-backdrop"><div class="we-dialog" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="we-title"><h2>'+esc(title)+'</h2>'+button('Close','closeModal')+'</div>'+form+'</div></div>'}
+function exportCsv(filename,header,data){const csv=[header,...data].map(row=>row.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),350)}
+function render(n){switch(Number(n)){case 50:return screen50();case 51:return screen51();case 52:return screen52();case 53:return screen53();case 54:return screen54();case 55:return screen55();default:return ''}}
+function actClick(e){
+const el=e.target.closest?.('[data-we],[data-wenav]');if(!el)return false;
+if(el.dataset.wenav){e.preventDefault();go(el.dataset.wenav);return true}
+const raw=el.dataset.we;const cmd=raw.split(':')[0],arg=raw.slice(cmd.length+1);
+ui.alert='';
+switch(cmd){
+ case 'reference':location.href='index.html#screen/'+ctx.screen();break;
+ case 'tab':{const i=arg.indexOf(':'),key=arg.slice(0,i),value=arg.slice(i+1);ui.tab[key]=value;if(key==='520')ui.assetFilter=value;save();break}
+ case 'asset':ui.asset=arg;save();break;
+ case 'holding':ui.holding=arg;go(54);break;
+ case 'category':go(51);break;
+ case 'portfolio':go(53);break;
+ case 'netWorth':go(50);break;
+ case 'viewDebt':case 'newLiability':case 'assetDebt':go(43);break;
+ case 'assetInsurance':go(47);break;
+ case 'newAsset':ui.editId=null;ui.modal='asset';save();break;
+ case 'editAsset':ui.editId=selAsset()?.id;ui.modal='asset';save();break;
+ case 'valuation':ui.modal='valuation';save();break;
+ case 'assetNote':ui.modal='assetNote';save();break;
+ case 'newHolding':ui.editId=null;ui.modal='holding';save();break;
+ case 'editHolding':ui.editId=selHolding()?.id;ui.modal='holding';save();break;
+ case 'tradeBuy':case 'tradeSell':ui.tradeSide=cmd==='tradeBuy'?'buy':'sell';ui.modal='trade';save();break;
+ case 'dividend':ui.modal='dividend';save();break;
+ case 'riskSettings':ui.modal='risk';save();break;
+ case 'investGoal':go(37);break;
+ case 'transfer':go(14);break;
+ case 'rebalance':go(55);break;
+ case 'exportPortfolio':exportCsv('finance-os-portfolio-demo.csv',['Security','Ticker','Category','Units','Estimated Price','Average Cost','Value'],state().holdings.map(h=>[h.name,h.ticker,h.kind,h.shares,h.price,h.avg,investmentValue(h)]));save('Portfolio CSV exported from demo valuations.');break;
+ case 'exportWealth':exportCsv('finance-os-wealth-demo.csv',['Category','Asset','Value (KES)'],[...state().assets.map(a=>[a.kind,a.name,a.value]),['Investments','Investment Portfolio',investTotal()],['Personal Cash','Accounts',personalCash()],...debtData().map(d=>['Liability',d.name,-d.balance])]);save('Wealth CSV exported from the unified demo ledger.');break;
+ case 'assetActions':case 'assetDocs':case 'market':case 'insight':case 'time':ui.modal='unavailable';save();break;
+ case 'closeModal':ui.modal=null;save();break;
+ default:ui.modal='unavailable';save();break;
+}
+return true;
+}
+function actInput(e){
+const el=e.target,key=el.dataset?.wesearch;if(!key)return false;
+if(key==='asset')ui.assetSearch=el.value;else if(key==='holding')ui.holdingSearch=el.value;else return false;
+const pos=el.selectionStart;ctx.render();const input=$('[data-wesearch="'+key+'"]');if(input){input.focus();input.setSelectionRange(pos,pos)}return true;
+}
+function actChange(e){const el=e.target;if(!el.dataset?.wefilter)return false;
+if(el.dataset.wefilter==='holdFilter')ui.holdFilter=el.value;save();return true;
+}
+function actSubmit(e){
+const form=e.target;if(!form.dataset?.weform)return false;e.preventDefault();
+const d=Object.fromEntries(new FormData(form)),st=state();
+switch(form.dataset.weform){
+ case 'asset':{
+ const name=String(d.name||'').trim(),value=Number(d.value),purchase=Number(d.purchase),growth=Number(d.annualGrowth);
+ if(!name||[value,purchase,growth].some(x=>!Number.isFinite(x))||value<0||purchase<0||growth<-100||growth>100){save('Enter a valid asset name and non-negative valuation.');break}
+ const old=st.assets.find(x=>x.id===ui.editId),record={name,kind:d.kind,value,purchase,annualGrowth:growth,location:d.location,date:d.date,status:d.status,type:d.type,size:d.size,notes:d.notes,icon:old?.icon||'◈'};
+ if(old)Object.assign(old,record);else{record.id='asset-'+Date.now();st.assets.push(record)}
+ ui.asset=old?.id||record.id;ui.modal=null;save('Asset saved to the local wealth register.');break}
+ case 'valuation':{
+ const a=selAsset(),amount=Number(d.value),growth=Number(d.annualGrowth);
+ if(!a||!Number.isFinite(amount)||amount<0||!Number.isFinite(growth)||growth<-100||growth>100){save('Enter valid valuation figures.');break}
+ a.value=amount;a.annualGrowth=growth;st.assetValuations.push({id:'val-'+Date.now(),assetId:a.id,date:d.date,value:amount});
+ ui.modal=null;save('Asset valuation updated across Net Worth and Asset Overview.');break}
+ case 'assetNote':{const text=String(d.note||'').trim();if(!text){save('Enter a note.');break}const a=selAsset();a.notes=(a.notes||'')+'\n'+text;st.assetNotes.push({assetId:a.id,text,date:'2026-10-30'});ui.modal=null;save('Asset note saved only in this browser.');break}
+ case 'holding':{
+ const name=String(d.name||'').trim(),ticker=String(d.ticker||'').trim(),shares=Number(d.shares),price=Number(d.price),avg=Number(d.avg),change=Number(d.change);
+ if(!name||!ticker||[shares,price,avg,change].some(x=>!Number.isFinite(x))||shares<0||price<=0||avg<=0||change<-100||change>100){save('Enter valid investment units, prices and cost.');break}
+ const old=st.holdings.find(x=>x.id===ui.editId),record={name,ticker,kind:d.kind,shares,price,avg,change,platform:d.platform,currency:'KES',notes:'Unverified manual holding value.'};
+ if(old)Object.assign(old,record);else{record.id='h-'+Date.now();st.holdings.push(record)}
+ ui.holding=old?.id||record.id;ui.modal=null;save('Manual investment position updated across portfolio and net worth.');break}
+ case 'trade':{
+ const h=selHolding(),shares=Number(d.shares),price=Number(d.price),account=ctx.model.accounts.find(x=>x[0]===d.account),cost=Math.round(shares*price*100)/100;
+ if(!h||!account||!Number.isFinite(shares)||!Number.isFinite(price)||shares<=0||price<=0||!Number.isFinite(cost)){save('Enter valid units, price and account.');break}
+ if(ui.tradeSide==='buy'){
+ if(account[1]<cost){save('Insufficient local demo cash balance; no simulated trade was recorded.');break}
+ const oldUnits=h.shares;h.avg=(h.avg*oldUnits+price*shares)/(oldUnits+shares);h.shares=oldUnits+shares;account[1]=Math.round((account[1]-cost)*100)/100;
+ }else{
+ if(h.shares<shares){save('Not enough units to sell; no trade recorded.');break}
+ h.shares=Math.round((h.shares-shares)*10000)/10000;account[1]=Math.round((account[1]+cost)*100)/100;
+ }
+ st.investEvents.push({id:'trade-'+Date.now(),type:ui.tradeSide,holdingId:h.id,date:'2026-10-30',shares,price,amount:cost,account:d.account,simulated:true});
+ ui.modal=null;save('Simulated '+ui.tradeSide+' saved; demo cash and investment quantities updated. No brokerage order placed.');break}
+ case 'dividend':{
+ const h=selHolding(),perShare=Number(d.perShare),account=ctx.model.accounts.find(x=>x[0]===d.account);
+ if(!h||!account||!Number.isFinite(perShare)||perShare<0){save('Enter a non-negative distribution and valid account.');break}
+ const amount=Math.round(perShare*h.shares*100)/100;account[1]=Math.round((account[1]+amount)*100)/100;
+ st.investEvents.push({id:'div-'+Date.now(),type:'dividend',holdingId:h.id,perShare,shares:h.shares,amount,date:'2026-10-30',account:d.account,simulated:true});
+ ui.modal=null;save('Fictional investment income added to demo cash. No provider or tax entry was created.');break}
+ case 'risk':{
+ const horizon=Number(d.horizon),annualReturn=Number(d.annualReturn),volatility=Number(d.volatility),monthlyAdd=Number(d.monthlyAdd);
+ if([horizon,annualReturn,volatility,monthlyAdd].some(x=>!Number.isFinite(x))||horizon<1||horizon>40||annualReturn< -30||annualReturn>35||volatility<0||volatility>80||monthlyAdd<0){save('Enter valid planning assumptions.');break}
+ Object.assign(st.riskPreferences,{tolerance:d.tolerance,horizon,annualReturn,volatility,monthlyAdd});
+ ui.modal=null;save('Wealth scenario assumptions saved locally. No future return is guaranteed.');break}
+}
+return true;
+}
+window.FinanceWealth={init,render,actClick,actInput,actChange,actSubmit};
+
 })();
