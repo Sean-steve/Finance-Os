@@ -87,6 +87,9 @@ async function main(){
   await page.locator('form[data-form=b4-scenario] input[name=name]').fill('CI hypothetical');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyIncome]').fill('100');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyExpense]').fill('80');
+  // Regression: async workspace refresh must not silently clear partially filled scenario inputs.
+  const valid=await page.locator('form[data-form=b4-scenario]').evaluate(form=>form.checkValidity());
+  assert.equal(valid,true,'Scenario form must remain valid after navigation and data refresh');
   await page.locator('form[data-form=b4-scenario] button[type=submit]').click();
   await page.getByText('Hypothetical end cash:').first().waitFor({timeout:10000});
   assert.deepEqual(errors,[],'Authenticated B4 views should not throw runtime errors');
