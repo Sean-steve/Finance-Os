@@ -40,7 +40,7 @@
   label('Description','description','text','','required')+
   label('Economic date','effectiveOn','date',new Date().toISOString().slice(0,10),'required')+
   '<button type="submit">Post locally (immutable)</button></form>'+
-  '<h3>Posted manual transactions</h3>'+(data.transactions.length?'<ul>'+data.transactions.map(t=>'<li>'+e(t.description)+' · '+money(t.amountMinor)+' ('+e(t.kind)+')</li>').join('')+'</ul>':'<p>No local journal entries.</p>');
+  '<h3>Posted manual transactions</h3>'+(data.transactions.length?'<ul>'+data.transactions.map(t=>'<li>'+e(t.description)+' · '+money(t.amountMinor)+' ('+e(t.kind)+') '+((t.kind==='INCOME'||t.kind==='EXPENSE')?'<button type="button" data-b1-reverse="'+e(t.id)+'">Reverse</button>':'')+'</li>').join('')+'</ul>':'<p>No local journal entries.</p>');
  const reconciliation=()=>'<form data-b1-form="import"><h3>Stage a local statement row</h3>'+
   '<label class="b1-field">Account<select name="financialAccountId">'+data.accounts.map(a=>'<option value="'+e(a.id)+'">'+e(a.displayName)+'</option>').join('')+'</select></label>'+
   label('Date','date','date',new Date().toISOString().slice(0,10),'required')+
@@ -122,6 +122,16 @@
  },true);
  document.addEventListener('click',async event=>{
   if(event.target.closest?.('[data-b1-toggle]')){el.dataset.hidden=el.dataset.hidden==='true'?'false':'true';draw();}
+  const reverse=event.target.closest?.('[data-b1-reverse]');
+  if(reverse && token && workspaceId){
+   const id=reverse.dataset.b1Reverse;
+   if(!confirm('Reverse this local journal transaction? A new immutable entry will be posted.'))return;
+   try{
+    await api('/v1/workspaces/'+encodeURIComponent(workspaceId)+'/transactions/'+encodeURIComponent(id)+'/reverse',{method:'POST'});
+    message='Reversal journal posted. Original record remains immutable.';await load();
+   }catch(error){message=String(error.message||error);draw();}
+   return;
+  }
   if(event.target.closest?.('[data-b1-logout]')){
    try{await api('/v1/auth/logout',{method:'POST'});}catch{}
    token='';workspaceId='';data={accounts:[],categories:[],transactions:[],reconciliation:[],journals:[]};message='Session cleared from memory.';draw();
