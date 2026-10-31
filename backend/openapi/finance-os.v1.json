@@ -5739,7 +5739,7 @@
       "post": {
         "operationId": "evaluateB2PurchasePolicy",
         "summary": "evaluateB2PurchasePolicy",
-        "description": "Read-only advisory pre-check. DOES NOT authorize a payment. Manual expense POST is separately enforced at transaction API.",
+        "description": "Read-only advisory pre-check. DOES NOT authorize a payment. Manual expense POST is separately enforced at transaction API. Active legacy BLOCK/REQUIRE_APPROVAL rules with unimplemented conditions fail closed (409) instead of being ignored.",
         "x-implementation-phase": "B2",
         "x-implementation-status": "IMPLEMENTED_B2",
         "security": [
@@ -6069,6 +6069,157 @@
           },
           "422": {
             "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/budgets/{budgetId}/archive": {
+      "post": {
+        "operationId": "archiveB2ActiveBudget",
+        "summary": "archiveB2ActiveBudget",
+        "description": "Archive an active immutable budget, freeing its categories for a new active period/version. Original posted spending remains untouched.",
+        "x-implementation-phase": "B2",
+        "x-implementation-status": "IMPLEMENTED_B2",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "budgetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Authenticated workspace response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B2Budget"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authenticated identity required"
+          },
+          "403": {
+            "description": "Workspace policy denial"
+          },
+          "409": {
+            "description": "Financial or idempotency conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/spending/guardrails/{guardrailId}/deactivate": {
+      "post": {
+        "operationId": "deactivateB2Guardrail",
+        "summary": "deactivateB2Guardrail",
+        "description": "One-time owner/admin deactivation of an immutable financial policy; original policy and audit remain. Cannot reactivate.",
+        "x-implementation-phase": "B2",
+        "x-implementation-status": "IMPLEMENTED_B2",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "guardrailId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Deactivated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "active": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "version": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Only owner/admin can deactivate"
+          },
+          "409": {
+            "description": "Rule not active or conflict"
           }
         }
       }
