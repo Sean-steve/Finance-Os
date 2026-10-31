@@ -35,7 +35,7 @@ The OpenAPI document is \`backend/openapi/finance-os.v1.json\`. Legacy B0 planne
 
 Live bank connections, M-Pesa/Paybill, statement-provider webhooks, payouts, real money transfers, bill autopay, complete onboarding, multi-currency FX, card safeguards, production account recovery, MFA, web-accessible account access and automated financial projections.
 
-Journal-backed manual Income/Expense and transaction reversals are implemented. Transfers are deferred until balanced multi-account transfer controls are certified. Non-KES manual category ledger postings are rejected by B1; the underlying schema retains 3-letter currency codes for later multi-currency support.
+Journal-backed manual Income/Expense and transaction reversals are implemented. Transfers are deferred until balanced multi-account transfer controls are certified. Only CASH, BANK and MOBILE_MONEY may be created as manual B1 posting accounts; credit cards/liabilities require dedicated ledger treatment in a later phase. Non-KES manual category ledger postings are rejected by B1; the underlying schema retains 3-letter currency codes for later multi-currency support.
 
 ## Database changes
 
