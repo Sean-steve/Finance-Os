@@ -9,6 +9,8 @@ on:
   pull_request:
     paths:
       - 'src/**'
+      - 'rebuild/**'
+      - 'rebuild.html'
       - 'index.html'
       - 'tests/**'
       - '.github/workflows/browser-qa.yml'
@@ -52,6 +54,8 @@ jobs:
         run: node tests/rebuild-batch56-60.cjs
       - name: Validate reconstructed budget Screen 22 and auth responsive layouts
         run: node tests/visual-screen22-qa.cjs
+      - name: Test five priority visual corrections and interactions
+        run: node tests/priority-screen-fidelity.cjs
       - name: Measure 59 reference screens and adapted Screen 22 visual difference
         run: node tests/visual-parity-score.cjs
       - name: Audit accessibility and color contrast
