@@ -5168,6 +5168,87 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspaceId}/transactions/{transactionId}/reverse": {
+      "post": {
+        "operationId": "reversePostedManualTransaction",
+        "summary": "Append an immutable balanced correction journal",
+        "description": "Local development only. One reversal per original posted manual transaction, no mutation of historical source. Concurrent attempts are protected by unique composite indexes. Reversal of a reversal is disallowed.",
+        "x-implementation-phase": "B1",
+        "x-implementation-status": "IMPLEMENTED_B1_LOCAL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspaceId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "path",
+            "name": "transactionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B1Transaction"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New posted reversal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B1Transaction"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or expired session"
+          },
+          "403": {
+            "description": "Read-only workspace member"
+          },
+          "404": {
+            "description": "Original transaction missing"
+          },
+          "409": {
+            "description": "Already reversed or idempotency conflict"
+          },
+          "428": {
+            "description": "Idempotency key required"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6979,6 +7060,12 @@
           "occurredAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "reversesTransactionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Original posted transaction ID, present only for reversal entries"
           }
         }
       },
