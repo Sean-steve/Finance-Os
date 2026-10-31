@@ -277,7 +277,7 @@ function budgetList(){
   data.budgets.map(b=>'<tr><td><b>'+esc(b.name)+'</b><small> · v'+esc(b.version)+'</small></td>'+
    '<td>'+esc(b.startsOn)+' → '+esc(b.endsOn)+'</td><td>'+esc(b.status)+'</td>'+
    '<td>'+money(b.amountMinor)+'</td><td>'+money(b.allocatedMinor)+'</td>'+
-   '<td>'+money(b.spentMinor)+'</td><td>'+(b.status==='DRAFT'?'<button data-activate-budget="'+esc(b.id)+'">Activate</button>':'—')+
+   '<td>'+money(b.spentMinor)+'</td><td>'+(b.status==='DRAFT'?'<button data-activate-budget="'+esc(b.id)+'">Activate</button>':b.status==='ACTIVE'?'<button data-archive-budget="'+esc(b.id)+'">Archive</button>':'—')+
    '</td></tr>').join('')+'</tbody></table></div>':'<p>No server budgets created yet.</p>')+
   btn('Create category budget',22)+btn('View spending intelligence',16);
 }
@@ -323,7 +323,7 @@ function guardrails(){
  return card('Active financial posting rules',rules.length?
  '<ul class="connected-list">'+rules.map(r=>'<li><b>'+esc(r.name)+'</b><span>'+esc(r.kind)+' · '+esc(r.action)+
  ' · '+esc(r.kind==='AMOUNT'?money(r.conditions.minAmountMinor):data.categories.find(c=>c.id===r.conditions.categoryId)?.name||'Unknown category')+
- '</span></li>').join('')+'</ul>':'<p>No guardrails configured. Manual expense entries currently have no policy restrictions beyond accounting validation.</p>')+
+ '</span>'+( ['OWNER','ADMIN'].includes(workspaces.find(w=>w.id===workspaceId)?.role)?'<button data-deactivate-rule="'+esc(r.id)+'">Deactivate</button>':'')+'</li>').join('')+'</ul>':'<p>No guardrails configured. Manual expense entries currently have no policy restrictions beyond accounting validation.</p>')+
  card('Create an amount guardrail','<form data-form="guardrail-amount">'+
  field('Policy name','name')+field('Minimum expense amount KES','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
  select('Action','action',[['WARN','Warn'],['REQUIRE_APPROVAL','Require independent approval'],['BLOCK','Block manual posting']])+
@@ -521,6 +521,20 @@ document.addEventListener('click',async event=>{
   token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[]};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
+ }
+ if(button.hasAttribute('data-archive-budget')){
+  if(!confirm('Archive this active budget? The original budget remains auditable and a replacement can be activated.'))return;
+  try{await request(path('/budgets/'+encodeURIComponent(button.dataset.archiveBudget)+'/archive'),true,{method:'POST'});
+   notice='Budget archived. Previous records are preserved.';await refresh();}
+  catch(ex){error=String(ex.message||ex);draw();}
+  return;
+ }
+ if(button.hasAttribute('data-deactivate-rule')){
+  if(!confirm('Deactivate this rule? A new policy must be created to replace it.'))return;
+  try{await request(path('/spending/guardrails/'+encodeURIComponent(button.dataset.deactivateRule)+'/deactivate'),true,{method:'POST'});
+   notice='Policy deactivated with an audit record; prior decisions remain.';lastEval=null;lastCheck=null;await refresh();}
+  catch(ex){error=String(ex.message||ex);draw();}
+  return;
  }
  if(button.hasAttribute('data-activate-budget')){
   if(!confirm('Activate this immutable budget? Category allocations cannot be edited after activation.'))return;
