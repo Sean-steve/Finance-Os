@@ -84,6 +84,15 @@ test('B1 end-to-end: real credentials, workspace authorization, immutable postin
   assert.equal((await request(app,'GET',target+'/ledger/journal-entries',tokenA)).json().items.length,2,
     'reconciliation must not double-post money');
 
+  const reverseKey=freshKey();
+  const reversed=await request(app,'POST',target+'/transactions/'+expense.json().id+'/reverse',tokenA,undefined,reverseKey);
+  assert.equal(reversed.statusCode,201,reversed.body);
+  assert.equal(reversed.json().kind,'REVERSAL');assert.equal(reversed.json().amountMinor,10000);
+  assert.equal((await request(app,'GET',target+'/accounts',tokenA)).json().items[0].balanceMinor,250000);
+  assert.equal((await request(app,'GET',target+'/ledger/journal-entries',tokenA)).json().items.length,3);
+  assert.equal((await request(app,'POST',target+'/transactions/'+expense.json().id+'/reverse',tokenA,undefined,reverseKey)).statusCode,200);
+  assert.equal((await request(app,'POST',target+'/transactions/'+expense.json().id+'/reverse',tokenA,undefined,freshKey())).statusCode,409);
+
   const userA=(await request(app,'GET','/v1/me',tokenA)).json();
   await admin.query(`INSERT INTO workspace_members(workspace_id,user_id,role,status) VALUES($1,$2,'VIEWER','ACTIVE')`,
     [workspaceA,userBId]);
@@ -92,7 +101,7 @@ test('B1 end-to-end: real credentials, workspace authorization, immutable postin
   const authData=(await admin.query('SELECT count(*)::int AS n FROM app.password_credentials WHERE user_id=$1',[userA.id])).rows[0].n;
   assert.equal(authData,1);
   const real=(await admin.query(`SELECT count(*)::int AS n FROM journal_entries WHERE workspace_id=$1 AND status='POSTED'`,[workspaceA])).rows[0].n;
-  assert.equal(real,2);
+  assert.equal(real,3);
   await assert.rejects(admin.query(`UPDATE journal_entries SET memo='tampered' WHERE id=$1`,[posted.json().journalEntryId]),/immutable/i);
   const refresh=await request(app,'POST','/v1/auth/refresh',tokenA);
   assert.equal(refresh.statusCode,200,refresh.body);
