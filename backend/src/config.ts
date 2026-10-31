@@ -42,7 +42,7 @@ export function loadConfig(source:NodeJS.ProcessEnv=process.env):Config{
  const requestedOidc=Boolean(e.OIDC_ISSUER||e.OIDC_AUDIENCE||e.OIDC_JWKS_URI||e.OIDC_CLIENT_ID);
  if(local&&requestedOidc)throw new Error('Choose either local password auth or OIDC, not both');
  if((local||requestedOidc)&&!e.AUTH_DATABASE_URL)throw new Error('A separate AUTH_DATABASE_URL is required');
- if((local||requestedOidc)&&e.AUTH_DATABASE_URL===e.DATABASE_URL)throw new Error('Auth and finance must use separate database roles');
+ if((local||requestedOidc)&&e.AUTH_DATABASE_URL===e.DATABASE_URL)throw new Error('Auth and finance must use different roles and database connections');
  let oidc:OidcConfig|undefined;
  if(requestedOidc){
   const required=['OIDC_ISSUER','OIDC_AUDIENCE','OIDC_JWKS_URI','OIDC_CLIENT_ID','OIDC_AUTHORIZATION_ENDPOINT',
