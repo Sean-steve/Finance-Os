@@ -90,7 +90,7 @@ test('B4: workspace planning envelopes, goal funding, approvals, scenarios and R
   assert.equal(totals.json().isProviderVerified,false);
   assert.equal((await ask('POST',root+'/capital/allocations',token,{...goalFund,amountMinor:-7000001},key())).statusCode,422);
   assert.equal((await ask('POST',root+'/capital/allocations',token,{...goalFund,targetId:randomUUID()},key())).statusCode,422);
-  assert.equal((await ask('POST',root+'/capital/allocations',token,{...goalFund,amountMinor:15000000},key())).statusCode,409);
+  assert.equal((await ask('POST',root+'/capital/allocations',token,{...goalFund,amountMinor:12000000},key())).statusCode,409);
   const afford=await ask('POST',root+'/capital/affordability',token,{purchaseAmountMinor:12000000});
   assert.equal(afford.statusCode,200,afford.body);
   assert.equal(afford.json().insufficientManualUnassigned,true);
