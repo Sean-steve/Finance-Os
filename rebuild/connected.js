@@ -64,7 +64,7 @@ async function initConfig(){
   if(!meta.financialEndpointsAvailable||!meta.authenticationAvailable)throw new Error('Finance API is not enabled for authenticated accounts.');
   if(meta.authenticationScope==='OIDC_VERIFIED_MFA')provider=await request('/v1/auth/provider',false);
   else if(meta.authenticationScope!=='LOCAL_TEST_ONLY'||!isLocal())throw new Error('Local password mode is only permitted on localhost.');
- }catch(ex){error=String(ex.message||ex);}
+ }catch(ex){error=String(ex.message||ex);apiBase=null;}
 }
 async function request(path,authenticated=true,options={}){
  if(!apiBase)throw new Error('Finance API is unconfigured.');
