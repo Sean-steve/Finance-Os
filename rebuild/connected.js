@@ -260,7 +260,7 @@ function spendingPanels(){
       return '<div class="connected-bar"><b>'+esc(p.period)+'</b><i style="width:'+width.toFixed(1)+'%"></i>'+
       '<span>'+formatSigned(p.netSpentMinor)+'</span></div>';
     }).join('')+'</div>':'<p>At least one posted journal entry is needed for a trend.</p>')+
-  '<p class="connected-muted">Corrections recorded in later months affect that later month. Trends are not audited bank statements.</p>');
+  '<p class="connected-muted">Corrections recorded in later months affect that later month. Trends are not audited bank statements.</p>';
 }
 function recurringSuggestions(){
  const rows=data.insights?.potentialRecurringDescriptions||[];
@@ -269,7 +269,7 @@ function recurringSuggestions(){
    esc(r.occurrences)+' manually entered occurrences · '+money(r.recordedGrossMinor)+
    ' total gross expense · NOT a confirmed subscription</span></li>').join('')+'</ul>':
   '<p>Not enough repeated, manually posted descriptions to suggest subscriptions or possible spending leaks.</p>')+
- '<p class="connected-muted">No merchant identity verification, provider feed, automatic cancellation or subscription prediction is available.</p>');
+ '<p class="connected-muted">No merchant identity verification, provider feed, automatic cancellation or subscription prediction is available.</p>';
 }
 function budgetList(){
  return card('Budgets · workspace-scoped and versioned',data.budgets.length?
@@ -290,7 +290,7 @@ function budgetDetails(){
     '<td>'+money(a.spentMinor)+'</td><td>'+money(a.remainingMinor)+'</td><td>'+
     (a.remainingMinor<0?'Over allocation':'Within allocation')+'</td></tr>').join('')+'</tbody></table></div>').join(''):
    '<p>No active budgets. Draft and activate a category budget to track utilization.</p>')+
- '<p class="connected-muted">Remaining allocation is not a safe-to-spend or verified bank-balance calculation. Rollover is not active.</p>');
+ '<p class="connected-muted">Remaining allocation is not a safe-to-spend or verified bank-balance calculation. Rollover is not active.</p>';
 }
 function createBudget(){
  const categories=spendCategories();
@@ -314,7 +314,7 @@ function allowance(){
  '</b><div class="connected-meter"><i style="width:'+Math.min(100,Math.max(0,a.limitMinor?100*a.spentMinor/a.limitMinor:0))+'%"></i></div>'+
  '<p>Limit '+money(a.limitMinor)+' · Posted '+money(a.spentMinor)+' · Allocation remaining '+money(a.remainingMinor)+'</p></div>')).join(''):
  '<p>No active budget allocations to summarize.</p>')+
- '<p class="connected-muted">Final affordability requires actual income, obligations, cash availability, and authoritative provider data in later phases.</p>');
+ '<p class="connected-muted">Final affordability requires actual income, obligations, cash availability, and authoritative provider data in later phases.</p>';
 }
 function guardrails(){
  const rules=data.guardrails||[],approvals=data.approvals||[];
@@ -356,7 +356,7 @@ function approvalQueue(){
  '<button data-approval-decision="'+esc(a.id)+'" data-decision="REJECTED">Reject</button>':
  'Independent decision required')+'</td></tr>').join('')+'</tbody></table></div>':
  '<p>No approval requests in this workspace.</p>')+
- '<p class="connected-muted">An approval authorizes a matching manual posting only once. It does NOT move funds or approve a bank/card payment.</p>');
+ '<p class="connected-muted">An approval authorizes a matching manual posting only once. It does NOT move funds or approve a bank/card payment.</p>';
 }
 function spendingRecovery(){
  const flagged=data.budgets.filter(b=>b.status==='ACTIVE').flatMap(b=>b.allocations.filter(a=>a.remainingMinor<0)
