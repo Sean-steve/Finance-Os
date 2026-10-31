@@ -801,8 +801,12 @@ document.addEventListener('change',event=>{
  if(t.name==='selectedBill'){selectedBill=t.value;draw();}
 });
 window.addEventListener('hashchange',()=>{
+ // Invalidate cached planning data whenever the user leaves B3, as B1/B2 postings
+ // and reversals can change authoritative cash flow without a B3 mutation.
+ const active=screen()>=27&&screen()<=34;
+ if(!active)b3LoadedFor='';
  draw();
- if(token&&workspaceId&&screen()>=27&&screen()<=34&&b3LoadedFor!==workspaceId&&!busy)void refresh();
+ if(token&&workspaceId&&active&&b3LoadedFor!==workspaceId&&!busy)void refresh();
 });
 (async()=>{await initConfig();if(apiBase)try{await finishOidc();}catch(ex){error=String(ex.message||ex);}draw();})();
 })();
