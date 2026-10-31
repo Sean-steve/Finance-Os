@@ -3674,11 +3674,7 @@
                     "enum": [
                       "CASH",
                       "BANK",
-                      "MOBILE_MONEY",
-                      "CARD",
-                      "SACCO",
-                      "INVESTMENT",
-                      "OTHER"
+                      "MOBILE_MONEY"
                     ]
                   },
                   "currency": {
