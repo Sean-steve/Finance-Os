@@ -40,3 +40,21 @@ button,input,select{font:inherit}button{cursor:pointer}
 .connected-policy-result strong{font-weight:800;color:#085d48}
 .connected-policy-result button{display:inline-block}
 @media(max-width:700px){.connected-alloc-row{grid-template-columns:18px 1fr}.connected-alloc-row input[type=text]{grid-column:2}.connected-bar{grid-template-columns:72px minmax(0,1fr) 88px;gap:7px;font-size:10px}}
+
+/* Phase B3 — verified-manual vs estimated scheduling visual separation. */
+.connected-b3-warning{border-left:4px solid #c37b37;background:#fff6e7!important;color:#6b431d!important;
+ padding:16px 18px;border-radius:6px;max-width:none!important;line-height:1.65}
+.connected-card table th{white-space:nowrap}
+.connected-card table td{font-variant-numeric:tabular-nums}
+.connected-card .connected-dl dd{font-variant-numeric:tabular-nums}
+.connected-card fieldset{min-width:0}
+.connected-card [data-form="bill-settlement"]{align-items:end}
+.connected-card [data-form="bill-settlement"] select{max-width:100%}
+.connected-card [data-form="bill-settlement"] button{white-space:normal}
+.connected-card p a{color:#067b5a;text-decoration:underline}
+.connected-card .connected-disclaimer{display:block;border-top:1px solid #dfeae3;padding-top:12px}
+.connected-hero p{max-width:850px}
+@media(max-width:750px){.connected-card .connected-dl{grid-template-columns:115px minmax(0,1fr)}
+ .connected-card h2{font-size:16px}
+ .connected-kpis article strong{font-size:20px}
+}

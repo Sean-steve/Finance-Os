@@ -1,6 +1,8 @@
-# Finance OS Backend — B0/B1 + B1.1 OIDC Security
+# Finance OS Backend — B0–B3 Certified Manual-Finance Services
 
 **Status: B1 local/test authenticated accounts and manual ledger are implemented; production authentication remains disabled.** The 60-screen UI remains independently published as a demonstration on GitHub Pages.
+
+**Phase B3** adds income-source projections, recurring bill obligations, unverified manual settlement evidence and indicative cash flow: [B3 Engineering](../docs/backend/B3_ENGINEERING.md). B3 does **not** authenticate bank payments, automatically transfer funds, or verify planned income. A real finance production IdP/API remains unconfigured.
 
 **Phase B2** extends the immutable journal with PostgreSQL budgets, spending insights, enforced guardrails and two-person approvals: [B2 Engineering](../docs/backend/B2_ENGINEERING.md). A disposable real-Keycloak protocol test and the production IdP readiness register are in [OIDC Activation](../docs/backend/OIDC_KEYCLOAK_ACTIVATION.md); no production provider is activated.
 

@@ -42,8 +42,8 @@ const asMinor=input=>{
 };
 const random=()=>crypto.randomUUID()+'-'+crypto.randomUUID();
 let apiBase=null,token='',identity=null,provider=null,workspaces=[],workspaceId='',busy=false,notice='',error='';
-let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[]};
-let selectedAccount='',selectedTransaction='',lastEval=null,lastCheck=null;
+let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+let selectedAccount='',selectedTransaction='',selectedBill='',lastEval=null,lastCheck=null,b3LoadedFor='',loadFailed=false;
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -90,16 +90,28 @@ async function refresh(){
   workspaces=(await request('/v1/workspaces')).items||[];
   workspaceId=workspaces.some(w=>w.id===workspaceId)?workspaceId:workspaces[0]?.id||'';
   if(workspaceId){
-   const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals'];
+   const b3Active=screen()>=27&&screen()<=34;
+   const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals',
+    ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[])];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
     journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
-    budgets:result[6].items||[],insights:result[7],guardrails:result[8].items||[],approvals:result[9].items||[]};
+    budgets:result[6].items||[],insights:result[7],guardrails:result[8].items||[],approvals:result[9].items||[],
+    incomeSources:b3Active?result[10].items||[]:data.incomeSources||[],
+    incomeOverview:b3Active?result[11]:data.incomeOverview||null,
+    incomeForecast:b3Active?result[12]:data.incomeForecast||null,
+    bills:b3Active?result[13].items||[]:data.bills||[],
+    billOverview:b3Active?result[13].overview:data.billOverview||null,
+    billCalendar:b3Active?result[14].events||[]:data.billCalendar||[],
+    cashflow:b3Active?result[15]:data.cashflow||null,
+    history:b3Active?result[16]:data.history||null,
+    shortfalls:b3Active?result[17]:data.shortfalls||null};
+   if(b3Active)b3LoadedFor=workspaceId;
    selectedAccount=data.accounts.some(a=>a.id===selectedAccount)?selectedAccount:(data.accounts[0]?.id||'');
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
-  }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[]};
-  error='';
- }catch(ex){error=String(ex.message||ex);}
+  }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  error='';loadFailed=false;
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{location.hash='screen/'+n;window.scrollTo(0,0);draw();};
@@ -368,10 +380,174 @@ function spendingRecovery(){
  recurringSuggestions()+btn('Set spending guardrails',24);
 }
 
+
+function incomeDashboard(){
+ const view=data.incomeOverview;
+ if(!view)return card('Income records','<p>Loading authoritative income records…</p>');
+ const months=view.monthlyRecordedIncome||[],plans=view.plannedSources||[];
+ const latest=months.find(m=>m.period===new Date().toISOString().slice(0,7))||null;
+ return '<div class="connected-kpis">'+
+  '<article><span>Net recorded income · last '+esc(view.months)+' months</span><strong>'+money(view.recordedIncomeMinor)+'</strong><small>POSTED manual journals only</small></article>'+
+  '<article><span>Current reporting month</span><strong>'+money(latest?latest.netRecordedIncomeMinor:0)+'</strong><small>Manual entries, net of reversals</small></article>'+
+  '<article><span>Expected sources</span><strong>'+plans.filter(p=>p.enabled).length+'</strong><small>User estimates, NOT received</small></article>'+
+  '</div>'+
+ card('Actual recorded income by month',months.length?
+  '<div class="connected-table"><table><thead><tr><th>Month</th><th>Net posted income</th><th>Recorded income entries</th></tr></thead><tbody>'+
+  months.map(m=>'<tr><td>'+esc(m.period)+'</td><td>'+money(m.netRecordedIncomeMinor)+'</td><td>'+esc(m.incomeEntries)+'</td></tr>').join('')+
+  '</tbody></table></div>':'<p>No posted income records in the selected reporting period.</p>')+
+ card('Next steps',btn('Manage expected income',28)+btn('Review forecast estimates',29)+btn('Record income',12))+
+ card('Evidence warning','<p>Income recorded manually is not a bank-verified deposit. Source expectations are separate estimates and never credited to your actual account ledger.</p>');
+}
+function incomeSourcesScreen(){
+ const sources=data.incomeSources||[],categories=data.categories.filter(c=>c.kind==='INCOME');
+ const listHtml=sources.length?'<div class="connected-table"><table><thead><tr><th>Income source</th><th>Cadence</th><th>Estimated amount</th><th>First expected</th><th>Evidence</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
+ sources.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(x.cadence)+'</td><td>'+money(x.expectedMinor)+'</td>'+
+ '<td>'+esc(x.firstExpectedOn)+'</td><td>User estimate</td><td>'+esc(x.enabled?'ENABLED':'DISABLED')+'</td>'+
+ '<td>'+(x.enabled?'<button data-disable-income="'+esc(x.id)+'">Disable</button>':'—')+'</td></tr>').join('')+
+ '</tbody></table></div>':'<p>No expected income sources. These are optional forecasts and do not create deposits.</p>';
+ return card('Expected income sources',listHtml)+
+ card('Add an estimated income source','<p>Expected amounts and dates are plans, not recorded earnings. Editing terms requires a new source after disabling the old one.</p>'+
+ '<form data-form="income-source">'+field('Source name','name')+
+ select('Income category','categoryId',categories.map(c=>[c.id,c.name]))+
+ select('Frequency','cadence',[['MONTHLY','Monthly'],['WEEKLY','Weekly'],['QUARTERLY','Quarterly'],['YEARLY','Yearly'],['VARIABLE','One-time / variable estimate']])+
+ field('Expected KES amount','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('First expected date','firstExpectedOn','date',true,new Date().toISOString().slice(0,10))+
+ field('Optional final expected date','lastExpectedOn','date',false)+
+ '<button type="submit">Save estimate</button></form>')+
+ (categories.length?'':card('Income category required',btn('Create an income category',12)));
+}
+function incomeForecastScreen(){
+ const estimate=data.incomeForecast;
+ if(!estimate)return card('Income forecast','<p>Loading income estimates…</p>');
+ const rows=estimate.events||[];
+ return '<div class="connected-kpis"><article><span>Expected, NOT received · next '+esc(estimate.days)+' days</span>'+
+ '<strong>'+money(estimate.expectedMinor)+'</strong><small>Unverified user-estimated income</small></article>'+
+ '<article><span>Scheduled expectations</span><strong>'+rows.length+'</strong><small>No automatic posting to accounts</small></article></div>'+
+ card('Expected income schedule',rows.length?
+ '<div class="connected-table"><table><thead><tr><th>Expected date</th><th>Income source</th><th>Estimate</th><th>Quality</th></tr></thead><tbody>'+
+ rows.map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.name)+'</td><td>'+money(x.amountMinor)+'</td>'+
+ '<td>'+esc(x.evidence)+' · NOT RECEIVED</td></tr>').join('')+'</tbody></table></div>':
+ '<p>No active estimated receipts in this period.</p>')+
+ card('Income planning boundary','<p>Each expected date is a projection. Do not treat a planned payment as available cash. Only actual recorded manual receipts affect the posted ledger.</p>'+
+ btn('Record an actual income entry',12)+btn('Review full cash flow',33));
+}
+function billsScreen(){
+ const bills=data.bills||[],overview=data.billOverview||{};
+ const cats=data.categories.filter(c=>c.kind==='EXPENSE');
+ const rows=bills.length?'<div class="connected-table"><table><thead><tr><th>Obligation</th><th>Payee label</th><th>Schedule</th><th>Amount</th><th>First due</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
+  bills.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(x.payeeLabel||'Not specified')+'</td>'+
+   '<td>'+esc(x.cadence)+'</td><td>'+money(x.amountMinor)+'</td><td>'+esc(x.firstDueOn)+'</td>'+
+   '<td>'+esc(x.status)+'</td><td><button data-open-bill="'+esc(x.id)+'">Details</button>'+
+   (x.status==='ACTIVE'?'<button data-cancel-bill="'+esc(x.id)+'">Cancel future dues</button>':'')+
+   '</td></tr>').join('')+'</tbody></table></div>':'<p>No user-reported bills or obligations recorded.</p>';
+ return '<div class="connected-kpis">'+
+ '<article><span>Next 90 days · unpaid scheduled obligations</span><strong>'+money(overview.upcomingUnverifiedMinor||0)+'</strong><small>User-reported, not bank confirmed</small></article>'+
+ '<article><span>Past 366 days · overdue exposure</span><strong>'+money(overview.overdueUnverifiedMinor||0)+'</strong><small>Unverified outstanding occurrences</small></article>'+
+ '</div>'+card('Bills and financial obligations',rows)+
+ card('Register an obligation','<p>This records a future obligation only. It will NOT pay it, establish a mandate or make a ledger posting.</p>'+
+ '<form data-form="bill-create">'+field('Bill or obligation name','name')+
+ field('Payee / label (optional)','payeeLabel','text',false)+
+ select('Expense category','categoryId',cats.map(c=>[c.id,c.name]))+
+ select('Due frequency','cadence',[['ONCE','One-time'],['MONTHLY','Monthly'],['WEEKLY','Weekly'],['QUARTERLY','Quarterly'],['YEARLY','Yearly']])+
+ field('Scheduled amount KES','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('First due date','firstDueOn','date',true,new Date().toISOString().slice(0,10))+
+ field('Optional last due date','lastDueOn','date',false)+
+ '<button type="submit">Add unpaid obligation</button></form>')+
+ (cats.length?'':card('Expense category required',btn('Create an expense category',12)));
+}
+function billDetailScreen(){
+ const bills=data.bills||[];
+ if(!bills.length)return card('Obligation details', '<p>Create a bill to view expected dues and link manually posted evidence.</p>'+btn('Add a bill',30));
+ if(!bills.some(x=>x.id===selectedBill))selectedBill=bills[0].id;
+ const bill=bills.find(x=>x.id===selectedBill);
+ const events=(data.billCalendar||[]).filter(x=>x.billId===bill.id);
+ const unpaid=events.filter(e=>e.status!=='RECORDED_UNVERIFIED');
+ const reversals=new Set(data.transactions.filter(t=>t.kind==='REVERSAL').map(t=>t.reversesTransactionId));
+ const eligible=data.transactions.filter(t=>t.kind==='EXPENSE'&&t.categoryId===bill.categoryId&&
+  t.currency==='KES'&&t.amountMinor===-bill.amountMinor&&!reversals.has(t.id));
+ return card('Select an obligation',select('Bill','selectedBill',bills.map(x=>[x.id,x.name]),selectedBill)+
+  '<dl class="connected-dl"><dt>Payee label</dt><dd>'+esc(bill.payeeLabel||'Not provided')+'</dd>'+
+  '<dt>Amount</dt><dd>'+money(bill.amountMinor)+'</dd>'+
+  '<dt>Frequency</dt><dd>'+esc(bill.cadence)+'</dd>'+
+  '<dt>Status</dt><dd>'+esc(bill.status)+'</dd>'+
+  '<dt>Evidence</dt><dd>User-reported obligation, not a payment mandate</dd></dl>')+
+ card('Due occurrences · recent 30 / next 90 days',
+  events.length?'<div class="connected-table"><table><thead><tr><th>Due date</th><th>Amount</th><th>Payment evidence</th></tr></thead><tbody>'+
+  events.map(e=>'<tr><td>'+esc(e.date)+'</td><td>'+money(e.amountMinor)+'</td><td>'+
+   esc(e.status.replaceAll('_',' '))+'</td></tr>').join('')+'</tbody></table></div>':
+  '<p>No due occurrences in the displayed period.</p>')+
+ card('Link an existing posted expense to one due occurrence',
+  '<p>This does NOT send money or verify a bill was paid. It associates an existing manual expense of the exact amount and category with the selected due date. Reversal reopens the obligation.</p>'+
+  (unpaid.length&&eligible.length?'<form data-form="bill-settlement">'+
+   '<input type="hidden" name="billId" value="'+esc(bill.id)+'">'+
+   select('Unrecorded due date','dueOn',unpaid.map(e=>[e.date,e.date+' · '+e.status]))+
+   select('Matching manually POSTED expense','manualTransactionId',eligible.map(t=>[t.id,t.description+' · '+money(-t.amountMinor)]))+
+   '<button type="submit">Link manual record (unverified)</button></form>':
+   '<p>Requires an unrecorded due occurrence and a matching POSTED expense visible in your most recent 100 transactions.</p>')+
+   btn('Record a manual expense',12));
+}
+function cashflowHistoryScreen(){
+ const history=data.history;
+ if(!history)return card('Recorded cash-flow timeline','<p>Loading posted journal evidence…</p>');
+ const rows=history.daysWithRecords||[];
+ return '<div class="connected-kpis"><article><span>Net manually recorded cash flow · last '+esc(history.days)+' days</span>'+
+ '<strong>'+money(history.netRecordedCashFlowMinor)+'</strong><small>Double-entry, POSTED manual entries only</small></article>'+
+ '<article><span>Days with records</span><strong>'+rows.length+'</strong><small>Corrections net in reversal dates</small></article></div>'+
+ card('Economic-date cash-flow ledger',rows.length?
+ '<div class="connected-table"><table><thead><tr><th>Economic date</th><th>Net manual income</th><th>Net manual expenses</th><th>Entries</th></tr></thead><tbody>'+
+ rows.map(r=>'<tr><td>'+esc(r.date)+'</td><td>'+money(r.incomeMinor)+'</td>'+
+ '<td>'+money(r.expenseMinor)+'</td><td>'+esc(r.recordedEntries)+'</td></tr>').join('')+
+ '</tbody></table></div>':'<p>No posted manual journals in this reporting interval.</p>')+
+ card('Accuracy boundary','<p>This is not a reconciled bank statement. Forecasted income and scheduled bills are intentionally absent from historical posted totals.</p>'+
+ btn('Open cash-flow forecast',33));
+}
+function cashflowForecastScreen(){
+ const x=data.cashflow;
+ if(!x)return card('Indicative cash-flow forecast','<p>Loading workspace cash-flow estimate…</p>');
+ const rows=x.timeline||[];
+ return '<div class="connected-kpis">'+
+ '<article><span>Manual ledger balance · as of '+esc(x.asOf)+'</span><strong>'+money(x.manualBalanceMinor)+'</strong><small>Not independently provider verified</small></article>'+
+ '<article><span>Future estimated income</span><strong>'+money(x.expectedIncomeMinor)+'</strong><small>NOT received / not recorded</small></article>'+
+ '<article><span>Upcoming unpaid obligations</span><strong>'+money(x.futureObligationsMinor)+'</strong><small>Unverified user-reported bills</small></article>'+
+ '<article><span>Indicative end · '+esc(x.days)+' days</span><strong>'+money(x.endingIndicativeMinor)+'</strong><small>Not available-to-spend cash</small></article>'+
+ '</div>'+
+ card('Projected event timeline',rows.length?
+ '<div class="connected-table"><table><thead><tr><th>Date</th><th>Estimated income</th><th>Expected bills</th><th>Indicative ledger after event</th></tr></thead><tbody>'+
+ rows.map(r=>'<tr><td>'+esc(r.date)+'</td><td>'+money(r.estimatedIncomeMinor)+'</td>'+
+ '<td>'+money(r.unverifiedBillsDueMinor)+'</td><td>'+money(r.projectionMinor)+'</td></tr>').join('')+
+ '</tbody></table></div>':'<p>No planned income or bill occurrences in this period.</p>')+
+ card('Overdue obligations', '<p>Unverified overdue exposure: <b>'+money(x.overdueUnverifiedMinor)+'</b>. '+
+ 'Indicative end after overdue exposure: <b>'+money(x.endingAfterOverdueExposureMinor)+'</b>.</p>'+
+ '<p>Overdue obligations are a separate exposure, not a journal entry or an assumed payment.</p>')+
+ card('Forecast limitations','<ul class="connected-list">'+(x.limitations||[]).map(t=>
+ '<li>'+esc(t)+'</li>').join('')+'</ul>'+btn('Review shortfall exposure',34));
+}
+function shortfallScreen(){
+ const x=data.shortfalls;
+ if(!x)return card('Potential cash shortfalls','<p>Loading conservative cash-flow review…</p>');
+ const issues=x.risks||{};
+ const flagged=Object.values(issues).some(Boolean);
+ return '<div class="connected-kpis"><article><span>First potential shortfall</span><strong>'+
+ esc(x.firstPotentialShortfallOn||'Not projected')+'</strong><small>Estimate, not confirmed liquidity</small></article>'+
+ '<article><span>Unverified overdue exposure</span><strong>'+money(x.overdueUnverifiedMinor)+'</strong>'+
+ '<small>Review before any additional obligation</small></article>'+
+ '<article><span>After-overdue indicative end</span><strong>'+money(x.endingAfterOverdueExposureMinor)+'</strong>'+
+ '<small>Not a guaranteed runway</small></article></div>'+
+ card('Cash-flow exposure',flagged?
+ '<p class="connected-b3-warning">One or more indicative risk conditions is present. Verify actual bank balances, outstanding obligations, and income dates before acting.</p>':
+ '<p>No potential shortfall was identified from these user-entered estimates. This does not establish solvency or mean all obligations have been captured.</p>')+
+ card('Suggested review actions','<ul class="connected-list">'+(x.recommendations||[]).map(t=>'<li>'+esc(t)+'</li>').join('')+
+ '</ul><p class="connected-muted">Advisory review only. No payment, bank mandate, emergency transfer or automated financial decision is initiated.</p>'+
+ btn('Review unverified bills',30)+btn('Inspect income assumptions',29));
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
  if(!workspaceId)return workspace();
+ if(loadFailed)return card('Financial records unavailable',
+  '<p>Authenticated workspace data could not be loaded. No balance, income, bill or cash-flow zero is implied. Check the API connection and retry.</p>'+
+  '<button data-retry>Retry loading records</button>');
  switch(id){
  case 1:case 3:case 60:return profile();
  case 2:return workspace();
@@ -391,6 +567,14 @@ function renderedScreen(){
  case 23:return allowance();
  case 24:return guardrails()+approvalQueue();
  case 26:return spendingRecovery();
+ case 27:return incomeDashboard();
+ case 28:return incomeSourcesScreen();
+ case 29:return incomeForecastScreen();
+ case 30:return billsScreen();
+ case 31:return billDetailScreen();
+ case 32:return cashflowHistoryScreen();
+ case 33:return cashflowForecastScreen();
+ case 34:return shortfallScreen();
 
  default:return soon(id);
  }
@@ -413,8 +597,8 @@ function draw(){
   '<h1>'+esc(names[id])+'</h1><p>'+esc(identity?'Workspace-scoped PostgreSQL records':'Sign in to access server-verified financial data')+'</p></div>'+
   (error?'<div class="connected-alert" role="alert">'+esc(error)+'</div>':'')+
   (notice?'<div class="connected-note" role="status">'+esc(notice)+'</div>':'')+
-  (busy?'<div role="status">Loading server records…</div>':'')+
-  (!apiBase?card('Configuration required','<p>The API endpoint has not been configured for this deployment. No demonstration data is displayed.</p>'):renderedScreen())+
+  (busy?'<div role="status">Loading server records…</div>':
+  (!apiBase?card('Configuration required','<p>The API endpoint has not been configured for this deployment. No demonstration data is displayed.</p>'):renderedScreen()))+
   '<footer class="connected-disclaimer">Finance OS · Authenticated mode · No provider-connected balances, automated payments or financial advice. '+
   'The separate visual prototype uses illustrative data. This connected mode never does.</footer></main></div></div>';
 }
@@ -468,6 +652,25 @@ async function submit(form){
    notice='Policy preview completed. No account was charged and no payment was authorized.';
    await refresh();return;
   }
+  else if(kind==='income-source'){
+   await request(base+'/income/sources',true,{method:'POST',body:{
+    name:d.name,categoryId:d.categoryId,cadence:d.cadence,
+    expectedMinor:asMinor(d.amount),currency:'KES',firstExpectedOn:d.firstExpectedOn,
+    lastExpectedOn:d.lastExpectedOn||null
+   }});
+  }else if(kind==='bill-create'){
+   await request(base+'/bills',true,{method:'POST',body:{
+    name:d.name,payeeLabel:d.payeeLabel||null,categoryId:d.categoryId,
+    cadence:d.cadence,amountMinor:asMinor(d.amount),currency:'KES',
+    firstDueOn:d.firstDueOn,lastDueOn:d.lastDueOn||null
+   }});
+  }else if(kind==='bill-settlement'){
+   await request(base+'/bills/'+encodeURIComponent(d.billId)+'/settlements',true,{
+    method:'POST',body:{dueOn:d.dueOn,manualTransactionId:d.manualTransactionId}
+   });
+   notice='A POSTED manual expense was linked as unverified evidence. No payment was initiated.';
+   await refresh();return;
+  }
   else throw new Error('This form is not connected to an authoritative service.');
   notice='Saved to the current workspace in PostgreSQL.';await refresh();
  }catch(ex){error=String(ex.message||ex);busy=false;draw();}
@@ -513,14 +716,34 @@ document.addEventListener('click',async event=>{
  const button=event.target.closest('button');
  if(!button)return;
  if(button.hasAttribute('data-go')){nav(Number(button.dataset.go));return;}
+ if(button.hasAttribute('data-retry')){void refresh();return;}
  if(button.hasAttribute('data-oidc-start')){
   try{await startOidc();}catch(ex){error=String(ex.message||ex);draw();}
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[]};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
+ }
+ if(button.hasAttribute('data-disable-income')){
+  if(!confirm('Disable this estimated income schedule? The original expectation will remain auditable.'))return;
+  try{
+   await request(path('/income/sources/'+encodeURIComponent(button.dataset.disableIncome)+'/disable'),true,{method:'POST'});
+   notice='Estimated income source disabled. No actual income was changed.';await refresh();
+  }catch(ex){error=String(ex.message||ex);draw();}
+  return;
+ }
+ if(button.hasAttribute('data-open-bill')){
+  selectedBill=button.dataset.openBill;nav(31);return;
+ }
+ if(button.hasAttribute('data-cancel-bill')){
+  if(!confirm('Cancel future bill occurrences? Historical manual payment records remain untouched.'))return;
+  try{
+   await request(path('/bills/'+encodeURIComponent(button.dataset.cancelBill)+'/cancel'),true,{method:'POST'});
+   notice='Future bill schedule cancelled; historical records preserved.';await refresh();
+  }catch(ex){error=String(ex.message||ex);draw();}
+  return;
  }
  if(button.hasAttribute('data-archive-budget')){
   if(!confirm('Archive this active budget? The original budget remains auditable and a replacement can be activated.'))return;
@@ -572,10 +795,14 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;lastEval=null;lastCheck=null;void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;lastEval=null;lastCheck=null;b3LoadedFor='';data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
+ if(t.name==='selectedBill'){selectedBill=t.value;draw();}
 });
-window.addEventListener('hashchange',draw);
+window.addEventListener('hashchange',()=>{
+ draw();
+ if(token&&workspaceId&&screen()>=27&&screen()<=34&&b3LoadedFor!==workspaceId&&!busy)void refresh();
+});
 (async()=>{await initConfig();if(apiBase)try{await finishOidc();}catch(ex){error=String(ex.message||ex);}draw();})();
 })();

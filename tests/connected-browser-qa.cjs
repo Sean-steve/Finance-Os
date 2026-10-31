@@ -21,7 +21,7 @@ async function main(){
   assert.equal(await page.locator('.connected-main').innerText().then(s=>s.includes('KES 1,245,800')),false);
   assert.deepEqual(await page.evaluate(()=>({keys:Object.keys(localStorage),session:Object.keys(sessionStorage)})),
    {keys:[],session:[]},'Connected startup must never create persistent financial/user data');
-  for(const n of [4,5,7,10,15,24,29,42,43,60]){
+  for(const n of [4,5,7,10,15,24,27,28,29,30,31,32,33,34,42,43,60]){
    await page.goto('http://127.0.0.1:8895/connected.html#screen/'+n);
    await page.locator('.connected-hero h1').waitFor();
    const screen=await page.locator('.connected-hero h1').innerText();
