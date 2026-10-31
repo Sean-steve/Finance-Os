@@ -1,9 +1,9 @@
 {
   "name": "@finance-os/backend",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "Finance OS B1.1 OIDC identity and authenticated 60-route client",
+  "description": "Finance OS B2 server-authoritative budgets, spending insights, guardrails and two-person approvals",
   "engines": {
     "node": ">=22"
   },
@@ -12,13 +12,14 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test test/unit.test.ts test/contracts.test.ts test/auth.test.ts test/oidc.test.ts",
+    "test": "tsx --test test/unit.test.ts test/contracts.test.ts test/auth.test.ts test/oidc.test.ts test/b2.unit.test.ts",
     "test:db": "tsx --test test/database.test.ts",
     "migrate": "tsx src/db/migrate.ts",
     "contract:check": "tsx test/check-openapi.ts",
     "test:b1": "tsx --test test/b1.integration.test.ts",
     "test:oidc": "tsx --test test/oidc.test.ts",
-    "test:oidc:db": "tsx --test test/oidc.integration.test.ts"
+    "test:oidc:db": "tsx --test test/oidc.integration.test.ts",
+    "test:b2": "tsx --test test/b2.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",

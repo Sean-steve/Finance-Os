@@ -15,7 +15,8 @@ const categoryBody=z.object({name:z.string().trim().min(1).max(120),
  kind:z.enum(['INCOME','EXPENSE'])}).strict();
 const transactionBody=z.object({financialAccountId:uuid,categoryId:uuid,
  kind:z.enum(['INCOME','EXPENSE']),amountMinor:cash,currency:z.string().regex(/^[A-Z]{3}$/).default('KES'),
- description:z.string().trim().min(1).max(500),effectiveOn:date}).strict();
+ description:z.string().trim().min(1).max(500),effectiveOn:date,
+ approvalRequestIds:z.array(uuid).max(20).optional().default([])}).strict();
 const importRow=z.object({date,description:z.string().trim().min(1).max(500),
  amountMinor:z.number().int().safe().refine(n=>n!==0),currency:z.string().regex(/^[A-Z]{3}$/).default('KES')}).strict();
 const importBody=z.object({financialAccountId:uuid,rows:z.array(importRow).min(1).max(150)}).strict();
@@ -27,7 +28,7 @@ const parse=<T extends z.ZodTypeAny>(schema:T,body:unknown):z.infer<T>=>{
  if(!result.success)throw new DomainError(422,'VALIDATION_ERROR','Invalid request fields');
  return result.data;
 };
-function headerIdempotency(request:FastifyRequest){
+export function headerIdempotency(request:FastifyRequest){
  const raw=request.headers['idempotency-key'];
  const key=Array.isArray(raw)?raw[0]:raw;
  if(!key||key.length<10||key.length>160||!/^[A-Za-z0-9_.:-]+$/.test(key))throw new DomainError(428,'IDEMPOTENCY_REQUIRED','Idempotency-Key header required (10–160 safe characters)');
@@ -35,7 +36,7 @@ function headerIdempotency(request:FastifyRequest){
 }
 const params=(request:FastifyRequest)=>request.params as {workspaceId:string;accountId?:string};
 export type IdentityResolver=(request:FastifyRequest)=>Promise<AuthIdentity>;
-async function scoped<T>(request:FastifyRequest,financial:pg.Pool,identity:IdentityResolver,
+export async function scoped<T>(request:FastifyRequest,financial:pg.Pool,identity:IdentityResolver,
  mode:'read'|'write',work:(db:pg.PoolClient,actor:AuthIdentity)=>Promise<T>):Promise<T>{
  const actor=await identity(request),workspaceId=params(request).workspaceId;
  if(!uuid.safeParse(workspaceId).success)throw new DomainError(400,'INVALID_WORKSPACE','Invalid workspace identifier');
@@ -48,7 +49,7 @@ async function scoped<T>(request:FastifyRequest,financial:pg.Pool,identity:Ident
   return work(db,actor);
  });
 }
-async function reserve(db:pg.PoolClient,workspaceId:string,key:string,operation:string,data:unknown){
+export async function reserve(db:pg.PoolClient,workspaceId:string,key:string,operation:string,data:unknown){
  const fingerprint=hash(JSON.stringify({operation,data}));
  const inserted=await db.query<{id:string}>(`INSERT INTO idempotency_records(workspace_id,operation,request_key,request_sha256,expires_at)
     VALUES($1,$2,$3,$4,now()+interval '48 hours') ON CONFLICT(workspace_id,operation,request_key) DO NOTHING RETURNING id`,[workspaceId,operation,key,fingerprint]);
@@ -60,10 +61,10 @@ async function reserve(db:pg.PoolClient,workspaceId:string,key:string,operation:
  if(!record.result_id)throw new DomainError(409,'IDEMPOTENCY_INCOMPLETE','Original operation did not finish');
  return {fresh:false,id:record.id,resultId:record.result_id};
 }
-async function finish(db:pg.PoolClient,id:string,resultId:string){
+export async function finish(db:pg.PoolClient,id:string,resultId:string){
  await db.query('UPDATE idempotency_records SET result_id=$2 WHERE id=$1',[id,resultId]);
 }
-async function audit(db:pg.PoolClient,workspaceId:string,actor:AuthIdentity,action:string,entityType:string,entityId:string,request:FastifyRequest){
+export async function audit(db:pg.PoolClient,workspaceId:string,actor:AuthIdentity,action:string,entityType:string,entityId:string,request:FastifyRequest){
  await db.query(`INSERT INTO audit_events(workspace_id,actor_user_id,event_type,entity_type,entity_id,correlation_id,details)
  VALUES($1,$2,$3,$4,$5,$6,'{}'::jsonb)`,[workspaceId,actor.id,action,entityType,entityId,request.id]);
 }
@@ -165,6 +166,39 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,identit
     WHERE c.workspace_id=$1 AND c.id=$2`,[wid,body.categoryId])).rows[0];
    if(!category||category.kind!==body.kind)throw new DomainError(422,'INVALID_CATEGORY','Category must match transaction kind');
    if(body.currency!=='KES')throw new DomainError(422,'UNSUPPORTED_CURRENCY','Manual category ledger currently supports KES only');
+   // B2: enforce active financial controls on manual expense POSTING, not merely on a UI preview.
+   // All matching require-approval rules need independently approved, one-time authorization.
+   const approvedRequestIds:string[]=[];
+   if(body.kind==='EXPENSE'){
+    const ruleResult=await db.query<{id:string;kind:string;action:string;conditions:Record<string,unknown>}>(`SELECT id,kind,action,conditions
+      FROM spending_guardrails WHERE workspace_id=$1 AND active=true ORDER BY created_at,id`,[wid]);
+    if(ruleResult.rows.some(r=>!['AMOUNT','CATEGORY'].includes(r.kind)&&['BLOCK','REQUIRE_APPROVAL'].includes(r.action)))
+     throw new DomainError(409,'UNSUPPORTED_ACTIVE_POLICY','Legacy financial policy cannot be evaluated safely');
+    const matched=ruleResult.rows.filter(r=>r.kind==='AMOUNT'
+      ? Number(r.conditions.minAmountMinor)<=body.amountMinor
+      : r.kind==='CATEGORY'&&r.conditions.categoryId===body.categoryId);
+    if(matched.some(rule=>rule.action==='BLOCK'))
+     throw new DomainError(403,'SPENDING_BLOCKED','Manual expense posting is blocked by an active workspace guardrail');
+    const required=matched.filter(rule=>rule.action==='REQUIRE_APPROVAL');
+    const provided=body.approvalRequestIds;
+    if(new Set(provided).size!==provided.length || provided.length!==required.length)
+     throw new DomainError(403,'APPROVAL_REQUIRED','One independent approval is required for each matching guardrail');
+    if(required.length){
+     const result=await db.query<{id:string;guardrail_id:string;category_id:string;requested_by:string;
+      amount_minor:string;currency:string;status:string}>(`SELECT id,guardrail_id,category_id,requested_by,
+      amount_minor::text,currency,status FROM approval_requests
+      WHERE workspace_id=$1 AND id=ANY($2::uuid[])`,[wid,provided]);
+     if(result.rows.length!==required.length)throw new DomainError(403,'APPROVAL_REQUIRED','Approved requests are missing');
+     const expected=new Set(required.map(x=>x.id));
+     for(const a of result.rows){
+      if(!expected.has(a.guardrail_id)||a.status!=='APPROVED'||a.category_id!==body.categoryId||
+        a.requested_by!==actor.id||a.currency!==body.currency||Number(a.amount_minor)!==body.amountMinor)
+       throw new DomainError(403,'APPROVAL_MISMATCH','An independent approved request must match the expense');
+      expected.delete(a.guardrail_id);approvedRequestIds.push(a.id);
+     }
+     if(expected.size)throw new DomainError(403,'APPROVAL_MISMATCH','Not all required rules are approved');
+    }
+   }else if(body.approvalRequestIds.length)throw new DomainError(422,'UNEXPECTED_APPROVAL','Income cannot consume expense approvals');
    const entry=(await db.query<{id:string}>(`INSERT INTO journal_entries(workspace_id,currency,effective_on,source_type,memo,status,idempotency_key,created_by)
      VALUES($1,$2,$3,'MANUAL',$4,'DRAFT',$5,$6) RETURNING id`,
      [wid,body.currency,body.effectiveOn,body.description,key,actor.id])).rows[0]!;
@@ -181,6 +215,10 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,identit
       [wid,account.id,body.categoryId,entry.id,body.kind,body.kind==='INCOME'?body.amountMinor:-body.amountMinor,
        body.currency,body.description,body.effectiveOn+'T12:00:00.000Z',actor.id]);
    const id=created.rows[0]!.id;
+   for(const approvalId of approvedRequestIds){
+    await db.query(`INSERT INTO spending_approval_consumptions(workspace_id,transaction_id,approval_request_id)
+      VALUES($1,$2,$3)`,[wid,id,approvalId]);
+   }
    await audit(db,wid,actor,'transaction.posted','manual_transaction',id,request);
    await finish(db,idem.id,id);
    return (await fetchTransactions(db,wid,id))[0]!;

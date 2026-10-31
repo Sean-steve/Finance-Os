@@ -1,0 +1,48 @@
+name: Finance OS — Real Keycloak OIDC Protocol Smoke (CI only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'phase-b2/**']
+    paths:
+      - 'backend/keycloak/**'
+      - 'backend/test/keycloak.provider.mjs'
+      - '.github/workflows/oidc-keycloak-smoke.yml'
+  pull_request:
+    paths:
+      - 'backend/keycloak/**'
+      - 'backend/test/keycloak.provider.mjs'
+      - '.github/workflows/oidc-keycloak-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  ephemeral-idp:
+    name: Genuine Keycloak 26.8.1 discovery, PKCE, JWT/JWKS and OTP rejection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Start disposable non-production Keycloak (local-only binding)
+        run: |
+          docker run -d --name finance-keycloak-ci            -p 127.0.0.1:8180:8080            -e KC_BOOTSTRAP_ADMIN_USERNAME=ci-admin            -e KC_BOOTSTRAP_ADMIN_PASSWORD=CI-ONLY-ADMIN-PASSWORD-NOT-A-SECRET            -v "$PWD/backend/keycloak:/opt/keycloak/data/import:ro"            quay.io/keycloak/keycloak:26.8.1            start-dev --hostname=http://127.0.0.1:8180 --import-realm
+      - name: Wait for real OpenID Connect issuer discovery
+        run: |
+          for attempt in $(seq 1 60); do
+            if [ "$(docker inspect --format '{{.State.Running}}' finance-keycloak-ci 2>/dev/null || echo false)" != "true" ]; then
+              echo 'Keycloak stopped during startup'; docker ps -a; docker logs finance-keycloak-ci --tail 150; exit 1
+            fi
+            if curl --fail --silent --max-time 2              http://127.0.0.1:8180/realms/finance-os-ci/.well-known/openid-configuration > /dev/null; then
+              echo "Real Keycloak issuer ready"; exit 0
+            fi
+            sleep 2
+          done
+          docker ps -a
+          docker logs finance-keycloak-ci --tail 150
+          exit 1
+      - name: Verify actual provider JWKS, API audience, Authorization Code PKCE and MFA fail-closed
+        run: node backend/test/keycloak.provider.mjs
+      - name: Stop disposable identity provider
+        if: always()
+        run: docker rm -f finance-keycloak-ci || true
