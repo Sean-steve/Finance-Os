@@ -40,10 +40,10 @@ BEGIN
    USING ERRCODE='23514';
  END IF;
  SELECT EXISTS (
-  SELECT 1 FROM budgets other JOIN budget_allocations old
-   ON old.workspace_id=other.workspace_id AND old.budget_id=other.id
+  SELECT 1 FROM budgets other JOIN budget_allocations existing_alloc
+   ON existing_alloc.workspace_id=other.workspace_id AND existing_alloc.budget_id=other.id
   JOIN budget_allocations current_alloc
-   ON current_alloc.workspace_id=old.workspace_id AND current_alloc.category_id=old.category_id
+   ON current_alloc.workspace_id=existing_alloc.workspace_id AND current_alloc.category_id=existing_alloc.category_id
   WHERE other.workspace_id=wid AND other.id<>target AND other.status='ACTIVE'
    AND other.currency=rec.currency AND other.starts_on<=rec.ends_on
    AND other.ends_on>=rec.starts_on AND current_alloc.budget_id=target
