@@ -9,7 +9,7 @@ const uuid=z.string().uuid();
 const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s=>!Number.isNaN(Date.parse(s)));
 const cash=z.number().int().positive().safe().max(1_000_000_000_000);
 const accountBody=z.object({displayName:z.string().trim().min(1).max(160),
- kind:z.enum(['CASH','BANK','MOBILE_MONEY','CARD','SACCO','INVESTMENT','OTHER']),
+ kind:z.enum(['CASH','BANK','MOBILE_MONEY']),
  currency:z.string().regex(/^[A-Z]{3}$/).default('KES')}).strict();
 const categoryBody=z.object({name:z.string().trim().min(1).max(120),
  kind:z.enum(['INCOME','EXPENSE'])}).strict();
