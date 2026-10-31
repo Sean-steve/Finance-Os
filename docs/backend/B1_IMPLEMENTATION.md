@@ -14,7 +14,7 @@ B1 is **LOCAL/TEST ONLY**. Password registration/login is blocked at process sta
 | Workspace membership | \`GET/POST /v1/workspaces\` |
 | Financial accounts | \`GET/POST /v1/workspaces/:workspaceId/accounts\` |
 | Category classification | \`GET/POST /v1/workspaces/:workspaceId/categories\` |
-| Manual transactions | \`GET/POST /v1/workspaces/:workspaceId/transactions\` |
+| Manual transactions | \`GET/POST /v1/workspaces/:workspaceId/transactions\`, \`POST /v1/workspaces/:workspaceId/transactions/:transactionId/reverse\` |
 | Ledger | \`GET /v1/workspaces/:workspaceId/ledger/journal-entries\`, \`GET /v1/workspaces/:workspaceId/ledger/summary\` |
 | Reconciliation | \`POST /v1/workspaces/:workspaceId/statement-imports\`, \`GET /v1/workspaces/:workspaceId/reconciliation\`, \`POST /v1/workspaces/:workspaceId/reconciliation/matches\` |
 
@@ -35,11 +35,11 @@ The OpenAPI document is \`backend/openapi/finance-os.v1.json\`. Legacy B0 planne
 
 Live bank connections, M-Pesa/Paybill, statement-provider webhooks, payouts, real money transfers, bill autopay, complete onboarding, multi-currency FX, card safeguards, production account recovery, MFA, web-accessible account access and automated financial projections.
 
-Journal-backed manual Income/Expense is implemented. Transfers are deferred until balanced multi-account transfer controls are certified. Non-KES manual category ledger postings are rejected by B1; the underlying schema retains 3-letter currency codes for later multi-currency support.
+Journal-backed manual Income/Expense and transaction reversals are implemented. Transfers are deferred until balanced multi-account transfer controls are certified. Non-KES manual category ledger postings are rejected by B1; the underlying schema retains 3-letter currency codes for later multi-currency support.
 
 ## Database changes
 
-\`004_b1_identity_ledger.sql\` introduces separate password/session tables, immutable manual transactions, reconciliation matches, explicit ACTIVE member policies and separate write permissions. B0 migrations 001–003 remain untouched.
+\`004_b1_identity_ledger.sql\` introduces separate password/session tables, immutable manual transactions, reconciliation matches, explicit ACTIVE member policies and separate write permissions. The additive \`005_b1_reversals.sql\` migration enforces one-to-one reversal entries and records original-to-reversal relationships. B0 migrations 001–003 remain untouched.
 
 Apply using an isolated migrator after backing up the database. Never run integration tests against a shared/production database. The CI environment uses throwaway PostgreSQL 17 with separate \`finance_app\` and \`finance_auth\` roles and detects migration checksum drift.
 
