@@ -1,0 +1,78 @@
+name: Finance OS B1.1 — OIDC MFA and Connected Frontend Certification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'phase-b1-1/**']
+    paths:
+      - 'backend/**'
+      - 'connected.html'
+      - 'connected-config.json'
+      - 'rebuild/connected.*'
+      - 'tests/connected-*'
+      - 'docs/backend/B1_1_*'
+      - '.github/workflows/backend-b1-1.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'connected.html'
+      - 'connected-config.json'
+      - 'rebuild/connected.*'
+      - 'tests/connected-*'
+      - 'docs/backend/B1_1_*'
+      - '.github/workflows/backend-b1-1.yml'
+permissions:
+  contents: read
+jobs:
+  certify:
+    name: Strict TS, OIDC RS256, PostgreSQL RLS and connected static app
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: finance_migrator
+          POSTGRES_PASSWORD: ci-migrator-only
+          POSTGRES_DB: finance_os_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U finance_migrator -d finance_os_test"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      MIGRATION_DATABASE_URL: postgresql://finance_migrator:ci-migrator-only@127.0.0.1:5432/finance_os_test
+      TEST_APP_DATABASE_URL: postgresql://finance_app:ci-app-only@127.0.0.1:5432/finance_os_test
+      TEST_AUTH_DATABASE_URL: postgresql://finance_auth:ci-auth-only@127.0.0.1:5432/finance_os_test
+      PGPASSWORD: ci-migrator-only
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: TypeScript strict compilation
+        run: npm --prefix backend run build
+      - name: Validate machine-readable API contracts
+        run: npm --prefix backend run contract:check
+      - name: OIDC cryptographic, local auth and HTTP policy tests
+        run: npm --prefix backend test
+      - name: Connected frontend syntax and honest-data contract
+        run: |
+          node --check rebuild/connected.js
+          node tests/connected-contract.cjs
+      - name: Apply baseline B0/B1 migrations
+        run: |
+          npm --prefix backend run migrate
+          npm --prefix backend run migrate
+      - name: Create restricted finance and auth roles
+        run: |
+          psql -h 127.0.0.1 -U finance_migrator -d finance_os_test            -v app_password="ci-app-only" -v auth_password="ci-auth-only" -f backend/scripts/provision-app-role.sql
+      - name: Verify baseline B0 and B1 PostgreSQL invariants
+        run: |
+          npm --prefix backend run test:db
+          npm --prefix backend run test:b1
+      - name: Verify OIDC MFA and restricted account provisioning against PostgreSQL
+        run: npm --prefix backend run test:oidc:db

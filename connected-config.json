@@ -1,0 +1,4 @@
+{
+  "apiBase": null,
+  "_comment": "Configure an HTTPS Finance OS API endpoint for the connected frontend. This is public config: never include secrets."
+}

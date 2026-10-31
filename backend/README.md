@@ -1,6 +1,8 @@
-# Finance OS Backend — B0 Foundation + B1 Local Financial Slice
+# Finance OS Backend — B0/B1 + B1.1 OIDC Security
 
 **Status: B1 local/test authenticated accounts and manual ledger are implemented; production authentication remains disabled.** The 60-screen UI remains independently published as a demonstration on GitHub Pages.
+
+The B1.1 OIDC and authenticated frontend design is documented in [B1.1 Security & Connected Frontend](../docs/backend/B1_1_IDENTITY_SECURITY_FRONTEND.md). Production identity and recovery require an external provider and staged certification.
 
 See [B1 Implementation & Local Runbook](../docs/backend/B1_IMPLEMENTATION.md) for working API routes, security boundaries and setup.
 
