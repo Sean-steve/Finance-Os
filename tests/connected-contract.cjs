@@ -9,7 +9,7 @@ assert.match(html,/rebuild\/connected\.js/);
 assert.doesNotMatch(html,/(rebuild\/app\.js|b1-connected\.js|src\/app\.js)/,
  'Authenticated app must never load demo runtime.');
 assert.match(ui,/Array\.from|const groups=/);
-assert.match(ui,/id>=1&&id<=60/);
+assert.match(ui,/n>=1&&n<=60/);
 assert.match(ui,/const names=/);
 assert.match(ui,/finance-os-pkce/);
 assert.match(ui,/crypto\.subtle\.digest\('SHA-256'/);
