@@ -42,6 +42,12 @@ jobs:
           node-version: '22'
       - name: Install backend dependencies
         run: npm install --prefix backend --no-audit --no-fund
+      - name: Capture dependency lock for deterministic B0 handoff
+        run: |
+          echo FINANCE_OS_PACKAGE_LOCK_BEGIN
+          base64 -w0 backend/package-lock.json
+          echo
+          echo FINANCE_OS_PACKAGE_LOCK_END
       - name: TypeScript strict build
         run: npm --prefix backend run build
       - name: Validate machine-readable OpenAPI
