@@ -1,11 +1,11 @@
 
 /* Screen 33 — source-led Cash Flow Forecast and Runway panels */
-.cf-page:has(.cf33-lead) .banner{
+.cfpage:has(.cf33-lead) .banner{
   background-image:linear-gradient(90deg,rgba(1,30,43,.94) 0%,rgba(2,43,58,.52) 45%,rgba(1,31,43,.88) 95%),url('../assets/screen-33.webp');
   background-size:auto,182% 940%;
   background-position:center,62% 7%;
 }
-.cf-page:has(.cf33-lead) .cf-inner{padding:0 1px}
+.cfpage:has(.cf33-lead) .cfinner{padding:0 1px}
 .cf33-toolbar{
   display:flex;
   align-items:center;
