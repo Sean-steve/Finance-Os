@@ -39,7 +39,6 @@ jobs:
         working-directory: backend
     env:
       DATABASE_URL: postgresql://finance_os:testing-only-in-ci@127.0.0.1:5432/finance_os
-      B0_INTEGRATION_TEST: '1'
       DATABASE_SSL_MODE: disable
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +56,7 @@ jobs:
           npm run db:migrate
           npm run db:check
       - name: Test actual PostgreSQL invariants
-        run: npm test
+        run: B0_INTEGRATION_TEST=1 npm test
       - name: Verify database index and RLS policy inventory
         run: |
           node -e "const pg=require('pg');(async()=>{const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.connect();const a=await c.query(\"SELECT count(*)::int AS n FROM pg_tables WHERE schemaname='public' AND rowsecurity=true\");if(a.rows[0].n<10)process.exitCode=1;console.log('RLS tables',a.rows[0].n);await c.end()})().catch(e=>{console.error(e);process.exitCode=1})"
