@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Finance OS API",
-    "version": "0.4.0",
-    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments."
+    "version": "0.5.0",
+    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability."
   },
   "servers": [
     {
@@ -7390,6 +7390,1304 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspaceId}/capital/summary": {
+      "get": {
+        "operationId": "getB4CapitalCommandCenter",
+        "summary": "getB4CapitalCommandCenter",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4CapitalSummary"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/money-buckets": {
+      "get": {
+        "operationId": "listB4Buckets",
+        "summary": "listB4Buckets",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B4Bucket"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB4Bucket",
+        "summary": "createB4Bucket",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "purpose",
+                  "priority",
+                  "currency"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 150
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "ESSENTIALS",
+                      "SAVINGS",
+                      "EMERGENCY",
+                      "INVESTMENT",
+                      "DISCRETIONARY",
+                      "OTHER"
+                    ]
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Bucket"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/money-buckets/{bucketId}/archive": {
+      "post": {
+        "operationId": "archiveB4Bucket",
+        "summary": "archiveB4Bucket",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bucketId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Bucket"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/savings-goals": {
+      "get": {
+        "operationId": "listB4Goals",
+        "summary": "listB4Goals",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B4Goal"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB4Goal",
+        "summary": "createB4Goal",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "kind",
+                  "targetMinor",
+                  "currency"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 150
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "SAVINGS",
+                      "EMERGENCY"
+                    ]
+                  },
+                  "targetMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1
+                  },
+                  "monthlyEssentialMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "nullable": true
+                  },
+                  "dueOn": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Goal"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/savings-goals/{goalId}/archive": {
+      "post": {
+        "operationId": "archiveB4Goal",
+        "summary": "archiveB4Goal",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "goalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Goal"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/capital/allocations": {
+      "get": {
+        "operationId": "listB4PlanningAllocations",
+        "summary": "listB4PlanningAllocations",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B4Allocation"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordB4VirtualAssignment",
+        "summary": "recordB4VirtualAssignment",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "targetKind",
+                  "targetId",
+                  "amountMinor",
+                  "note"
+                ],
+                "properties": {
+                  "targetKind": {
+                    "type": "string",
+                    "enum": [
+                      "BUCKET",
+                      "GOAL"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "approvalRequestId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Allocation"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/capital/requests": {
+      "get": {
+        "operationId": "listB4FundingRequests",
+        "summary": "listB4FundingRequests",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B4FundingRequest"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB4FundingRequest",
+        "summary": "createB4FundingRequest",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "targetKind",
+                  "targetId",
+                  "amountMinor",
+                  "rationale",
+                  "currency"
+                ],
+                "properties": {
+                  "targetKind": {
+                    "type": "string",
+                    "enum": [
+                      "BUCKET",
+                      "GOAL"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4FundingRequest"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/capital/requests/{requestId}/decision": {
+      "post": {
+        "operationId": "decideB4IndependentFunding",
+        "summary": "decideB4IndependentFunding",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "decision"
+                ],
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVED",
+                      "REJECTED"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4FundingRequest"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/capital/affordability": {
+      "post": {
+        "operationId": "simulateB4PurchaseAffordability",
+        "summary": "simulateB4PurchaseAffordability",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "purchaseAmountMinor"
+                ],
+                "properties": {
+                  "purchaseAmountMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1
+                  },
+                  "monthlyPaymentMinor": {
+                    "type": "integer",
+                    "format": "int64"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Affordability"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/planning/scenarios": {
+      "get": {
+        "operationId": "listB4WhatIfScenarios",
+        "summary": "listB4WhatIfScenarios",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B4Scenario"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      },
+      "post": {
+        "operationId": "saveB4WhatIfScenario",
+        "summary": "saveB4WhatIfScenario",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "horizonMonths",
+                  "currency",
+                  "monthlyIncomeMinor",
+                  "monthlyExpenseMinor",
+                  "monthlySavingsMinor",
+                  "oneTimePurchaseMinor",
+                  "incomeShockBasisPoints",
+                  "expenseShockBasisPoints"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 150
+                  },
+                  "horizonMonths": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 24
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "monthlyIncomeMinor": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "monthlyExpenseMinor": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "monthlySavingsMinor": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "oneTimePurchaseMinor": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "incomeShockBasisPoints": {
+                    "type": "integer",
+                    "minimum": -10000,
+                    "maximum": 10000
+                  },
+                  "expenseShockBasisPoints": {
+                    "type": "integer",
+                    "minimum": -10000,
+                    "maximum": 20000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Scenario"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/planning/scenarios/{scenarioId}": {
+      "get": {
+        "operationId": "readB4WhatIfScenario",
+        "summary": "readB4WhatIfScenario",
+        "description": "B4 planning-only, manual-ledger-backed data; no bank custody, real transfers or provider verification.",
+        "x-implementation-phase": "B4",
+        "x-implementation-status": "IMPLEMENTED_B4",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "scenarioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B4Scenario"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created with mandatory idempotency key"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denial or approval required"
+          },
+          "409": {
+            "description": "Constraint or idempotency conflict"
+          },
+          "422": {
+            "description": "Invalid fields or financial assumptions"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9898,6 +11196,243 @@
             "type": "boolean"
           },
           "paymentAuthorized": {
+            "type": "boolean"
+          },
+          "isProviderVerified": {
+            "type": "boolean"
+          }
+        }
+      },
+      "B4Bucket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "allocatedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "planningOnly": {
+            "type": "boolean"
+          }
+        }
+      },
+      "B4Goal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "targetMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "allocatedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyEssentialMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "emergencyCoverageMonths": {
+            "type": "number"
+          },
+          "dueOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "planningOnly": {
+            "type": "boolean"
+          }
+        }
+      },
+      "B4Allocation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetKind": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": "string"
+          },
+          "approvalRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "B4FundingRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetKind": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "requestedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decidedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "B4CapitalSummary": {
+        "type": "object",
+        "properties": {
+          "manualPostedLiquidityMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "virtualReservedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unassignedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isProviderVerified": {
+            "type": "boolean"
+          },
+          "fundsMoved": {
+            "type": "boolean"
+          },
+          "isBankReservation": {
+            "type": "boolean"
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/B4Bucket"
+            }
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/B4Goal"
+            }
+          }
+        }
+      },
+      "B4Scenario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "modelVersion": {
+            "type": "string"
+          },
+          "simulation": {
+            "type": "object"
+          },
+          "assumptions": {
+            "type": "object"
+          }
+        }
+      },
+      "B4Affordability": {
+        "type": "object",
+        "properties": {
+          "purchaseAmountMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingAfterPurchaseMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "upcoming90DayBillsUnverifiedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "insufficientManualUnassigned": {
+            "type": "boolean"
+          },
+          "verdict": {
+            "type": "string"
+          },
+          "doesNotAuthorizePurchase": {
             "type": "boolean"
           },
           "isProviderVerified": {
