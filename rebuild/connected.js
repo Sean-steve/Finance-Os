@@ -44,6 +44,8 @@ const random=()=>crypto.randomUUID()+'-'+crypto.randomUUID();
 let apiBase=null,token='',identity=null,provider=null,workspaces=[],workspaceId='',busy=false,notice='',error='';
 let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
 let selectedAccount='',selectedTransaction='',selectedBill='',lastEval=null,lastCheck=null,b3LoadedFor='',loadFailed=false,billHistory=null;
+let b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};
+let b4LoadedFor='',selectedGoal='';
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -91,8 +93,10 @@ async function refresh(){
   workspaceId=workspaces.some(w=>w.id===workspaceId)?workspaceId:workspaces[0]?.id||'';
   if(workspaceId){
    const b3Active=screen()>=27&&screen()<=34;
+   const b4Active=screen()>=35&&screen()<=42;
    const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals',
-    ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[])];
+    ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[]),
+    ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[])];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
     journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
@@ -106,6 +110,14 @@ async function refresh(){
     cashflow:b3Active?result[15]:data.cashflow||null,
     history:b3Active?result[16]:data.history||null,
     shortfalls:b3Active?result[17]:data.shortfalls||null};
+   if(b4Active){
+    const offset=b3Active?18:10;
+    b4={...b4,summary:result[offset],buckets:result[offset+1].items||[],
+      goals:result[offset+2].items||[],allocations:result[offset+3].items||[],
+      requests:result[offset+4].items||[],scenarios:result[offset+5].items||[]};
+    b4LoadedFor=workspaceId;
+    selectedGoal=b4.goals.some(g=>g.id===selectedGoal)?selectedGoal:(b4.goals[0]?.id||'');
+   }
    if(b3Active){
     b3LoadedFor=workspaceId;
     billHistory=null;
@@ -118,7 +130,7 @@ async function refresh(){
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
   }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   error='';loadFailed=false;
- }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{location.hash='screen/'+n;window.scrollTo(0,0);draw();};
@@ -568,6 +580,164 @@ function shortfallScreen(){
  btn('Review unverified bills',30)+btn('Inspect income assumptions',29));
 }
 
+
+const b4Money=n=>money(n||0);
+const b4Minor=s=>String(s??'0').trim()==='0'?0:asMinor(s);
+const b4MonthNote='<p class="connected-muted">Planning labels are NOT bank balances, protected deposits, investment holdings or actual money transfers. Source: manually POSTED journal entries.</p>';
+const b4TargetOptions=()=>[
+ ...b4.buckets.filter(x=>x.status==='ACTIVE').map(x=>['BUCKET:'+x.id,'Bucket · '+x.name]),
+ ...b4.goals.filter(x=>x.status==='ACTIVE').map(x=>['GOAL:'+x.id,'Goal · '+x.name])
+];
+function capitalCommand(){
+ const x=b4.summary;
+ if(!x)return card('Capital allocation data unavailable','<p>Authenticated capital service has not been loaded. No zero balance is implied.</p>');
+ return '<div class="connected-kpis">'+
+ '<article><span>Manually posted liquidity</span><strong>'+b4Money(x.manualPostedLiquidityMinor)+'</strong><small>Unverified, journal-backed</small></article>'+
+ '<article><span>Virtual capital assigned</span><strong>'+b4Money(x.virtualReservedMinor)+'</strong><small>Planning envelope only</small></article>'+
+ '<article><span>Unassigned in manual records</span><strong>'+b4Money(x.unassignedMinor)+'</strong><small>NOT certified free cash</small></article>'+
+ '<article><span>Active planning targets</span><strong>'+esc(b4.buckets.filter(x=>x.status==='ACTIVE').length+b4.goals.filter(x=>x.status==='ACTIVE').length)+'</strong><small>Bucket and goal definitions</small></article>'+
+ '</div>'+
+ card('Allocation Command Center',b4MonthNote+
+ (x.unassignedNegative?'<div class="connected-alert">Virtual reservations now exceed manually recorded liquidity. Review actual expenses and release reservations where appropriate.</div>':'')+
+ '<p>Plan within posted manual funds without transferring money. Funding a goal or bucket never debits or credits a financial account.</p>'+
+ btn('Manage money buckets',36)+btn('Savings & goals',37)+btn('Emergency cover',39)+btn('Financial scenarios',42))+
+ card('Current capital distribution',
+ '<div class="connected-table"><table><thead><tr><th>Planning target</th><th>Kind</th><th>Virtual assigned</th><th>Status</th></tr></thead><tbody>'+
+ [...b4.buckets.map(x=>[x.name,x.purpose,x.allocatedMinor,x.status]),
+ ...b4.goals.map(x=>[x.name,x.kind,x.allocatedMinor,x.status])].map(x=>
+ '<tr><td>'+esc(x[0])+'</td><td>'+esc(x[1])+'</td><td>'+b4Money(x[2])+'</td><td>'+esc(x[3])+'</td></tr>').join('')+
+ '</tbody></table></div>')+
+ card('Recorded allocation history',b4.allocations.length?
+ '<ul class="connected-list">'+b4.allocations.slice(0,20).map(x=>
+ '<li><b>'+esc(x.note)+'</b><span>'+esc(x.targetKind)+' · '+b4Money(x.amountMinor)+' · virtual '+(x.amountMinor<0?'release':'assignment')+'</span></li>').join('')+'</ul>':
+ '<p>No virtual assignments. Your ledger balance remains unaffected.</p>');
+}
+function b4FundingForm(kind,targetId){
+ const choices=[['','No request — allowable below approval threshold'],
+  ...b4.requests.filter(r=>r.status==='APPROVED'&&r.requestedBy===identity?.id&&r.targetKind===kind&&r.targetId===targetId)
+   .map(r=>[r.id,r.rationale+' · '+b4Money(r.amountMinor)+' · approved'])];
+ return '<form data-form="b4-assign">'+
+ '<input type="hidden" name="targetKind" value="'+esc(kind)+'"><input type="hidden" name="targetId" value="'+esc(targetId)+'">'+
+ field('Amount to assign (+) or release (-) · KES','amount','text',true,'','pattern="-?[0-9]+(\\.[0-9]{1,2})?"')+
+ field('Reason / note','note')+select('Matching independent approval (if required)','approvalRequestId',choices)+
+ '<button type="submit">Record virtual allocation</button></form>';
+}
+function bucketManagement(){
+ return card('Money buckets — planning envelopes',
+ '<p>Create named priority envelopes, then virtually assign or release amounts against existing posted manual liquidity. This never segregates bank funds.</p>'+
+ '<form data-form="b4-bucket">'+field('Bucket name','name')+
+ select('Purpose','purpose',[['ESSENTIALS','Essential bills'],['SAVINGS','Savings'],['EMERGENCY','Emergency reserve'],['INVESTMENT','Investment planning'],['DISCRETIONARY','Discretionary'],['OTHER','Other']])+
+ select('Priority (1 = highest)','priority',[['1','1 — essential'],['2','2 — high'],['3','3 — normal'],['4','4 — lower'],['5','5 — optional']])+
+ '<button type="submit">Create money bucket</button></form>')+
+ (b4.buckets.length?b4.buckets.map(x=>card(x.name+' · '+x.purpose,
+ '<p><b>'+b4Money(x.allocatedMinor)+'</b> virtually assigned · Priority '+esc(x.priority)+' · '+esc(x.status)+'</p>'+
+ (x.status==='ACTIVE'?b4FundingForm('BUCKET',x.id)+
+ '<button data-b4-archive="BUCKET:'+esc(x.id)+'">Archive empty bucket</button>':'<p>Archived — historic allocations preserved.</p>'))).join(''):
+ card('No buckets','<p>Start by creating a money bucket. No virtual funding exists yet.</p>'))+
+ b4MonthNote;
+}
+function b4GoalCard(x){
+ const pct=x.targetMinor?Math.max(0,Math.min(100,(x.allocatedMinor/x.targetMinor)*100)):0;
+ return card(x.name+' · '+x.kind,
+ '<p><b>'+b4Money(x.allocatedMinor)+'</b> virtually assigned of '+b4Money(x.targetMinor)+' target · '+esc(x.status)+'</p>'+
+ '<div class="connected-meter"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
+ '<p>Unassigned goal target: '+b4Money(x.remainingMinor)+
+ (x.dueOn?' · Due '+esc(x.dueOn):' · No due date')+
+ (x.kind==='EMERGENCY'?' · '+esc(x.emergencyCoverageMonths)+' months of user-reported essentials':'')+'</p>'+
+ '<button data-b4-goal="'+esc(x.id)+'">Open goal funding</button>');
+}
+function savingsGoals(){
+ return card('Savings & financial goals','<p>Create immutable planning targets. Funding them only earmarks a portion of your MANUAL financial records; it does not move money.</p>'+
+ '<form data-form="b4-goal">'+field('Goal name','name')+
+ select('Goal type','kind',[['SAVINGS','Savings'],['EMERGENCY','Emergency fund']])+
+ field('Target KES','targetAmount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('Target date (optional)','dueOn','date',false)+
+ field('Essential monthly costs KES (only for emergency fund)','monthlyEssential','text',false,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ '<button type="submit">Create goal</button></form>')+
+ (b4.goals.length?b4.goals.map(b4GoalCard).join(''):card('No goals','<p>Add your first target to model funding without changing the ledger.</p>'))+
+ b4MonthNote;
+}
+function goalDetails(){
+ const x=b4.goals.find(g=>g.id===selectedGoal)||b4.goals[0];
+ if(!x)return card('Goal details','<p>No savings goals registered in this workspace.</p>'+btn('Create a goal',37));
+ return card('Selected goal',select('Choose a goal','b4SelectedGoal',b4.goals.map(g=>[g.id,g.name]),x.id))+
+ b4GoalCard(x)+
+ (x.status==='ACTIVE'?card('Virtual funding or release',b4FundingForm('GOAL',x.id)+
+ '<button data-b4-archive="GOAL:'+esc(x.id)+'">Archive empty goal</button>'):
+ card('Archived','<p>Goal definition and allocation history are retained.</p>'))+
+ b4MonthNote;
+}
+function emergencyGoals(){
+ const emergency=b4.goals.filter(g=>g.kind==='EMERGENCY');
+ return card('Emergency fund coverage — self-reported',
+ '<p>Coverage divides virtually assigned KES by the monthly essential-expense amount you entered when creating a goal. It does not confirm bank liquidity.</p>')+
+ (emergency.length?emergency.map(b4GoalCard).join(''):
+ card('No emergency fund','<p>Create an EMERGENCY goal with a target and monthly essential living-cost estimate.</p>'+btn('New savings / emergency goal',37)))+
+ b4MonthNote;
+}
+function affordabilityScreen(){
+ const x=b4.affordability;
+ return card('Affordability & purchase simulator','<p>Purchasing power cannot be confirmed from unverified manual records. This is a non-authorizing exposure check.</p>'+
+ '<form data-form="b4-afford">'+field('Proposed purchase KES','purchaseAmount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('Optional future monthly repayment KES','monthlyPayment','text',false,'0','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ '<button type="submit">Evaluate without purchase</button></form>')+
+ (x?card('Advisory assessment · '+x.verdict,
+ '<div class="connected-kpis"><article><span>Manual unassigned amount</span><strong>'+b4Money(x.unassignedMinor)+'</strong></article>'+
+ '<article><span>After hypothetical purchase</span><strong>'+b4Money(x.remainingAfterPurchaseMinor)+'</strong></article>'+
+ '<article><span>90-day user-reported unpaid bills</span><strong>'+b4Money(x.upcoming90DayBillsUnverifiedMinor)+'</strong></article>'+
+ '<article><span>Overdue unverified bills</span><strong>'+b4Money(x.overdueBillsUnverifiedMinor)+'</strong></article></div>'+
+ '<p><b>'+(x.insufficientManualUnassigned?'Insufficient unassigned manual funds':'Manual reserve test not failed')+
+ '</b>; neither result confirms true affordability. No funds moved, payment authorized, or loan approved.</p>'):'')+
+ b4MonthNote;
+}
+function fundingApprovals(){
+ const targets=b4TargetOptions();
+ const isApprover=['OWNER','ADMIN'].includes(workspaces.find(w=>w.id===workspaceId)?.role);
+ return card('Funding request · virtual capital governance',
+ '<p>Cumulative assignments above KES 100,000 per target require an independently approved request for the exact increment. Self-approvals are rejected.</p>'+
+ '<form data-form="b4-request">'+select('Target bucket or savings goal','target',targets)+
+ field('Requested amount KES','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('Funding rationale','rationale')+'<button type="submit">Request independent approval</button></form>')+
+ card('Independent decisions',(b4.requests.length?
+ '<div class="connected-table"><table><thead><tr><th>Target</th><th>Amount</th><th>Status</th><th>Requester</th><th>Action</th></tr></thead><tbody>'+
+ b4.requests.map(x=>'<tr><td>'+esc(x.targetKind)+'</td><td>'+b4Money(x.amountMinor)+'</td>'+
+ '<td>'+esc(x.status)+'</td><td>'+esc(x.requestedBy)+'</td><td>'+
+ (isApprover&&x.status==='PENDING'&&x.requestedBy!==identity?.id?
+ '<button data-b4-decision="'+esc(x.id)+'" data-b4-choice="APPROVED">Approve</button>'+
+ '<button data-b4-decision="'+esc(x.id)+'" data-b4-choice="REJECTED">Reject</button>':
+ 'Independent review required')+'</td></tr>').join('')+'</tbody></table></div>':
+ '<p>No funding requests in this workspace.</p>')+
+ '<p class="connected-muted">Approval only permits a subsequent matching virtual assignment. No bank, wallet or card is charged.</p>')+
+ btn('Assign to buckets',36)+btn('Assign to goals',38);
+}
+function scenarioScreen(){
+ const s=b4.scenario;
+ return card('Financial scenario planning — deterministic what-if',
+ '<p>Set explicit KES monthly assumptions. Shock changes cashflow; savings changes discretionary planning only, not actual liquid money or future investment returns.</p>'+
+ '<form data-form="b4-scenario">'+field('Scenario name','name')+
+ select('Horizon','horizonMonths',Array.from({length:24},(_,i)=>[String(i+1),String(i+1)+' months']))+
+ field('Monthly income estimate KES','monthlyIncome','text',true,'0','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('Monthly expense estimate KES','monthlyExpense','text',true,'0','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('Monthly planned savings KES','monthlySavings','text',true,'0','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('One-time purchase KES','oneTimePurchase','text',true,'0','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ field('Income change % (e.g. -10)','incomeShock','number',true,'0','min="-100" max="100" step="1"')+
+ field('Expense change % (e.g. +5)','expenseShock','number',true,'0','min="-100" max="200" step="1"')+
+ '<button type="submit">Save non-executing scenario</button></form>')+
+ card('Saved simulations',b4.scenarios.length?
+ '<ul class="connected-list">'+b4.scenarios.map(x=>'<li><b>'+esc(x.name)+'</b>'+
+ '<span>'+esc(x.horizonMonths)+' months</span><button data-b4-scenario="'+esc(x.id)+'">View saved result</button></li>').join('')+'</ul>':
+ '<p>No scenarios saved yet.</p>')+
+ (s?card('What-if results for '+s.name,
+ '<p><strong>Hypothetical end cash:</strong> '+b4Money(s.simulation.endingCashAfterExpensesMinor)+
+ ' · <strong>After virtual savings allocation:</strong> '+b4Money(s.simulation.endingDiscretionaryAfterPlannedSavingsMinor)+'</p>'+
+ '<div class="connected-table"><table><thead><tr><th>Month</th><th>Income assumption</th><th>Expense assumption</th><th>Hypothetical cash</th><th>After planned savings</th></tr></thead><tbody>'+
+ s.simulation.months.map(m=>'<tr><td>'+esc(m.month)+'</td><td>'+b4Money(m.incomeMinor)+'</td>'+
+ '<td>'+b4Money(m.expensesMinor)+'</td><td>'+b4Money(m.cashAfterExpensesMinor)+'</td>'+
+ '<td>'+b4Money(m.discretionaryAfterPlannedSavingsMinor)+'</td></tr>').join('')+
+ '</tbody></table></div><p class="connected-muted">Model '+esc(s.modelVersion)+' · user-defined assumptions, no investment advice or provider-verified balances.</p>'):'')+
+ b4MonthNote;
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
@@ -602,6 +772,14 @@ function renderedScreen(){
  case 32:return cashflowHistoryScreen();
  case 33:return cashflowForecastScreen();
  case 34:return shortfallScreen();
+ case 35:return capitalCommand();
+ case 36:return bucketManagement();
+ case 37:return savingsGoals();
+ case 38:return goalDetails();
+ case 39:return emergencyGoals();
+ case 40:return affordabilityScreen();
+ case 41:return fundingApprovals();
+ case 42:return scenarioScreen();
 
  default:return soon(id);
  }
@@ -698,6 +876,39 @@ async function submit(form){
    notice='A POSTED manual expense was linked as unverified evidence. No payment was initiated.';
    await refresh();return;
   }
+  else if(kind==='b4-bucket'){
+   await request(base+'/money-buckets',true,{method:'POST',body:{
+    name:d.name,purpose:d.purpose,priority:Number(d.priority),currency:'KES'}});
+  }else if(kind==='b4-goal'){
+   const essential=d.monthlyEssential?asMinor(d.monthlyEssential):null;
+   if(d.kind==='EMERGENCY'&&!essential)throw new Error('Emergency goal requires a monthly essential-expense estimate.');
+   await request(base+'/savings-goals',true,{method:'POST',body:{
+    name:d.name,kind:d.kind,targetMinor:asMinor(d.targetAmount),currency:'KES',
+    dueOn:d.dueOn||null,monthlyEssentialMinor:d.kind==='EMERGENCY'?essential:null}});
+  }else if(kind==='b4-assign'){
+   await request(base+'/capital/allocations',true,{method:'POST',body:{
+    targetKind:d.targetKind,targetId:d.targetId,amountMinor:asMinor(d.amount),
+    note:d.note,approvalRequestId:d.approvalRequestId||null}});
+   notice='Virtual allocation recorded. No bank or ledger transfer occurred.';await refresh();return;
+  }else if(kind==='b4-request'){
+   if(!d.target)throw new Error('Create a bucket or goal before requesting funding.');
+   const [targetKind,targetId]=d.target.split(':');
+   await request(base+'/capital/requests',true,{method:'POST',body:{
+    targetKind,targetId,amountMinor:asMinor(d.amount),rationale:d.rationale,currency:'KES'}});
+   notice='Independent funding review requested. No funds moved.';await refresh();return;
+  }else if(kind==='b4-afford'){
+   b4.affordability=await request(base+'/capital/affordability',true,{method:'POST',body:{
+    purchaseAmountMinor:asMinor(d.purchaseAmount),monthlyPaymentMinor:b4Minor(d.monthlyPayment)}});
+   notice='Hypothetical affordability evaluated; no purchase authorized.';busy=false;draw();return;
+  }else if(kind==='b4-scenario'){
+   const body={name:d.name,horizonMonths:Number(d.horizonMonths),currency:'KES',
+    monthlyIncomeMinor:b4Minor(d.monthlyIncome),monthlyExpenseMinor:b4Minor(d.monthlyExpense),
+    monthlySavingsMinor:b4Minor(d.monthlySavings),oneTimePurchaseMinor:b4Minor(d.oneTimePurchase),
+    incomeShockBasisPoints:Math.round(Number(d.incomeShock)*100),
+    expenseShockBasisPoints:Math.round(Number(d.expenseShock)*100)};
+   const saved=await request(base+'/planning/scenarios',true,{method:'POST',body});
+   b4.scenario=saved;notice='Non-executing what-if scenario saved.';await refresh();return;
+  }
   else throw new Error('This form is not connected to an authoritative service.');
   notice='Saved to the current workspace in PostgreSQL.';await refresh();
  }catch(ex){error=String(ex.message||ex);busy=false;draw();}
@@ -749,9 +960,32 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
+ }
+ if(button.hasAttribute('data-b4-goal')){
+  selectedGoal=button.dataset.b4Goal;nav(38);return;
+ }
+ if(button.hasAttribute('data-b4-archive')){
+  const [kind,id]=button.dataset.b4Archive.split(':');
+  if(!['BUCKET','GOAL'].includes(kind)||!id)return;
+  if(!confirm('Archive this empty planning target? Release allocations first; historic records remain immutable.'))return;
+  try{await request(path('/'+(kind==='BUCKET'?'money-buckets':'savings-goals')+'/'+encodeURIComponent(id)+'/archive'),
+   true,{method:'POST'});notice='Planning target archived; prior records retained.';await refresh();}
+  catch(ex){error=String(ex.message||ex);draw();}return;
+ }
+ if(button.hasAttribute('data-b4-decision')){
+  if(!confirm('Submit an irreversible independent virtual-funding decision?'))return;
+  try{await request(path('/capital/requests/'+encodeURIComponent(button.dataset.b4Decision)+'/decision'),
+   true,{method:'POST',body:{decision:button.dataset.b4Choice}});
+   notice='Planning decision recorded; no real money moved.';await refresh();}
+  catch(ex){error=String(ex.message||ex);draw();}return;
+ }
+ if(button.hasAttribute('data-b4-scenario')){
+  try{b4.scenario=await request(path('/planning/scenarios/'+encodeURIComponent(button.dataset.b4Scenario)));
+   notice='Saved assumptions loaded.';draw();}
+  catch(ex){error=String(ex.message||ex);draw();}return;
  }
  if(button.hasAttribute('data-disable-income')){
   if(!confirm('Disable this estimated income schedule? The original expectation will remain auditable.'))return;
@@ -822,7 +1056,8 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.name==='b4SelectedGoal'){selectedGoal=t.value;draw();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
  if(t.name==='selectedBill'){selectedBill=t.value;billHistory=null;draw();void loadSelectedBill();}
@@ -836,6 +1071,14 @@ window.addEventListener('hashchange',()=>{
  if(token&&workspaceId&&active&&b3LoadedFor!==workspaceId&&!busy)void refresh();
  else if(token&&workspaceId&&active&&screen()===31&&selectedBill&&billHistory?.bill?.id!==selectedBill&&!busy)
   void loadSelectedBill();
+});
+window.addEventListener('hashchange',()=>{
+ const active=screen()>=35&&screen()<=42;
+ if(!active)b4LoadedFor='';
+ if(token&&workspaceId&&active&&b4LoadedFor!==workspaceId&&!busy){
+  b4={...b4,summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[]};
+  void refresh();
+ }
 });
 (async()=>{await initConfig();if(apiBase)try{await finishOidc();}catch(ex){error=String(ex.message||ex);}draw();})();
 })();

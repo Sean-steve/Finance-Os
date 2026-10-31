@@ -40,4 +40,14 @@ assert.match(ui,/POSTED manual/);
 assert.match(ui,/No payment was initiated/);
 assert.match(ui,/Financial records unavailable/);
 assert.match(ui,/loadFailed=true/);
+for(const n of [35,36,37,38,39,40,41,42])
+ assert.ok(ui.includes('case '+n+':return'),'missing B4 authenticated service route '+n);
+for(const route of ['/capital/summary','/money-buckets','/savings-goals','/capital/allocations',
+ '/capital/requests','/capital/affordability','/planning/scenarios'])
+ assert.ok(ui.includes(route),'missing B4 capital API '+route);
+for(const form of ["kind==='b4-bucket'","kind==='b4-goal'","kind==='b4-assign'",
+ "kind==='b4-request'","kind==='b4-afford'","kind==='b4-scenario'"])
+ assert.ok(ui.includes(form),'missing B4 authenticated input '+form);
+assert.match(ui,/Virtual assignment|Virtual allocation|Virtual capital|planning envelope/i);
+assert.match(ui,/CANNOT_CONFIRM_AFFORDABILITY|cannot be confirmed/i);
 console.log('PASS connected frontend: 60 routes, B1–B3 real data controls, manual-only obligations and no demo imports');

@@ -58,3 +58,13 @@ button,input,select{font:inherit}button{cursor:pointer}
  .connected-card h2{font-size:16px}
  .connected-kpis article strong{font-size:20px}
 }
+
+/* B4 capital planning: non-custodial envelope and goal affordances */
+.connected-capital-disclaimer{border:1px solid #d2e7dd;border-radius:12px;padding:15px 17px;background:#f0f8f3}
+.connected-meter{height:12px;background:#e6f1eb;border-radius:8px;overflow:hidden}
+.connected-meter i{display:block;background:linear-gradient(90deg,#0b7d5d,#5bc9a5);height:100%}
+.connected-kpis article strong{font-variant-numeric:tabular-nums}
+.connected-card form[data-form^="b4-"]{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:end}
+.connected-card form[data-form^="b4-"] button[type="submit"]{min-height:43px}
+.connected-list button{margin:4px 0}
+@media(max-width:700px){.connected-card form[data-form^="b4-"]{grid-template-columns:1fr}}
