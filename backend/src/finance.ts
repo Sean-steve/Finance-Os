@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type pg from 'pg';
 import {z} from 'zod';
-import {sessionIdentity,DomainError,type AuthIdentity} from './auth.js';
+import {DomainError,type AuthIdentity} from './auth.js';
 import {withWorkspace} from './db/tenant.js';
 
 const uuid=z.string().uuid();
@@ -34,9 +34,10 @@ function headerIdempotency(request:FastifyRequest){
  return key;
 }
 const params=(request:FastifyRequest)=>request.params as {workspaceId:string;accountId?:string};
-async function scoped<T>(request:FastifyRequest,financial:pg.Pool,auth:pg.Pool,
+export type IdentityResolver=(request:FastifyRequest)=>Promise<AuthIdentity>;
+async function scoped<T>(request:FastifyRequest,financial:pg.Pool,identity:IdentityResolver,
  mode:'read'|'write',work:(db:pg.PoolClient,actor:AuthIdentity)=>Promise<T>):Promise<T>{
- const actor=await sessionIdentity(request,auth),workspaceId=params(request).workspaceId;
+ const actor=await identity(request),workspaceId=params(request).workspaceId;
  if(!uuid.safeParse(workspaceId).success)throw new DomainError(400,'INVALID_WORKSPACE','Invalid workspace identifier');
  return withWorkspace(financial,actor.id,workspaceId,async db=>{
   const result=await db.query<{role:string}>(`SELECT role FROM workspace_members
@@ -91,14 +92,14 @@ async function fetchTransactions(db:pg.PoolClient,wid:string,transactionId?:stri
   occurredAt:r.occurred_at instanceof Date?r.occurred_at.toISOString():String(r.occurred_at),
   journalEntryId:r.entry_id,origin:r.origin,reversesTransactionId:r.reverses_transaction_id,status:'POSTED'}));
 }
-export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg.Pool){
+export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,identity:IdentityResolver){
  app.get('/v1/workspaces/:workspaceId/accounts',async(request,reply)=>{
-  const items=await scoped(request,finance,auth,'read',(db)=>fetchAccounts(db,params(request).workspaceId));
+  const items=await scoped(request,finance,identity,'read',(db)=>fetchAccounts(db,params(request).workspaceId));
   return reply.send({items,nextCursor:null});
  });
  app.post('/v1/workspaces/:workspaceId/accounts',async(request,reply)=>{
   const body=parse(accountBody,request.body),key=headerIdempotency(request);
-  const item=await scoped(request,finance,auth,'write',async(db,actor)=>{
+  const item=await scoped(request,finance,identity,'write',async(db,actor)=>{
    const wid=params(request).workspaceId, idem=await reserve(db,wid,key,'accounts.create',body);
    if(!idem.fresh){
     const prior=await fetchAccounts(db,wid,idem.resultId!);
@@ -117,7 +118,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
   return reply.code('replayed' in item?200:201).send(item);
  });
  app.get('/v1/workspaces/:workspaceId/categories',async(request,reply)=>{
-  const items=await scoped(request,finance,auth,'read',async db=>{
+  const items=await scoped(request,finance,identity,'read',async db=>{
    const rows=await db.query<{id:string;name:string;kind:string}>(`SELECT id,name,kind FROM financial_categories
        WHERE workspace_id=$1 ORDER BY kind,name LIMIT 200`,[params(request).workspaceId]);
    return rows.rows;
@@ -125,7 +126,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
  });
  app.post('/v1/workspaces/:workspaceId/categories',async(request,reply)=>{
   const body=parse(categoryBody,request.body),key=headerIdempotency(request);
-  const category=await scoped(request,finance,auth,'write',async(db,actor)=>{
+  const category=await scoped(request,finance,identity,'write',async(db,actor)=>{
    const wid=params(request).workspaceId, idem=await reserve(db,wid,key,'categories.create',body);
    if(!idem.fresh){
     const row=await db.query('SELECT id,name,kind FROM financial_categories WHERE workspace_id=$1 AND id=$2',[wid,idem.resultId]);
@@ -142,12 +143,12 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
   });return reply.code('replayed' in category?200:201).send(category);
  });
  app.get('/v1/workspaces/:workspaceId/transactions',async(request,reply)=>{
-  const items=await scoped(request,finance,auth,'read',db=>fetchTransactions(db,params(request).workspaceId));
+  const items=await scoped(request,finance,identity,'read',db=>fetchTransactions(db,params(request).workspaceId));
   return reply.send({items,nextCursor:null});
  });
  app.post('/v1/workspaces/:workspaceId/transactions',async(request,reply)=>{
   const body=parse(transactionBody,request.body),key=headerIdempotency(request);
-  const item=await scoped(request,finance,auth,'write',async(db,actor)=>{
+  const item=await scoped(request,finance,identity,'write',async(db,actor)=>{
    const wid=params(request).workspaceId,idem=await reserve(db,wid,key,'transactions.record',body);
    if(!idem.fresh){
     const prior=await fetchTransactions(db,wid,idem.resultId!);
@@ -187,7 +188,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
   return reply.code('replayed' in item?200:201).send(item);
  });
  app.get('/v1/workspaces/:workspaceId/ledger/journal-entries',async(request,reply)=>{
-  const items=await scoped(request,finance,auth,'read',async(db)=>{
+  const items=await scoped(request,finance,identity,'read',async(db)=>{
    const rows=await db.query<{id:string;effective_on:Date;currency:string;memo:string;status:string;
      debit_minor:string;credit_minor:string}>(`SELECT e.id,e.effective_on,e.currency,e.memo,e.status,
     SUM(l.debit_minor)::text AS debit_minor,SUM(l.credit_minor)::text AS credit_minor
@@ -198,7 +199,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
   });return reply.send({items,nextCursor:null});
  });
  app.get('/v1/workspaces/:workspaceId/ledger/summary',async(request,reply)=>{
-  const summary=await scoped(request,finance,auth,'read',async(db)=>{
+  const summary=await scoped(request,finance,identity,'read',async(db)=>{
    const accounts=await fetchAccounts(db,params(request).workspaceId);
    return {accounts,totalByCurrency:Object.entries(accounts.reduce<Record<string,number>>((acc,item)=>{
     acc[item.currency]=(acc[item.currency]??0)+item.balanceMinor;return acc;
@@ -207,7 +208,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
  });
  app.post('/v1/workspaces/:workspaceId/statement-imports',async(request,reply)=>{
   const body=parse(importBody,request.body),key=headerIdempotency(request);
-  const response=await scoped(request,finance,auth,'write',async(db,actor)=>{
+  const response=await scoped(request,finance,identity,'write',async(db,actor)=>{
    const wid=params(request).workspaceId,idem=await reserve(db,wid,key,'imports.stage',body);
    if(!idem.fresh)return {id:idem.resultId,status:'STAGED',replayed:true};
    const ac=(await db.query<{currency:string}>(`SELECT currency FROM financial_accounts WHERE workspace_id=$1 AND id=$2 AND archived_at IS NULL`,
@@ -230,7 +231,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
   });return reply.code(response.replayed?200:201).send(response);
  });
  app.get('/v1/workspaces/:workspaceId/reconciliation',async(request,reply)=>{
-  const items=await scoped(request,finance,auth,'read',async db=>{
+  const items=await scoped(request,finance,identity,'read',async db=>{
    const rows=await db.query(`SELECT i.id,i.batch_id,i.transaction_on,i.description,i.amount_minor::text,
     i.currency,i.disposition,i.entry_id,b.financial_account_id
     FROM import_rows i JOIN import_batches b ON b.workspace_id=i.workspace_id AND b.id=i.batch_id
@@ -244,7 +245,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
  });
  app.post('/v1/workspaces/:workspaceId/reconciliation/matches',async(request,reply)=>{
   const body=parse(matchBody,request.body),key=headerIdempotency(request);
-  const match=await scoped(request,finance,auth,'write',async(db,actor)=>{
+  const match=await scoped(request,finance,identity,'write',async(db,actor)=>{
    const wid=params(request).workspaceId,idem=await reserve(db,wid,key,'reconciliation.match',body);
    if(!idem.fresh)return {id:idem.resultId,matched:true,replayed:true};
    const row=(await db.query<{account:string;amount_minor:string;currency:string;disposition:string}>(`
@@ -269,7 +270,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
   const key=headerIdempotency(request);
   const transactionId=(request.params as {transactionId:string}).transactionId;
   if(!uuid.safeParse(transactionId).success)throw new DomainError(400,'INVALID_TRANSACTION','Invalid transaction identifier');
-  const item=await scoped(request,finance,auth,'write',async(db,actor)=>{
+  const item=await scoped(request,finance,identity,'write',async(db,actor)=>{
    const wid=params(request).workspaceId,idem=await reserve(db,wid,key,'transactions.reverse',{transactionId});
    if(!idem.fresh){
     const prior=await fetchTransactions(db,wid,idem.resultId!);

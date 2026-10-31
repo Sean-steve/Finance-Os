@@ -10,7 +10,7 @@ test('B1 contract differentiates locally implemented endpoints from future APIs'
    assert.ok(op.operationId,'missing operationId '+path);
    assert.ok(!ids.has(op.operationId),'duplicate operationId '+op.operationId);ids.add(op.operationId);
    const status=op['x-implementation-status'];
-   assert.ok(['PLANNED','IMPLEMENTED_B0','IMPLEMENTED_B1_LOCAL'].includes(status),status);
+   assert.ok(['PLANNED','IMPLEMENTED_B0','IMPLEMENTED_B1_LOCAL','IMPLEMENTED_B1_1'].includes(status),status);
    if(status==='IMPLEMENTED_B1_LOCAL'){
     b1++;
     if(!path.startsWith('/v1/auth/register')&&!path.startsWith('/v1/auth/login'))
@@ -20,6 +20,7 @@ test('B1 contract differentiates locally implemented endpoints from future APIs'
     if(method==='post' && path.includes('{workspaceId}'))
      assert.ok(op.parameters?.some((p:any)=>p.name==='Idempotency-Key'&&p.required));
    }
+   if(status==='IMPLEMENTED_B1_1')assert.equal(path,'/v1/auth/provider');
    if(status==='PLANNED')planned++;
   }
  }

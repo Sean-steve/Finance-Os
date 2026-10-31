@@ -11,6 +11,8 @@ on:
       - 'src/**'
       - 'rebuild/**'
       - 'rebuild.html'
+      - 'connected.html'
+      - 'connected-config.json'
       - 'index.html'
       - 'tests/**'
       - '.github/workflows/browser-qa.yml'
@@ -56,6 +58,8 @@ jobs:
         run: node tests/visual-screen22-qa.cjs
       - name: Test five priority visual corrections and interactions
         run: node tests/priority-screen-fidelity.cjs
+      - name: Certify connected 60-route authentication and demo-data segregation
+        run: node tests/connected-browser-qa.cjs
       - name: Measure 59 reference screens and adapted Screen 22 visual difference
         run: node tests/visual-parity-score.cjs
       - name: Audit accessibility and color contrast

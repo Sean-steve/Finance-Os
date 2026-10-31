@@ -5,9 +5,9 @@ import {buildApp} from './app.js';
 
 const config=loadConfig();
 const financePool=createPool(config);
-const authPool=config.localAuthEnabled && config.authDatabaseUrl
- ? new pg.Pool({connectionString:config.authDatabaseUrl,max:5,connectionTimeoutMillis:4000,idleTimeoutMillis:15000,
-   application_name:'finance-os-auth-local'}) : undefined;
+const authPool=config.authDatabaseUrl && (config.localAuthEnabled||config.oidc)
+ ? new pg.Pool({connectionString:config.authDatabaseUrl,max:5,connectionTimeoutMillis:4000,
+    idleTimeoutMillis:15000,application_name:'finance-os-identity'}) : undefined;
 const app=await buildApp({config,database:financePool,financePool,authPool});
 async function close(){await app.close();await financePool.end();if(authPool)await authPool.end();}
 process.once('SIGTERM',()=>{void close().finally(()=>process.exit(0));});

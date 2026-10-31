@@ -5,7 +5,7 @@
   "description": "Finance OS V2 frontend-only UI/UX reconstruction",
   "scripts": {
     "test": "node tests/smoke.cjs",
-    "check": "node --check src/app.js",
+    "check": "node --check src/app.js && node --check rebuild/connected.js && node tests/connected-contract.cjs",
     "start": "python3 -m http.server 8080"
   }
 }

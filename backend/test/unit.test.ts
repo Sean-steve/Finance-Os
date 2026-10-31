@@ -41,7 +41,15 @@ test('CORS grants only explicit configured frontend origins', async()=>{
     assert.ok(!denied.headers['access-control-allow-origin']);
   } finally {await app.close();}
 });
-test('production configuration rejects missing explicit HTTPS CORS and TLS',()=>{
-  assert.throws(()=>loadConfig({NODE_ENV:'production',DATABASE_URL:'postgresql://db-host/finance',CORS_ALLOWED_ORIGINS:'http://localhost:8080'}),/HTTPS/);
-  assert.throws(()=>loadConfig({NODE_ENV:'production',DATABASE_URL:'postgresql://db-host/finance',CORS_ALLOWED_ORIGINS:'https://finance.example'}),/TLS/);
+test('production rejects missing identity provider, untrusted CORS and inadequate database TLS',()=>{
+ const oidc={NODE_ENV:'production',DATABASE_URL:'postgresql://app:p@db-host/finance?sslmode=verify-full',
+  AUTH_DATABASE_URL:'postgresql://auth:p@db-host/finance?sslmode=verify-full',
+  OIDC_ISSUER:'https://login.example',OIDC_AUDIENCE:'finance-api',OIDC_JWKS_URI:'https://login.example/jwks',
+  OIDC_CLIENT_ID:'finance-spa',OIDC_AUTHORIZATION_ENDPOINT:'https://login.example/authorize',
+  OIDC_TOKEN_ENDPOINT:'https://login.example/token',OIDC_REDIRECT_URI:'https://finance.example/connected.html',
+  OIDC_REQUIRED_ACR:'urn:mfa',CORS_ALLOWED_ORIGINS:'https://finance.example'};
+ assert.throws(()=>loadConfig({NODE_ENV:'production',DATABASE_URL:'postgresql://db-host/finance',
+  CORS_ALLOWED_ORIGINS:'http://localhost:8080'}),/OIDC/);
+ assert.throws(()=>loadConfig({...oidc,CORS_ALLOWED_ORIGINS:'http://finance.example'}),/origin|HTTPS/);
+ assert.throws(()=>loadConfig({...oidc,DATABASE_URL:'postgresql://db-host/finance?sslmode=disable'}),/sslmode/);
 });
