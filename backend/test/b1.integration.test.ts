@@ -85,15 +85,15 @@ test('B1 end-to-end: real credentials, workspace authorization, immutable postin
     'reconciliation must not double-post money');
 
   const userA=(await request(app,'GET','/v1/me',tokenA)).json();
-  await admin.query(\`INSERT INTO workspace_members(workspace_id,user_id,role,status) VALUES($1,$2,'VIEWER','ACTIVE')\`,
+  await admin.query(`INSERT INTO workspace_members(workspace_id,user_id,role,status) VALUES($1,$2,'VIEWER','ACTIVE')`,
     [workspaceA,userBId]);
   assert.equal((await request(app,'GET',target+'/accounts',tokenB)).statusCode,200);
   assert.equal((await request(app,'POST',target+'/accounts',tokenB,{displayName:'Denied',kind:'CASH'},freshKey())).statusCode,403);
   const authData=(await admin.query('SELECT count(*)::int AS n FROM app.password_credentials WHERE user_id=$1',[userA.id])).rows[0].n;
   assert.equal(authData,1);
-  const real=(await admin.query(\`SELECT count(*)::int AS n FROM journal_entries WHERE workspace_id=$1 AND status='POSTED'\`,[workspaceA])).rows[0].n;
+  const real=(await admin.query(`SELECT count(*)::int AS n FROM journal_entries WHERE workspace_id=$1 AND status='POSTED'`,[workspaceA])).rows[0].n;
   assert.equal(real,2);
-  await assert.rejects(admin.query(\`UPDATE journal_entries SET memo='tampered' WHERE id=$1\`,[posted.json().journalEntryId]),/immutable/i);
+  await assert.rejects(admin.query(`UPDATE journal_entries SET memo='tampered' WHERE id=$1`,[posted.json().journalEntryId]),/immutable/i);
   const refresh=await request(app,'POST','/v1/auth/refresh',tokenA);
   assert.equal(refresh.statusCode,200,refresh.body);
   assert.equal((await request(app,'GET','/v1/me',tokenA)).statusCode,401);
