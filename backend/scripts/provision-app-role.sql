@@ -25,7 +25,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO finance_app;
 GRANT INSERT ON financial_accounts,financial_categories,ledger_accounts,journal_entries,journal_lines,
  manual_transactions,import_batches,import_rows,reconciliation_matches,idempotency_records,audit_events,
  budgets,budget_allocations,spending_guardrails,approval_requests,spending_approval_consumptions,
- income_sources,bills,bill_settlements
+ income_sources,bills,bill_settlements,money_buckets,savings_goals,capital_funding_requests,capital_allocations,
+ financial_scenarios
  TO finance_app;
 GRANT UPDATE(status,posted_at) ON journal_entries TO finance_app;
 GRANT UPDATE(result_id) ON idempotency_records TO finance_app;
@@ -36,6 +37,8 @@ GRANT UPDATE(status,decided_by,decided_at) ON approval_requests TO finance_app;
 GRANT UPDATE(enabled,disabled_at,version) ON income_sources TO finance_app;
 GRANT UPDATE(status,cancelled_at,version) ON bills TO finance_app;
 GRANT UPDATE(status,reversed_at) ON bill_settlements TO finance_app;
+GRANT UPDATE(status,archived_at) ON money_buckets,savings_goals TO finance_app;
+GRANT UPDATE(status,decided_by,decided_at) ON capital_funding_requests TO finance_app;
 
 -- finance_auth handles only registration and opaque sessions. It has no finance ledger privileges.
 GRANT SELECT,INSERT ON app_users,workspaces,workspace_members TO finance_auth;
