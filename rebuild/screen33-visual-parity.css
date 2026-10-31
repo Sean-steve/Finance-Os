@@ -1,0 +1,111 @@
+
+/* Screen 33 — source-led Cash Flow Forecast and Runway panels */
+.cfpage:has(.cf33-lead) .banner{
+  background-image:linear-gradient(90deg,rgba(1,30,43,.94) 0%,rgba(2,43,58,.52) 45%,rgba(1,31,43,.88) 95%),url('../assets/screen-33.webp');
+  background-size:auto,182% 940%;
+  background-position:center,62% 7%;
+}
+.cfpage:has(.cf33-lead) .cfinner{padding:0 1px}
+.cf33-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  background:#fff;
+  border:1px solid #edf3ef;
+  border-radius:7px;
+  margin-bottom:9px;
+  min-height:43px;
+  padding:4px 7px;
+}
+.cf33-toolbar .cf-tabs{
+  flex:1;min-width:0;display:flex;
+  flex-wrap:wrap;
+  margin:0;
+  border-bottom:0;
+  gap:3px;
+}
+.cf33-toolbar .cf-tabs button{
+  min-height:34px;
+  border-bottom:2px solid transparent;
+  font-size:10px;
+  padding:5px 9px;
+}
+.cf33-toolbar .cf-tabs button.on{border-bottom-color:#078b65;background:#f6fbf8;color:#005943}
+.cf33-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cf33-lead{
+  display:grid;
+  grid-template-columns:minmax(0,1.90fr) minmax(310px,1fr);
+  gap:9px;
+  align-items:stretch;
+  margin-bottom:9px;
+}
+.cf33-lead>.cf-panel{min-width:0;min-height:267px;padding:11px 14px}
+.cf33-lead .cf-head h2{font-size:14px;color:#112c49}
+.cf33-forecast-plot{display:block;width:100%;height:190px}
+.cf33-runway-plot{display:block;width:100%;height:166px}
+.cf33-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:9px;color:#285b94;margin:1px auto}
+.cf33-runway-callout{
+  display:grid;align-content:center;
+  min-height:55px;
+  background:#e9fbf3;
+  border-radius:7px;
+  padding:8px 10px;
+  color:#07543d;
+}
+.cf33-runway-callout b{font-size:11px}
+.cf33-runway-callout small{font-size:9px;color:#3d7465}
+.cf33-bottom{
+  display:grid;
+  grid-template-columns:minmax(0,1.11fr) minmax(0,.97fr) minmax(260px,.67fr);
+  gap:9px;
+  align-items:start;
+}
+.cf33-column{display:grid;gap:9px;align-content:start;min-width:0}
+.cf33-column>.cf-panel{padding:11px 13px;min-width:0}
+.cf33-column .cf-panel h2{font-size:13px;color:#102c4b}
+.cf33-column .cf-table th{font-size:9px;padding:6px 4px}
+.cf33-column .cf-table td{font-size:10px;padding:6px 4px}
+.cf33-scenarios{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0}
+.cf33-scenarios>div{
+  display:grid;align-content:start;gap:5px;
+  min-height:137px;
+  border:1px solid #eaf1ed;border-radius:6px;
+  padding:9px 7px;
+  background:#f7faff;
+  min-width:0;
+}
+.cf33-scenarios>div:first-child{background:#fff3f3}
+.cf33-scenarios>div:last-child{background:#eefaF3}
+.cf33-scenarios>div.selected{border-color:#b4d4ff;background:#edf6ff}
+.cf33-scenarios b{font-size:10px;color:#163559}
+.cf33-scenarios small{font-size:9px;color:#55738c;line-height:1.3}
+.cf33-scenarios strong{font-size:12px;color:#003f81;word-break:break-word}
+.cf33-scenario-track{height:7px;border-radius:10px;background:#dde8e9;overflow:hidden}
+.cf33-scenario-track i{display:block;background:#0d8ae5;height:100%;border-radius:10px}
+.cf33-column .cf-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.cf33-column .cf-label{font-size:10px}
+.cf33-column .cfinput,.cf33-column .cf-select{min-height:32px;padding:5px 7px;font-size:10px}
+.cf33-column .cf-form .cf-btn.green{width:100%;min-height:33px}
+.cf33-column .cf-donut{width:133px;height:133px;flex-basis:133px}
+.cf33-column .cf-donut .hole{width:92px;height:92px}
+@media(max-width:1250px){
+ .cf33-lead{grid-template-columns:minmax(0,1fr)}
+ .cf33-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cf33-bottom>.cf33-column:last-child{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:780px){
+ .cf33-bottom{grid-template-columns:minmax(0,1fr)}
+ .cf33-bottom>.cf33-column:last-child{grid-column:auto;grid-template-columns:minmax(0,1fr)}
+ .cf33-toolbar{align-items:stretch;flex-direction:column}
+ .cf33-tools{justify-content:flex-end}
+}
+@media(max-width:590px){
+ .cf33-scenarios{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .cf33-column .cf-fields{grid-template-columns:minmax(0,1fr)}
+ .cf33-forecast-plot{height:146px}
+ .cf33-runway-plot{height:140px}
+ .cf33-scenarios>div{min-height:122px;padding:7px 5px}
+ .cf33-scenarios strong{font-size:10px}
+ .cf33-legend{gap:7px}
+}

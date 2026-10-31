@@ -1,0 +1,52 @@
+name: Finance OS Budget 21–22 Visual Reconciliation
+on:
+  push:
+    branches: ['reconstruction/visual-parity-budget22-and-global-geometry']
+  pull_request:
+    paths:
+      - 'rebuild/**'
+      - 'tests/budget-visual-reconciliation.cjs'
+      - 'tests/measure-budget-parity.py'
+      - '.github/workflows/budget-visual-reconciliation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax validation
+        run: |
+          node --check rebuild/app.js
+          node --check rebuild/batch16-26.js
+          node --check rebuild/budget-editor22.js
+          node --check tests/budget-visual-reconciliation.cjs
+      - name: Browser installation
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Check dual budget workflows and responsive parity
+        run: node tests/budget-visual-reconciliation.cjs
+      - name: Measure budget screenshots against user-approved reference
+        run: |
+          python3 -m pip install --break-system-packages Pillow
+          python3 tests/measure-budget-parity.py
+      - name: Capture all 60 coded views at approved desktop viewport
+        run: node tests/capture-full-visual-parity.cjs
+      - name: Compute ranked reference-to-code differences for all available images
+        run: python3 tests/measure-full-visual-parity.py
+      - name: Attach screenshot comparisons and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-budget-visual-parity
+          path: |
+            qa-artifacts/budget-visual-reconciliation
+            qa-artifacts/full-visual-parity
+          if-no-files-found: ignore
+          retention-days: 14

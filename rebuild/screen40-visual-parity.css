@@ -1,0 +1,158 @@
+
+/* Screen 40 — source-led three-column vehicle affordability simulator.
+   Original approved photo is cropped from the reference asset, never a whole-page image overlay. */
+.cap-page:has(.cap40-layout) .banner{
+  background-image:linear-gradient(90deg,rgba(2,31,49,.95) 0%,rgba(2,42,57,.75) 42%,rgba(1,31,44,.43) 78%,rgba(0,28,40,.88) 100%),url('../assets/screen-40.webp');
+  background-size:auto,165% 850%;
+  background-position:center,67% 6%;
+}
+.cap-page:has(.cap40-layout) .cap-inner{padding:0 1px}
+.cap40-layout{
+ display:grid;
+ grid-template-columns:minmax(330px,.95fr) minmax(420px,1.52fr) minmax(200px,.62fr);
+ gap:10px;
+ align-items:start;
+}
+.cap40-left,.cap40-center,.cap40-right{display:grid;align-content:start;gap:9px;min-width:0}
+.cap40-left>.cap-panel{min-height:552px}
+.cap40-center>.cap-panel:first-child{min-height:242px}
+.cap40-center .cap-panel{min-width:0}
+.cap40-right>.cap-panel:first-child{min-height:473px}
+.cap40-left .cap-form{gap:10px}
+.cap40-left .cap-field{font-size:10px;gap:5px}
+.cap40-left .cap-field input,.cap40-left .cap-field select{
+  min-height:34px;
+  padding:7px 9px;
+  color:#19364d;
+}
+.cap40-left .cap-purchase-types button{
+ min-height:61px;
+ font-size:10px;
+ padding:5px 2px;
+}
+.cap40-left .cap-purchase-types button strong{font-size:20px;margin-bottom:3px}
+.cap40-left .cap-purchase-types button.active{color:#005942;border-color:#008d67}
+.cap40-left input[type=range]{accent-color:#1679ff;min-height:15px}
+.cap40-range-caption{
+ display:flex;justify-content:space-between;align-items:center;
+ font-size:9px;color:#3c6fc7;margin-top:-7px;
+}
+.cap40-left .cap-btn.primary{
+ background:#005b43;
+ border-color:#005b43;
+ min-height:36px;
+}
+.cap40-left .cap-actions{flex-wrap:nowrap;gap:5px}
+.cap40-left .cap-actions button{min-width:0;white-space:normal;font-size:10px}
+.cap40-center .cap-score{
+ min-height:91px;
+ background:#eafaf1;
+ align-items:center;
+ padding:14px;
+ border-radius:7px;
+}
+.cap40-center .cap-score strong{color:#0a6049;font-size:13px}
+.cap40-center .cap-score .big{color:#11314c;font-size:18px;font-weight:700}
+.cap40-center .cap-score small{font-size:10px;color:#426f67;max-width:400px}
+.cap40-results-metrics{
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:2px;
+}
+.cap40-results-metrics>div{
+ min-height:72px;
+ display:grid;align-content:center;gap:4px;
+ border-right:1px solid #e9f0e9;padding:5px 7px;
+ min-width:0;
+}
+.cap40-results-metrics>div:last-child{border:0}
+.cap40-results-metrics .cap-ic{width:27px;height:28px;font-size:15px}
+.cap40-results-metrics b{font-size:10px;font-weight:650;color:#45647b}
+.cap40-results-metrics strong{font-size:11px;color:#0f2f52;white-space:normal}
+.cap40-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-items:stretch;min-width:0}
+.cap40-chart-row>.cap-panel{min-width:0;min-height:220px}
+.cap40-chart-row .cap-donut{width:145px;height:145px;flex-basis:145px}
+.cap40-chart-row .cap-donut .hole{width:92px;height:92px}
+.cap40-chart-row .cap-barplot{height:154px}
+.cap40-chart-row .cap-legend{gap:4px}
+.cap40-chart-row .cap-row{font-size:9px;padding:3px 0}
+.cap40-bottom{
+ display:grid;
+ grid-template-columns:minmax(0,.83fr) minmax(0,1.45fr);
+ gap:9px;
+ align-items:start;
+}
+.cap40-bottom .cap-panel{min-height:204px}
+.cap40-bottom .cap-row{font-size:10px;padding:5px 0}
+.cap40-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.cap40-option{
+ min-width:0;min-height:146px;
+ display:grid;align-content:start;gap:4px;
+ text-align:left;cursor:pointer;
+ border:1px solid #e4efe9;border-radius:7px;
+ background:#fff;
+ padding:7px 6px;color:#11324b;
+ font-size:9px;
+}
+.cap40-option.selected{border:2px solid #069e71;background:#f7fffa}
+.cap40-option b{font-size:10px}
+.cap40-option strong{font-size:11px;color:#003e70}
+.cap40-option small{font-size:9px;color:#62778b}
+.cap40-mini-car{font-size:23px;display:block;text-align:center;padding:2px}
+.cap40-option-action{
+ display:block;text-align:center;font-size:9px;
+ background:#e6f1fb;color:#064c86;border-radius:5px;
+ padding:5px 3px;margin-top:5px;
+}
+.cap40-option.selected .cap40-option-action{background:#005940;color:#fff}
+.cap40-car-visual{
+ width:100%;height:112px;
+ background:#c1d0c4 url('../assets/screen-40.webp') no-repeat;
+ background-size:1536px 1024px;
+ background-position:-1287px -322px;
+ border-radius:7px;
+ margin-bottom:9px;
+}
+.cap40-car-name{display:block;color:#0b2850;font-size:12px}
+.cap40-car-price{display:block;font-size:15px;color:#083a78;margin:3px 0 7px}
+.cap40-right .cap-row{padding:5px 0;font-size:10px}
+.cap40-right .cap-row b{font-size:10px;color:#173a78;text-align:right}
+.cap40-summary-action{margin-top:9px;display:grid}
+.cap40-summary-action .cap-btn{
+ background:#dcf8eb;
+ color:#006a4b;
+ border-color:#d2f3e1;
+ min-height:30px;
+}
+.cap40-insight{
+ min-height:34px;
+ display:flex;align-items:center;gap:8px;
+ padding:5px 0;
+ border-bottom:1px solid #eef2ef;
+}
+.cap40-insight span{
+ width:25px;height:25px;border-radius:6px;
+ display:grid;place-items:center;flex:none;
+ background:#e7f9ee;color:#0b9467;
+ font-size:17px;
+}
+.cap40-insight small{font-size:9px;color:#3a6082;line-height:1.25}
+@media(max-width:1350px){
+ .cap40-layout{grid-template-columns:minmax(280px,1fr) minmax(0,1.3fr)}
+ .cap40-right{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cap40-right>.cap-panel:first-child{min-height:0}
+ .cap40-car-visual{background-size:1536px 1024px}
+}
+@media(max-width:940px){
+ .cap40-layout{grid-template-columns:minmax(0,1fr)}
+ .cap40-right{grid-column:auto;grid-template-columns:1fr}
+ .cap40-center .cap-score .big{margin-left:0}
+ .cap40-results-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+ .cap40-chart-row,.cap40-bottom{grid-template-columns:minmax(0,1fr)}
+ .cap40-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .cap40-left .cap-actions{flex-wrap:wrap}
+ .cap40-results-metrics>div{min-height:60px}
+ .cap40-car-visual{max-width:255px}
+}

@@ -9,8 +9,8 @@ const sum=()=>items.reduce((n,x)=>n+Number(draft.categories[x[0]]||0),0);
 const act=(name,key,cl='')=>'<button type="button" data-be22="'+esc(key)+'" class="be22-btn '+cl+'">'+esc(name)+'</button>';
 const store=()=>ctx.model.spendV2;
 function init(bridge){ctx=bridge}
-function snapshot(){const s=store();return JSON.stringify([s.budgetName,s.budgetMonth,s.budgetPeriod,s.budgetLimit,s.categories,s.rollover,s.rules])}
-function prepare(){const stateSignature=snapshot();if(draft&&observed===stateSignature)return;const s=store();observed=stateSignature;draft={name:s.budgetName||'October 2026 Budget',month:s.budgetMonth||'October 2026',period:s.budgetPeriod||'Monthly',limit:Number(s.budgetLimit||300000),categories:{...Object.fromEntries(items.map(x=>[x[0],x[3]])),...s.categories},rollover:{...s.rollover},rules:{alertThreshold:80,weeklyDigest:true,unusual:true,paused:false,...s.rules}}}
+function snapshot(){const s=store();return JSON.stringify([s.budgetName,s.budgetMonth,s.budgetPeriod,s.budgetLimit,s.categories,s.budgetRollover||s.rollover,s.rules])}
+function prepare(){const stateSignature=snapshot();if(draft&&observed===stateSignature)return;const s=store();observed=stateSignature;draft={name:s.budgetName||'October 2026 Budget',month:s.budgetMonth||'October 2026',period:s.budgetPeriod||'Monthly',limit:Number(s.budgetLimit||300000),categories:{...Object.fromEntries(items.map(x=>[x[0],x[3]])),...s.categories},rollover:{...(s.rollover||{}),...(s.budgetRollover||{})},rules:{alertThreshold:80,weeklyDigest:true,unusual:true,paused:false,...s.rules}}}
 function pie(){const total=sum();let v=0;const stops=items.map(x=>{const old=v;v+=Number(draft.categories[x[0]]||0)/Math.max(1,total)*100;return x[2]+' '+old.toFixed(2)+'% '+v.toFixed(2)+'%'}).join(',');
 return '<div class="be22-pie-wrap"><div class="be22-pie" style="background:conic-gradient('+stops+')"><div><b>'+fmt(total)+'</b><small>Total Budget</small></div></div><div class="be22-legend">'+items.map(x=>'<div><i style="background:'+x[2]+'"></i><span>'+esc(x[0])+'</span><em>'+Math.round(100*Number(draft.categories[x[0]]||0)/Math.max(1,total))+'%</em><strong>'+fmt(draft.categories[x[0]])+'</strong></div>').join('')+'</div></div>'}
 function budgetTable(){const total=sum();return '<div class="be22-table-box"><table class="be22-table"><thead><tr><th></th><th>Category</th><th>Allocation (KES)</th><th>% of Budget</th><th>Share</th><th>Monthly Limit</th><th>Rollover</th><th>Actions</th></tr></thead><tbody>'+
@@ -31,7 +31,7 @@ return '<div class="be22"><div class="be22-hero"><div><small>Budgets　›　Cre
 '<section class="be22-card"><header><h2>Budget Rules & Alerts</h2>'+act('Edit','step:2')+'</header><div class="be22-rules"><label><span>♧</span>Alert when category spending reaches<select data-be22-threshold>'+[60,70,80,90,100].map(n=>'<option value="'+n+'" '+(draft.rules.alertThreshold===n?'selected':'')+'>'+n+'%</option>').join('')+'</select><input type="checkbox" data-be22-rule="limitEnabled" class="be22-switch" '+(draft.rules.limitEnabled!==false?'checked':'')+'></label>'+
 [['weeklyDigest','✉','Send weekly budget summary'],['unusual','⚠','Alert me on unusual spending'],['paused','⌘','Pause alerts for this budget']].map(([k,i,t])=>'<label><span>'+i+'</span>'+t+'<input type="checkbox" class="be22-switch" data-be22-rule="'+k+'" '+(draft.rules[k]?'checked':'')+'></label>').join('')+'</div><small>Preferences only; no notification service connected.</small></section>'+
 '<section class="be22-card"><header><h2>Budget Goals</h2>'+act('Link Goal','goals')+'</header><div class="be22-goals">◎ <div><b>Stay within budget</b><small>Keep spending under '+fmt(draft.limit)+'</small><div class="be22-bar large"><i style="width:'+Math.min(100,projected/Math.max(1,draft.limit)*100)+'%"></i></div><small>'+fmt(draft.limit-projected)+' left</small></div></div></section></aside></div>'+
-'<p class="be22-caption">Screen 22 follows the approved Screen 21 Finance OS editor layout; no separate Screen 22 screenshot was supplied.</p></div>';
+'<p class="be22-caption">No separate Screen 22 screenshot was supplied. Screen 22 has been recreated using the approved Create / Edit Budget design language provided for Screen 21.</p></div>';
 }
 
 
@@ -39,11 +39,29 @@ function syncInputs(){const form=document.querySelector('[data-be22-form="budget
 draft.name=String(form.elements.name.value||draft.name).trim();
 draft.month=String(form.elements.month.value||draft.month);
 const value=Number(form.elements.limit.value);if(Number.isFinite(value)&&value>0)draft.limit=value}
+
+function refreshDraftSummary(){
+ const total=sum();
+ const hole=document.querySelector('.be22-pie>div b');
+ if(hole)hole.textContent=fmt(total);
+ const pieEl=document.querySelector('.be22-pie');
+ if(pieEl){let from=0;const stops=items.map(x=>{const next=from+Number(draft.categories[x[0]]||0)/Math.max(1,total)*100;const color=x[2]+' '+from.toFixed(3)+'% '+next.toFixed(3)+'%';from=next;return color});pieEl.style.background='conic-gradient('+stops.join(',')+')'}
+ for(const [index,c] of items.entries()){
+  const amount=Number(draft.categories[c[0]]||0),share=Math.round(100*amount/Math.max(1,total));
+  const legend=document.querySelectorAll('.be22-legend>div')[index];
+  if(legend){legend.querySelector('em').textContent=share+'%';legend.querySelector('strong').textContent=fmt(amount)}
+  const row=document.querySelectorAll('.be22-table tbody tr:not(.be22-sum)')[index];
+  if(row){const cells=row.querySelectorAll('td');cells[3].textContent=share+'%';cells[4].querySelector('i').style.width=share+'%';cells[5].textContent=fmt(amount)}
+ }
+ const totalRow=document.querySelector('.be22-table .be22-sum');
+ if(totalRow){const cells=totalRow.querySelectorAll('td');cells[2].textContent=fmt(total);cells[3].textContent=Math.round(total/Math.max(1,draft.limit)*100)+'% of target';cells[4].querySelector('i').style.width=Math.min(100,total/Math.max(1,draft.limit)*100)+'%';cells[5].textContent=fmt(total)}
+}
+
 function change(e){prepare();const el=e.target;
-if(el.matches?.('[data-be22-cat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){syncInputs();draft.categories[el.dataset.be22Cat]=value;notice='Category allocation updated. Save to apply changes throughout Finance OS.';ctx.render()}return true}
-if(el.matches?.('[data-be22-rollover]')){syncInputs();draft.rollover[el.dataset.be22Rollover]=el.checked;ctx.render();return true}
-if(el.matches?.('[data-be22-rule]')){syncInputs();draft.rules[el.dataset.be22Rule]=el.checked;ctx.render();return true}
-if(el.matches?.('[data-be22-threshold]')){syncInputs();draft.rules.alertThreshold=Number(el.value);ctx.render();return true}
+if(el.matches?.('[data-be22-cat]')){const value=Number(el.value);if(Number.isFinite(value)&&value>=0){syncInputs();draft.categories[el.dataset.be22Cat]=value;notice='Category allocation updated. Save to apply changes throughout Finance OS.';refreshDraftSummary()}return true}
+if(el.matches?.('[data-be22-rollover]')){syncInputs();draft.rollover[el.dataset.be22Rollover]=el.checked;return true}
+if(el.matches?.('[data-be22-rule]')){syncInputs();draft.rules[el.dataset.be22Rule]=el.checked;return true}
+if(el.matches?.('[data-be22-threshold]')){syncInputs();draft.rules.alertThreshold=Number(el.value);return true}
 return false}
 function click(e){const el=e.target.closest?.('[data-be22]');if(!el)return false;
 e.preventDefault();prepare();syncInputs();
@@ -59,7 +77,7 @@ if(arg==='lastMonth')draft.name='Copied from Previous Month Budget';
 if(arg==='template')items.forEach(c=>draft.categories[c[0]]=c[3]);
 if(arg==='suggested'){const fractions=[.4,.15,.10,.08,.06,.05,.04,.04,.03,.05];items.forEach((c,i)=>draft.categories[c[0]]=Math.round(fractions[i]*draft.limit))}
 notice='Preset added to your draft. Review amounts before saving.';break}
-case 'template':notice='Budget template retained in this browser draft. Save Budget to apply it.';break;
+case 'template':{const data=store();data.budgetTemplates??=[];data.budgetTemplates.push({id:'budget-template-'+Date.now(),name:draft.name+' Template',limit:draft.limit,period:draft.period,categories:{...draft.categories},rollover:{...draft.rollover},rules:{...draft.rules}});ctx.save();observed=snapshot();notice='Budget template saved to local planning records; it does not move money.';break}
 case 'category':notice='Edit the '+arg+' allocation directly in the row.';break;
 case 'goals':ctx.navigate(37);return true;
 case 'cancel':draft=null;ctx.navigate(21);return true;
@@ -67,7 +85,7 @@ case 'save':{
 if(!draft.name){notice='A budget name is required.';break}
 if(draft.limit<=0||!Number.isFinite(draft.limit)){notice='Enter a positive budget limit.';break}
 if(Math.abs(sum()-draft.limit)>.01){notice='Category allocations must equal the total target before saving. Difference: '+fmt(draft.limit-sum())+'.';break}
-const data=store();data.budgetName=draft.name;data.budgetMonth=draft.month;data.budgetPeriod=draft.period;data.budgetLimit=draft.limit;data.categories={...draft.categories};data.rollover={...draft.rollover};data.rules={...draft.rules};
+const data=store();data.budgetName=draft.name;data.budgetMonth=draft.month;data.budgetPeriod=draft.period;data.budgetLimit=draft.limit;data.categories={...draft.categories};data.rollover={...draft.rollover};data.budgetRollover={...draft.rollover};data.rules={...draft.rules};
 ctx.save();observed=snapshot();notice='Budget saved to the shared Finance OS planning records. No real funds have moved.';step=3;break}
 default:notice='Local prototype action; no bank or external service contacted.';break
 }
