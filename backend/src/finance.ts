@@ -280,7 +280,7 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
       currency:string;amount_minor:string;description:string;kind:string;occurred_at:Date}>(`
      SELECT id,financial_account_id,category_id,entry_id,currency,amount_minor::text,
       description,kind,occurred_at FROM manual_transactions
-     WHERE workspace_id=$1 AND id=$2 FOR SHARE`,[wid,transactionId])).rows[0];
+     WHERE workspace_id=$1 AND id=$2`,[wid,transactionId])).rows[0];
    if(!original)throw new DomainError(404,'TRANSACTION_NOT_FOUND','Transaction not found');
    if(original.kind==='REVERSAL')throw new DomainError(409,'REVERSAL_CANNOT_REVERSE','A reversal cannot be reversed; post a new adjusting transaction');
    const existing=await db.query(`SELECT id FROM manual_transactions WHERE workspace_id=$1 AND reverses_transaction_id=$2`,[wid,transactionId]);
