@@ -16,6 +16,7 @@ const bearer=(request:FastifyRequest)=>{
 export function createOidcVerifier(config:OidcConfig,fetcher:typeof fetch=fetch){
  let jwks:{keys:Jwk[]}|null=null;
  let expires=0;
+ let lastForcedRefresh=0;
  async function keys():Promise<Jwk[]>{
   if(jwks&&Date.now()<expires)return jwks.keys;
   let response:Response;
@@ -47,6 +48,9 @@ export function createOidcVerifier(config:OidcConfig,fetcher:typeof fetch=fetch)
   let candidate=list.filter(k=>k.kty==='RSA'&&k.kid===header.kid&&(!k.use||k.use==='sig')&&
    (!k.alg||k.alg==='RS256')&&(!k.key_ops||k.key_ops.includes('verify')));
   if(candidate.length!==1){
+   // Do not allow arbitrary unknown-kid requests to flood the trusted identity provider.
+   if(Date.now()-lastForcedRefresh<30000)throw problem('OIDC_UNKNOWN_KEY');
+   lastForcedRefresh=Date.now();
    jwks=null;list=await keys();
    candidate=list.filter(k=>k.kty==='RSA'&&k.kid===header.kid&&(!k.use||k.use==='sig')&&
     (!k.alg||k.alg==='RS256')&&(!k.key_ops||k.key_ops.includes('verify')));
