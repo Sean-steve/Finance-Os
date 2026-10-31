@@ -23,7 +23,7 @@ export async function buildApp({config,database,financePool,authPool}:Dependenci
    const result=await database.query('SELECT version FROM schema_migrations ORDER BY version');
    const versions=new Set(result.rows.map(row=>(row as {version:string}).version));
    const required=['001_identity_workspaces.sql','002_financial_domains.sql','003_integrity_rls.sql'];
-   if(config.localAuthEnabled)required.push('004_b1_identity_ledger.sql');
+   if(config.localAuthEnabled)required.push('004_b1_identity_ledger.sql','005_b1_reversals.sql');
    if(!required.every(version=>versions.has(version)))throw new Error('Migrations not applied');
    return {status:'ready',migrationTracking:true};
   }catch{
