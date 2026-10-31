@@ -4,10 +4,10 @@
 
 ## Delivery status and risk boundary
 
-- Workspace category budgets can be drafted and activated. Each budget has an immutable definition, revision number, period, KES limit and expense-category allocations. The user cannot silently edit an activated budget: a new budget must be created and conflicts reviewed.
+- Workspace category budgets can be drafted and activated. Each budget has an immutable definition, revision number, period, KES limit and expense-category allocations. An ACTIVE budget can be archived with an auditable one-time transition so a non-overlapping replacement may activate. The user cannot silently edit an activated budget: a new budget must be created and conflicts reviewed.
 - Spending intelligence is calculated from **POSTED, double-entry journal-backed manual transactions only**; expense reversals compensate the original entry without mutating any posted financial record.
 - User-entered expense descriptions may indicate possible recurring activity, but **cannot prove a merchant, subscription, transaction identity or provider confirmation**.
-- Guardrails currently support only **AMOUNT** and **CATEGORY** conditions and actions WARN, REQUIRE_APPROVAL, BLOCK. Unsupported merchant, geo, time, or recurring signals must not be fabricated.
+- Guardrails currently support only **AMOUNT** and **CATEGORY** conditions and actions WARN, REQUIRE_APPROVAL, BLOCK. Owners/admins can deactivate a rule exactly once without rewriting its original definition. Any active legacy BLOCK or REQUIRE_APPROVAL rule with unsupported evaluation conditions causes a fail-closed 409 rather than silent policy bypass. Unsupported merchant, geo, time, or recurring signals must not be fabricated.
 - A read-only purchase check returns advisory decision, matched policies, and budget warnings. It never authorizes or moves money, and it cannot block an actual payment outside Finance OS.
 - The real **manual expense-posting API** also enforces BLOCK and REQUIRE_APPROVAL: no silent bypass through direct REST calls. All matching REQUIRE_APPROVAL rules must have their own independently approved request ID; an approval is consumed **once only** by an immutable financial record.
 - Approval decisions require a different active workspace **OWNER or ADMIN** from the requestor. Self approval, replay with new idempotency key, revision of a final decision, and crossing workspace boundaries are rejected.
@@ -19,7 +19,7 @@
 - Migration: `backend/db/migrations/006_b2_spending_controls.sql`.
 - Existing tables: `budgets`, `budget_allocations`, `spending_guardrails`, `approval_requests`. Preserves B0/B1 tables, RLS, double-entry journals and checksummed migrations 001–005 unchanged.
 - New `spending_approval_consumptions` links approved authorization requests to posted manual transactions, with a composite workspace FK and unique constraint ensuring an approval cannot be consumed twice.
-- Database triggers: immutable budget economics, versioned status transitions, no category overlap across active budgets in overlapping periods, sum of allocations <= budget amount, and one-time independent approval decisions.
+- Database triggers: immutable budget economics, versioned status transitions, one-time guardrail deactivation, no category overlap across active budgets in overlapping periods, sum of allocations <= budget amount, and one-time independent approval decisions.
 - Runtime permissions: `finance_app` may SELECT scoped records, INSERT controlled financial records, UPDATE only budget status/version and approval decision columns, and cannot DELETE or modify posted ledger history. `finance_auth` has no ledger privileges.
 - All new data is protected by explicit row-level security policies checking authenticated actor workspace membership. Migrator-only functions are not a user-facing API.
 - Idempotency-Key mandatory for every mutating B2 endpoint, including budget activation and approvals. Same key + same request gives replay; same key + different request is rejected.
@@ -33,9 +33,11 @@
 | GET /budgets | Period, version, category allocations, ledger-backed spent/remaining |
 | POST /budgets | Draft with category allocations, KES limit, period |
 | POST /budgets/:budgetId/activate | Immutable lifecycle activation with database overlap guards |
+| POST /budgets/:budgetId/archive | Audited archive of active budget, enabling replacement |
 | GET /spending/insights?months=1..12 | Net monthly and category expense totals, repeated description review suggestions |
 | GET /spending/guardrails | Active manual financial posting policies |
 | POST /spending/guardrails | Create AMOUNT/CATEGORY WARN/REQUIRE_APPROVAL/BLOCK rules |
+| POST /spending/guardrails/:guardrailId/deactivate | Audited one-time policy deactivation by owner/admin |
 | POST /spending/purchase-checks | Preview; **no financial movement and no authorization** |
 | GET /spending/approvals | Workspace approval queue |
 | POST /spending/approvals | Request independently approved expense |
