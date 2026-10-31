@@ -133,7 +133,7 @@ async function refresh(){
  }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
-const nav=(n)=>{location.hash='screen/'+n;window.scrollTo(0,0);draw();};
+const nav=(n)=>{const target='screen/'+n;const changed=location.hash.slice(1)!==target;location.hash=target;window.scrollTo(0,0);if(!changed)draw();};
 const card=(title,html)=>'<section class="connected-card"><h2>'+esc(title)+'</h2>'+html+'</section>';
 const btn=(text,screen)=>'<button type="button" data-go="'+screen+'">'+esc(text)+'</button>';
 const field=(caption,name,type='text',required=true,value='',opts='')=>
