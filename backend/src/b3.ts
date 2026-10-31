@@ -131,7 +131,7 @@ function pendingBills(bills:BillRow[],settlements:SettlementRow[],from:string,to
  const events:{date:string;billId:string;name:string;amountMinor:number;state:string;dueOn:string}[]=[];
  for(const bill of bills){
   const cutoff=bill.status==='CANCELLED'&&bill.cancelled_at
-    ?asDate(new Date(bill.cancelled_at.getTime()-86400000)):null;
+    ?asDate(bill.cancelled_at):null;
   const last=cutoff&&(!bill.last_due_on||cutoff<bill.last_due_on)?cutoff:bill.last_due_on;
   for(const dueOn of occurrenceDates(bill.first_due_on,bill.cadence,from,to,last)){
    if(active.has(bill.id+'#'+dueOn))continue;
@@ -330,7 +330,7 @@ export function installB3Routes(app:FastifyInstance,financial:pg.Pool,identity:I
    const events:{billId:string;billName:string;date:string;amountMinor:number;status:string;settlementId:string|null}[]=[];
    for(const bill of bills){
     const cutoff=bill.status==='CANCELLED'&&bill.cancelled_at
-      ?dateShift(asDate(bill.cancelled_at),-1):null;
+      ?asDate(bill.cancelled_at):null;
     const end=cutoff&&(!bill.last_due_on||cutoff<bill.last_due_on)?cutoff:bill.last_due_on;
     for(const date of occurrenceDates(bill.first_due_on,bill.cadence,range.from,range.to,end)){
      const payment=recorded.get(bill.id+'#'+date);
@@ -390,7 +390,7 @@ export function installB3Routes(app:FastifyInstance,financial:pg.Pool,identity:I
    }
    const bill=(await billRows(db,wid,id))[0];
    if(!bill)throw new DomainError(404,'BILL_NOT_FOUND','Bill not found');
-   const cutoff=bill.status==='CANCELLED'&&bill.cancelled_at?dateShift(asDate(bill.cancelled_at),-1):null;
+   const cutoff=bill.status==='CANCELLED'&&bill.cancelled_at?asDate(bill.cancelled_at):null;
    const last=cutoff&&(!bill.last_due_on||cutoff<bill.last_due_on)?cutoff:bill.last_due_on;
    if(!occurrenceDates(bill.first_due_on,bill.cadence,body.dueOn,body.dueOn,last).includes(body.dueOn))
     throw new DomainError(422,'NOT_SCHEDULED_DUE_DATE','Due date is not an occurrence of this bill');
