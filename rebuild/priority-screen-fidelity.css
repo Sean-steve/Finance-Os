@@ -37,7 +37,7 @@
 .fo-priority-1 .auth-state-examples>div{background:#fffdfa}
 .fo-priority-1 .auth-security-note{max-width:950px;margin-left:auto}
 .fo-priority-42 .cap-grid{grid-template-columns:minmax(0,1.65fr) minmax(0,.80fr) minmax(0,1.03fr);grid-template-areas:"projections outcomes builder" "cashflow goals whatif" "comparison insights export";gap:9px;align-items:stretch}
-.fo-priority-42 .cap-grid>[data-fo-section]{grid-area:var(--fo-area);grid-column:auto;grid-row:auto;min-width:0}
+.fo-priority-42 .cap-grid>[data-fo-section]{grid-area:var(--fo-area);min-width:0}
 .fo-priority-42 [data-fo-section="projections"]{--fo-area:projections}
 .fo-priority-42 [data-fo-section="outcomes"]{--fo-area:outcomes}
 .fo-priority-42 [data-fo-section="builder"]{--fo-area:builder}
@@ -86,7 +86,7 @@
 .fo-priority-29 [data-fo-section="scenarios"] .cf-field{max-width:100%}
 .fo-priority-29 [data-fo-section="monthly"] .cf-tablebox{max-height:260px;overflow:auto}
 .fo-priority-24 .sp-grid{grid-template-columns:minmax(0,2.1fr) minmax(0,1fr) minmax(0,1.08fr);grid-template-areas:"rules queue check" "impact risk recommendations" "blocked settings settings" "activity settings settings";gap:9px;align-items:stretch}
-.fo-priority-24 .sp-grid>[data-fo-section]{grid-area:var(--fo-area);grid-column:auto;grid-row:auto;min-width:0}
+.fo-priority-24 .sp-grid>[data-fo-section]{grid-area:var(--fo-area);min-width:0}
 .fo-priority-24 [data-fo-section="rules"]{--fo-area:rules}
 .fo-priority-24 [data-fo-section="queue"]{--fo-area:queue}
 .fo-priority-24 [data-fo-section="check"]{--fo-area:check}
@@ -117,7 +117,7 @@
 .fo-priority-24 [data-fo-section="risk"] .sp-gauge{width:130px;height:130px}
 .fo-priority-24 [data-fo-section="settings"] .sp-stat-row{min-height:42px}
 .fo-priority-43 .pr-grid{grid-template-columns:minmax(0,1.17fr) minmax(0,1fr) minmax(0,.87fr);grid-template-areas:"breakdown balance actions" "commitments progress insights" "accounts accounts strategies" "alerts alerts alerts";gap:10px;align-items:stretch}
-.fo-priority-43 .pr-grid>[data-fo-section]{grid-area:var(--fo-area);grid-column:auto;grid-row:auto;min-width:0}
+.fo-priority-43 .pr-grid>[data-fo-section]{grid-area:var(--fo-area);min-width:0}
 .fo-priority-43 [data-fo-section="breakdown"]{--fo-area:breakdown}
 .fo-priority-43 [data-fo-section="balance"]{--fo-area:balance}
 .fo-priority-43 [data-fo-section="actions"]{--fo-area:actions}
