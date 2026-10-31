@@ -40,14 +40,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
       - name: Install backend dependencies
-        run: npm install --prefix backend --no-audit --no-fund
-      - name: Capture dependency lock for deterministic B0 handoff
-        run: |
-          echo FINANCE_OS_PACKAGE_LOCK_BEGIN
-          base64 -w0 backend/package-lock.json
-          echo
-          echo FINANCE_OS_PACKAGE_LOCK_END
+        run: npm ci --prefix backend --no-audit --no-fund
       - name: TypeScript strict build
         run: npm --prefix backend run build
       - name: Validate machine-readable OpenAPI

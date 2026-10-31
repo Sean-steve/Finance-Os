@@ -22,7 +22,7 @@ Requirements: Node 22+, PostgreSQL 17+ (compose optional), psql, two separate st
 export FINANCE_DB_MIGRATOR_PASSWORD='<your-local-strong-secret>'
 docker compose -f backend/compose.yaml up -d
 cd backend
-npm install
+npm ci
 npm run check
 npm run contract:check
 npm test
