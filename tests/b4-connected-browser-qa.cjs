@@ -87,8 +87,26 @@ async function main(){
   await page.locator('form[data-form=b4-scenario] input[name=name]').fill('CI hypothetical');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyIncome]').fill('100');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyExpense]').fill('80');
+  // Wait for an actual transport response and report full UI diagnostics on failure;
+  // avoid depending on race-prone DOM paint timing after the form re-renders.
+  const sent=page.waitForResponse(x=>x.request().method()==='POST'&&
+   x.url().includes('/v1/workspaces/'+uuid+'/planning/scenarios'),{timeout:15000});
   await page.locator('form[data-form=b4-scenario] button[type=submit]').click();
-  await page.getByText('Hypothetical end cash:').first().waitFor({timeout:10000});
+  try{
+   const posted=await sent;
+   assert.equal(posted.status(),200,'Scenario POST failed in isolated CI mock');
+   await page.getByText('Hypothetical end cash:').first().waitFor({timeout:25000});
+  }catch(cause){
+   const main=await page.locator('main').innerText().catch(()=>'(main missing)');
+   const state=await page.locator('form[data-form=b4-scenario]').evaluate(form=>({
+    valid:form.checkValidity(),
+    fields:[...form.querySelectorAll('input,select')].map(x=>({
+     name:x.name,value:x.value,valid:x.checkValidity(),message:x.validationMessage}))
+   })).catch(()=>null);
+   throw new Error('B4 scenario browser test did not render; UI='+main.slice(0,4000)+
+    '; form='+JSON.stringify(state)+'; pageerrors='+JSON.stringify(errors)+
+    '; cause='+String(cause));
+  }
   assert.deepEqual(errors,[],'Authenticated B4 views should not throw runtime errors');
   assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[],'No finance state in localStorage');
   await page.setViewportSize({width:390,height:844});
