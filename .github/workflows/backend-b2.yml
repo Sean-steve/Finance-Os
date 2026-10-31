@@ -1,0 +1,68 @@
+name: Finance OS Backend B2 — Budgets, Spending & Policy Certification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'phase-b2/**']
+    paths:
+      - 'backend/**'
+      - 'docs/backend/B2_*'
+      - '.github/workflows/backend-b2.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'docs/backend/B2_*'
+      - '.github/workflows/backend-b2.yml'
+permissions:
+  contents: read
+jobs:
+  database-certification:
+    name: PostgreSQL 17 budget, ledger, guardrail and independent approval invariants
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: finance_migrator
+          POSTGRES_PASSWORD: ci-migrator-only
+          POSTGRES_DB: finance_os_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U finance_migrator -d finance_os_test"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      MIGRATION_DATABASE_URL: postgresql://finance_migrator:ci-migrator-only@127.0.0.1:5432/finance_os_test
+      TEST_APP_DATABASE_URL: postgresql://finance_app:ci-app-only@127.0.0.1:5432/finance_os_test
+      TEST_AUTH_DATABASE_URL: postgresql://finance_auth:ci-auth-only@127.0.0.1:5432/finance_os_test
+      PGPASSWORD: ci-migrator-only
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: Strict TypeScript and OpenAPI contracts
+        run: |
+          npm --prefix backend run build
+          npm --prefix backend run contract:check
+      - name: B0, B1 and B2 security unit tests
+        run: npm --prefix backend test
+      - name: Forward-only migrations and checksum drift
+        run: |
+          npm --prefix backend run migrate
+          npm --prefix backend run migrate
+      - name: Provision restricted runtime roles
+        run: |
+          psql -h 127.0.0.1 -U finance_migrator -d finance_os_test            -v app_password="ci-app-only" -v auth_password="ci-auth-only"            -f backend/scripts/provision-app-role.sql
+      - name: Baseline B0 invariants and workspace RLS
+        run: npm --prefix backend run test:db
+      - name: Baseline B1 immutable financial ledger
+        run: npm --prefix backend run test:b1
+      - name: B1.1 OIDC identity and MFA invariants
+        run: npm --prefix backend run test:oidc:db
+      - name: Phase B2 real PostgreSQL financial control certification
+        run: npm --prefix backend run test:b2
