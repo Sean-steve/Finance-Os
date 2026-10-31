@@ -43,6 +43,7 @@ test('B1 end-to-end: real credentials, workspace authorization, immutable postin
    {displayName:'Manual KES Wallet',kind:'CASH',currency:'KES'},freshKey());
   assert.equal(account.statusCode,201,account.body);
   const accountId=account.json().id;
+  assert.equal((await request(app,'POST',target+'/accounts',tokenA,{displayName:'Unsupported Credit Card',kind:'CARD',currency:'KES'},freshKey())).statusCode,422);
   assert.equal(account.json().balanceMinor,0);
   const category=await request(app,'POST',target+'/categories',tokenA,{name:'Contract income',kind:'INCOME'},freshKey());
   assert.equal(category.statusCode,201,category.body);
