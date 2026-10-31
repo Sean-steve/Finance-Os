@@ -6,7 +6,7 @@ import { loadConfig } from '../src/config.js';
 const config = {
   nodeEnv:'test' as const, host:'127.0.0.1', port:3101,
   databaseUrl:'postgresql://not-used.invalid/test', corsAllowedOrigins:['http://localhost:8080'],
-  logLevel:'silent' as const,
+  logLevel:'silent' as const,localAuthEnabled:false,authDatabaseUrl:undefined,
 };
 test('liveness, documented API stage and no prematurely served financial routes', async () => {
   const app = await buildApp({config,database:{query: async()=>({rows:[{version:'001_identity_workspaces.sql'},{version:'002_financial_domains.sql'},{version:'003_integrity_rls.sql'}]})}});

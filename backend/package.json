@@ -1,9 +1,9 @@
 {
   "name": "@finance-os/backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Finance OS B0 API and PostgreSQL contract foundation",
+  "description": "Finance OS B1 local authenticated accounts, transaction ledger and reconciliation",
   "engines": {
     "node": ">=22"
   },
@@ -12,10 +12,11 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test test/unit.test.ts test/contracts.test.ts",
+    "test": "tsx --test test/unit.test.ts test/contracts.test.ts test/auth.test.ts",
     "test:db": "tsx --test test/database.test.ts",
     "migrate": "tsx src/db/migrate.ts",
-    "contract:check": "tsx test/check-openapi.ts"
+    "contract:check": "tsx test/check-openapi.ts",
+    "test:b1": "tsx --test test/b1.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",
