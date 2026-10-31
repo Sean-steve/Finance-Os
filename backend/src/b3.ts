@@ -86,19 +86,22 @@ function serialSettlement(r:SettlementRow){return {id:r.id,billId:r.bill_id,dueO
 async function sourceRows(db:pg.PoolClient,wid:string,id?:string):Promise<SourceRow[]>{
  const r=await db.query<SourceRow>(`SELECT id,name,category_id,cadence,expected_minor::text,currency,evidence,
  enabled,first_expected_on::text,last_expected_on::text,version,disabled_at FROM income_sources
- WHERE workspace_id=$1 AND ($2::uuid IS NULL OR id=$2::uuid) ORDER BY created_at DESC,id LIMIT 120`,[wid,id??null]);
+ WHERE workspace_id=$1 AND ($2::uuid IS NULL OR id=$2::uuid) ORDER BY created_at DESC,id LIMIT 121`,[wid,id??null]);
+ if(r.rows.length>120)throw new DomainError(409,'INCOME_SOURCE_LIMIT','Income source count exceeds certified planning window; use data archival or pagination');
  return r.rows;
 }
 async function billRows(db:pg.PoolClient,wid:string,id?:string):Promise<BillRow[]>{
  const r=await db.query<BillRow>(`SELECT id,name,payee_label,category_id,cadence,amount_minor::text,currency,
  first_due_on::text,last_due_on::text,status,version,cancelled_at FROM bills
- WHERE workspace_id=$1 AND ($2::uuid IS NULL OR id=$2::uuid) ORDER BY created_at DESC,id LIMIT 150`,[wid,id??null]);
+ WHERE workspace_id=$1 AND ($2::uuid IS NULL OR id=$2::uuid) ORDER BY created_at DESC,id LIMIT 151`,[wid,id??null]);
+ if(r.rows.length>150)throw new DomainError(409,'BILL_COUNT_LIMIT','Bill count exceeds certified planning window; do not project incomplete obligations');
  return r.rows;
 }
 async function settlementRows(db:pg.PoolClient,wid:string,billId?:string):Promise<SettlementRow[]>{
  const r=await db.query<SettlementRow>(`SELECT id,bill_id,due_on::text,manual_transaction_id,status,linked_at,reversed_at
  FROM bill_settlements WHERE workspace_id=$1 AND ($2::uuid IS NULL OR bill_id=$2::uuid)
- ORDER BY linked_at DESC,id DESC LIMIT 1000`,[wid,billId??null]);
+ ORDER BY linked_at DESC,id DESC LIMIT 1001`,[wid,billId??null]);
+ if(r.rows.length>1000)throw new DomainError(409,'SETTLEMENT_LIMIT','Settlement history exceeds certified window; refusing potentially inaccurate obligations');
  return r.rows;
 }
 async function incomeLedger(db:pg.PoolClient,wid:string,months:number){
@@ -208,7 +211,7 @@ async function actualTimeline(db:pg.PoolClient,wid:string,days:number){
  ON j.workspace_id=t.workspace_id AND j.id=t.entry_id AND j.status='POSTED'
  LEFT JOIN manual_transactions original ON original.workspace_id=t.workspace_id AND original.id=t.reverses_transaction_id
  WHERE t.workspace_id=$1 AND t.currency='KES' AND j.effective_on BETWEEN current_date-$2::int AND current_date
- GROUP BY j.effective_on ORDER BY j.effective_on DESC LIMIT 365`,[wid,days]);
+ GROUP BY j.effective_on ORDER BY j.effective_on DESC LIMIT 366`,[wid,days]);
  const daysWithRecords=r.rows.map(x=>({date:x.date,incomeMinor:safe(x.income_minor),
   expenseMinor:safe(x.expense_minor),recordedEntries:safe(x.entry_count)}));
  return {currency:'KES',days,sourceQuality:'MANUAL_POSTED_LEDGER',isProviderVerified:false,
