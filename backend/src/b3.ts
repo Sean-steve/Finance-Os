@@ -27,6 +27,7 @@ const rangeSchema=z.object({from:day,to:day}).strict()
 const list=(items:unknown[])=>({items,nextCursor:null});
 const params=(request:FastifyRequest)=>request.params as {workspaceId:string;sourceId?:string;billId?:string};
 const safe=(x:unknown)=>{const number=Number(x);if(!Number.isSafeInteger(number))throw new DomainError(422,'AMOUNT_RANGE','Financial amount exceeds safe integer minor units');return number;};
+const addMinor=(a:number,b:number)=>safe(a+b);
 function parse<S extends z.ZodTypeAny>(schema:S,data:unknown):z.infer<S>{
  const r=schema.safeParse(data);if(!r.success)throw new DomainError(422,'VALIDATION_ERROR','Invalid fields, currency or date period');return r.data;
 }
@@ -164,11 +165,12 @@ export async function indicativeForecast(db:pg.PoolClient,wid:string,days:number
  const pending=pendingBills(bills,settlements,start,end,now);
  // Overdue liabilities remain a separate exposure. They are NOT silently converted to today's ledger entries.
  const overdue=pendingBills(bills,settlements,dateShift(now,-366),dateShift(now,-1),now);
- const overdueMinor=overdue.reduce((a,x)=>a+x.amountMinor,0);
+ const overdueMinor=overdue.reduce((a,x)=>addMinor(a,x.amountMinor),0);
  const byDay=new Map<string,{date:string;estimatedIncomeMinor:number;unverifiedBillsDueMinor:number;projectionMinor:number}>();
  const add=(date:string,amount:number,kind:'income'|'bill')=>{
   const row=byDay.get(date)||{date,estimatedIncomeMinor:0,unverifiedBillsDueMinor:0,projectionMinor:0};
-  if(kind==='income')row.estimatedIncomeMinor+=amount;else row.unverifiedBillsDueMinor+=amount;
+  if(kind==='income')row.estimatedIncomeMinor=addMinor(row.estimatedIncomeMinor,amount);
+  else row.unverifiedBillsDueMinor=addMinor(row.unverifiedBillsDueMinor,amount);
   byDay.set(date,row);
  };
  for(const e of expected)add(e.date,e.amountMinor,'income');
@@ -176,21 +178,21 @@ export async function indicativeForecast(db:pg.PoolClient,wid:string,days:number
  let balanceProjection=balance,low=balance,firstNegative:string|null=null;
  const timeline=[...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date));
  for(const item of timeline){
-  balanceProjection+=item.estimatedIncomeMinor-item.unverifiedBillsDueMinor;
+  balanceProjection=addMinor(balanceProjection,addMinor(item.estimatedIncomeMinor,-item.unverifiedBillsDueMinor));
   item.projectionMinor=balanceProjection;
   low=Math.min(low,balanceProjection);
-  if(firstNegative===null&&balanceProjection-overdueMinor<0)firstNegative=item.date;
+  if(firstNegative===null&&addMinor(balanceProjection,-overdueMinor)<0)firstNegative=item.date;
  }
- const futureIncomeMinor=expected.reduce((a,x)=>a+x.amountMinor,0);
- const futureBillsMinor=pending.reduce((a,x)=>a+x.amountMinor,0);
- const endAfterOverdueMinor=balanceProjection-overdueMinor;
+ const futureIncomeMinor=expected.reduce((a,x)=>addMinor(a,x.amountMinor),0);
+ const futureBillsMinor=pending.reduce((a,x)=>addMinor(a,x.amountMinor),0);
+ const endAfterOverdueMinor=addMinor(balanceProjection,-overdueMinor);
  return {currency:'KES',asOf:now,horizonEndsOn:end,days,sourceQuality:'MANUAL_LEDGER_PLUS_USER_ESTIMATES',
   isProviderVerified:false,manualBalanceMinor:balance,
   expectedIncomeMinor:futureIncomeMinor,futureObligationsMinor:futureBillsMinor,
   overdueUnverifiedMinor:overdueMinor,endingIndicativeMinor:balanceProjection,
   endingAfterOverdueExposureMinor:endAfterOverdueMinor,lowestIndicativeMinor:low,
-  firstPotentialShortfallOn:firstNegative??(balance-overdueMinor<0?now:null),
-  risks:{negativeIndicativeCashFlow:low<0,overdueMayCauseShortfall:low-overdueMinor<0,
+  firstPotentialShortfallOn:firstNegative??(addMinor(balance,-overdueMinor)<0?now:null),
+  risks:{negativeIndicativeCashFlow:low<0,overdueMayCauseShortfall:addMinor(low,-overdueMinor)<0,
    exposureExceedsManualCash:overdueMinor>balance},
   timeline,scheduledIncome:expected,unverifiedUpcomingBills:pending,unverifiedOverdueBills:overdue,
   limitations:['Not a bank-verified balance, actual solvency forecast or payment authorization',
@@ -215,7 +217,7 @@ async function actualTimeline(db:pg.PoolClient,wid:string,days:number){
  const daysWithRecords=r.rows.map(x=>({date:x.date,incomeMinor:safe(x.income_minor),
   expenseMinor:safe(x.expense_minor),recordedEntries:safe(x.entry_count)}));
  return {currency:'KES',days,sourceQuality:'MANUAL_POSTED_LEDGER',isProviderVerified:false,
-  daysWithRecords,netRecordedCashFlowMinor:daysWithRecords.reduce((a,x)=>a+x.incomeMinor-x.expenseMinor,0)};
+  daysWithRecords,netRecordedCashFlowMinor:daysWithRecords.reduce((a,x)=>addMinor(addMinor(a,x.incomeMinor),-x.expenseMinor),0)};
 }
 
 export function installB3Routes(app:FastifyInstance,financial:pg.Pool,identity:IdentityResolver){
@@ -272,7 +274,7 @@ export function installB3Routes(app:FastifyInstance,financial:pg.Pool,identity:I
    const [sources,ledger]=await Promise.all([sourceRows(db,w(request)),incomeLedger(db,w(request),months)]);
    return {currency:'KES',months,sourceQuality:'POSTED_MANUAL_LEDGER_AND_SEPARATE_USER_ESTIMATES',
     isProviderVerified:false,monthlyRecordedIncome:ledger,
-    recordedIncomeMinor:ledger.reduce((a,x)=>a+x.netRecordedIncomeMinor,0),
+    recordedIncomeMinor:ledger.reduce((a,x)=>addMinor(a,x.netRecordedIncomeMinor),0),
     plannedSources:sources.map(serialSource),
     notes:['Source expectations are not automatically allocated to recorded journal entries',
      'A repeated income source does not create money or a financial transaction',
@@ -287,7 +289,7 @@ export function installB3Routes(app:FastifyInstance,financial:pg.Pool,identity:I
    const expected=proposedSources(sources,dateShift(now,1),end);
    return {currency:'KES',asOf:now,through:end,days,
     evidence:'USER_ESTIMATE_NOT_RECEIVED',isProviderVerified:false,
-    expectedMinor:expected.reduce((a,x)=>a+x.amountMinor,0),events:expected,
+    expectedMinor:expected.reduce((a,x)=>addMinor(a,x.amountMinor),0),events:expected,
     note:'Scheduled income estimates have not been received or posted. No funds are added to the ledger.'};
   });
  });
@@ -298,8 +300,8 @@ export function installB3Routes(app:FastifyInstance,financial:pg.Pool,identity:I
    const upcoming=pendingBills(bills,settlements,now,until,now);
    const overdue=pendingBills(bills,settlements,dateShift(now,-366),dateShift(now,-1),now);
    return {items:bills.map(serialBill),nextCursor:null,
-    overview:{upcomingUnverifiedMinor:upcoming.reduce((a,x)=>a+x.amountMinor,0),
-     overdueUnverifiedMinor:overdue.reduce((a,x)=>a+x.amountMinor,0),
+    overview:{upcomingUnverifiedMinor:upcoming.reduce((a,x)=>addMinor(a,x.amountMinor),0),
+     overdueUnverifiedMinor:overdue.reduce((a,x)=>addMinor(a,x.amountMinor),0),
      evidence:'USER_REPORTED_OBLIGATIONS_NOT_PROVIDER_VERIFIED'}};
   });
  });
