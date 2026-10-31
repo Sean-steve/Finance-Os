@@ -144,8 +144,11 @@ function dashboard(){
  const balance=summary.find(x=>x.currency==='KES')?.amountMinor??0;
  const current=new Date().toISOString().slice(0,7);
  const month=data.transactions.filter(t=>String(t.occurredAt).startsWith(current));
- const inc=month.filter(t=>t.kind==='INCOME').reduce((n,t)=>n+t.amountMinor,0);
- const spent=-month.filter(t=>t.kind==='EXPENSE').reduce((n,t)=>n+t.amountMinor,0);
+ const byId=new Map(data.transactions.map(t=>[t.id,t]));
+ const sourceKind=t=>t.kind==='REVERSAL'?byId.get(t.reversesTransactionId)?.kind:t.kind;
+ // Reversal entries negate the original financial effect in the posting month.
+ const inc=month.filter(t=>sourceKind(t)==='INCOME').reduce((n,t)=>n+t.amountMinor,0);
+ const spent=-month.filter(t=>sourceKind(t)==='EXPENSE').reduce((n,t)=>n+t.amountMinor,0);
  return '<div class="connected-kpis"><article><span>Posted manual balance (KES)</span><strong>'+money(balance)+'</strong><small>Not a verified bank balance</small></article>'+
   '<article><span>Recorded income this month</span><strong>'+money(inc)+'</strong><small>Manual journal transactions</small></article>'+
   '<article><span>Recorded expenses this month</span><strong>'+money(spent)+'</strong><small>Includes reversals in net balance only</small></article>'+
