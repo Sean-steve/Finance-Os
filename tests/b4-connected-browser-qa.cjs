@@ -87,6 +87,11 @@ async function main(){
   await page.locator('form[data-form=b4-scenario] input[name=name]').fill('CI hypothetical');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyIncome]').fill('100');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyExpense]').fill('80');
+  const validity=await page.locator('form[data-form=b4-scenario]').evaluate(form=>({
+    valid:form.checkValidity(),fields:[...form.elements].filter(x=>x.name).map(x=>({
+      name:x.name,value:x.value,valid:x.validity.valid,patternMismatch:x.validity.patternMismatch,
+      validationMessage:x.validationMessage,outerHTML:x.outerHTML.slice(0,280)}))}));
+  console.log('B4 scenario form validation: '+JSON.stringify(validity));
   await page.locator('form[data-form=b4-scenario] button[type=submit]').click();
   try{await page.getByText('Hypothetical end cash:').first().waitFor({timeout:10000});}
   catch(e){
