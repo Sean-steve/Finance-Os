@@ -172,6 +172,8 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,identit
    if(body.kind==='EXPENSE'){
     const ruleResult=await db.query<{id:string;kind:string;action:string;conditions:Record<string,unknown>}>(`SELECT id,kind,action,conditions
       FROM spending_guardrails WHERE workspace_id=$1 AND active=true ORDER BY created_at,id`,[wid]);
+    if(ruleResult.rows.some(r=>!['AMOUNT','CATEGORY'].includes(r.kind)&&['BLOCK','REQUIRE_APPROVAL'].includes(r.action)))
+     throw new DomainError(409,'UNSUPPORTED_ACTIVE_POLICY','Legacy financial policy cannot be evaluated safely');
     const matched=ruleResult.rows.filter(r=>r.kind==='AMOUNT'
       ? Number(r.conditions.minAmountMinor)<=body.amountMinor
       : r.kind==='CATEGORY'&&r.conditions.categoryId===body.categoryId);
