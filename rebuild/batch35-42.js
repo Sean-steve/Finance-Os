@@ -287,41 +287,57 @@ function loanMetrics(){
  const score=Math.max(0,Math.min(10,10-Math.max(0,ratio-25)/7));
  return {payment,total,principal,interest:Math.max(0,payment*n-principal),net,ratio,score,affordable:ratio<=35&&Number(p.down)<=liquid()};
 }
+
 function screen40(){
  const p=state().purchase,k=loanMetrics(),types=[['🚙','Car'],['⌂','House'],['♙','Business'],['🎓','Education'],['···','Other']];
  const alternativePrices=p.type==='Car'?[2200000,3500000,6500000]:[p.price*.65,p.price,p.price*1.35];
- return shell(40,metrics([['🛒','Purchase Budget (Max)',cash(4200000),'Illustrative from assumptions'],['✓','Recommended Range',cash(2800000)+'–'+cash(3500000),'Subject to circumstances'],['◕','Monthly Payment (Max)',cash(85000),'Advisory threshold'],['◷','Affordability Score',k.score.toFixed(1)+'/10','Not lending approval']])+
- tabs(40,['Simulator','Purchase Options','Affordability Analysis','Monthly Impact','Compare Options','Scenarios','Saved Simulations'],tabValue(40,'Simulator'))+
- '<div class="cap-grid">'+
- panel('Purchase Simulator','<form class="cap-form" id="cap-purchase" data-capform="purchase">'+
+ const simulator=panel('Purchase Simulator','<form class="cap-form" id="cap-purchase" data-capform="purchase">'+
  '<label class="cap-field">Purchase Type<div class="cap-purchase-types">'+types.map(([i,n])=>'<button type="button" class="'+(p.type===n?'active':'')+'" data-cap="purchaseType:'+n+'"><strong>'+i+'</strong>'+n+'</button>').join('')+'</div></label>'+
  label('Purchase Price (KES)','price',p.price,'number','min="1000" required')+
  '<input type="range" min="500000" max="15000000" step="50000" data-caprange="price" value="'+p.price+'" aria-label="Purchase price slider">'+
+ '<div class="cap40-range-caption"><span>KES 500,000</span><span>KES 15,000,000</span></div>'+
  label('Down Payment (KES)','down',p.down,'number','min="0" required')+
  '<input type="range" min="0" max="'+p.price+'" step="10000" data-caprange="down" value="'+p.down+'" aria-label="Down payment slider">'+
+ '<div class="cap40-range-caption"><span>0%</span><span>100%</span></div>'+
  '<div class="cap-formgrid">'+sel('Loan Term','term',['12','24','36','48','60','72','84'],String(p.term))+
  label('Interest Rate (%)','interest',p.interest,'number','min="0" max="100" step="0.1" required')+'</div>'+
  label('Additional Costs (KES)','costs',p.costs,'number','min="0" required')+
- '<button class="cap-btn primary" type="submit">▤ Calculate Affordability</button>'+
- '<div class="cap-actions">'+act('Save Simulation','savePurchase')+act('Compare Options','purchaseCompare')+act('Reset','resetPurchase')+'</div></form>')+
- '<div class="cap-span2" style="display:grid;gap:10px">'+panel('Affordability Results','<div class="cap-score">'+icon(k.affordable?'✓':'!')+'<div><strong>'+(k.affordable?'Within selected guardrails':'Review affordability assumptions')+'</strong><small style="display:block">Based on monthly modeled cash flow; actual loan eligibility requires a lender.</small></div><div class="big">'+k.score.toFixed(1)+' / 10</div></div>'+
- '<div class="cap-columns">'+[
- ['Monthly Payment',k.payment],['Total Cost',k.total],['Interest Amount',k.interest],['Debt-to-available-income',k.ratio]
- ].map(([name,value])=>row('▥',name,'',name.includes('income')?value.toFixed(1)+'%':cash(value))).join('')+'</div>')+
- '<div class="cap-columns">'+panel('Payment Breakdown',donut([{name:'Principal',value:k.principal},{name:'Interest',value:k.interest},{name:'Down Payment',value:Number(p.down)},{name:'Other Costs',value:Number(p.costs)}],k.total))+
- panel('Monthly Payment Schedule',barGraph(Array.from({length:12},(_,i)=>({name:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],value:70+i/4})),true))+'</div></div>'+
- panel('Purchase Summary','<div class="cap-note">Selected '+safe(p.type)+' purchase</div>'+[
- ['Purchase Price',cash(p.price)],['Down Payment',cash(p.down)],['Loan Amount',cash(k.principal)],['Interest Rate',p.interest+'%'],['Loan Term',p.term+' months'],['Monthly Payment',cash(k.payment)],['Total Repayment',cash(k.total)]
- ].map(x=>'<div class="cap-row"><span class="grow">'+x[0]+'</span><b>'+x[1]+'</b></div>').join(''))+
- panel('Impact on Financial Goals',state().goals.slice(0,5).map(g=>row(g.icon||'◎',g.name,percent(g.saved,g.target)+'% complete',k.affordable?'On Track':'Review')).join(''))+
- panel('Alternative Options',alternativePrices.map((price,i)=>row('🚙',safe(p.type)+' Option '+(i+1),'Illustrative price',cash(price),'option:'+i)).join(''))+
- panel('AI Insights & Recommendations',[
- ['Loan eligibility is not verified','Check with an authorized lender before deciding.'],
- ['Increase down payment','Reduces loan interest and monthly costs.'],
- ['Protect emergency savings','Avoid consuming essential cash reserves.'],
- ['Review ownership costs','Insurance, repairs and fees may add expenses.']
- ].map(x=>row('✦',x[0],x[1])).join(''))+
- '</div>');
+ '<button class="cap-btn primary" type="submit">▤ Calculate Affordability　→</button>'+
+ '<div class="cap-actions">'+act('Save Simulation','savePurchase')+act('Compare Options','purchaseCompare')+act('Reset','resetPurchase')+'</div></form>');
+ const affordability=panel('Affordability Results','<div class="cap-score">'+icon(k.affordable?'✓':'!')+
+ '<div><strong>'+(k.affordable?'Within selected guardrails':'Review affordability assumptions')+'</strong>'+
+ '<small style="display:block">Based on monthly modeled cash flow; actual loan eligibility requires a lender.</small></div>'+
+ '<div class="big">'+k.score.toFixed(1)+' / 10</div></div>'+
+ '<div class="cap40-results-metrics">'+[
+ ['▦','Monthly Payment',cash(k.payment)],['▣','Total Cost',cash(k.total)],['%','Interest Amount',cash(k.interest)],['↗','Debt-to-income',k.ratio.toFixed(1)+'%']
+ ].map(([iconCode,name,value])=>'<div><span class="cap-ic">'+iconCode+'</span><b>'+name+'</b><strong>'+value+'</strong></div>').join('')+'</div>');
+ const charts='<div class="cap40-chart-row">'+
+ panel('Payment Breakdown',donut([{name:'Principal',value:k.principal},{name:'Interest',value:k.interest},{name:'Down Payment',value:Number(p.down)},{name:'Other Costs',value:Number(p.costs)}],k.total))+
+ panel('Monthly Payment Schedule (First 12 Months)',barGraph(Array.from({length:12},(_,i)=>({name:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],value:70+i/4})),true))+'</div>';
+ const goals=panel('Impact on Financial Goals',state().goals.slice(0,5).map(g=>row(g.icon||'◎',g.name,percent(g.saved,g.target)+'% complete',k.affordable?'On Track':'Review')).join(''));
+ const options=panel('Alternative Options','<div class="cap40-options">'+alternativePrices.map((price,i)=>
+ '<button type="button" class="cap40-option '+(i===1?'selected':'')+'" data-cap="option:'+i+'"><span class="cap40-mini-car">🚘</span><b>'+safe(p.type)+' '+(i===0?'Corolla':i===1?'RAV4':'Prado')+'</b><strong>'+cash(price)+'</strong><small>Illustrative option</small><span class="cap40-option-action">View Details</span></button>').join('')+'</div>');
+ const summary=panel('Purchase Summary',
+ '<div class="cap40-car-visual" role="img" aria-label="Vehicle example cropped from the approved design screenshot"></div>'+
+ '<b class="cap40-car-name">'+safe(p.type==='Car'?'Toyota RAV4 2023':p.type+' purchase')+'</b>'+
+ '<strong class="cap40-car-price">'+cash(p.price)+'</strong>'+
+ [
+ ['Purchase Price',cash(p.price)],['Down Payment',cash(p.down)],['Loan Amount',cash(k.principal)],
+ ['Interest Rate',p.interest+'%'],['Loan Term',p.term+' months'],['Monthly Payment',cash(k.payment)],['Total Repayment',cash(k.total)]
+ ].map(x=>'<div class="cap-row"><span class="grow">'+x[0]+'</span><b>'+x[1]+'</b></div>').join('')+
+ '<div class="cap40-summary-action">'+act('✎ Edit Details','purchaseCompare')+'</div>');
+ const insights=panel('AI Insights & Recommendations',[
+ ['✓','Consider affordability alongside your current cash position.'],
+ ['✦','Increasing the down payment may reduce interest expense.'],
+ ['▣','Compare alternative options before committing.'],
+ ['⚑','Protect emergency savings and other financial goals.'],
+ ['◎','Loan eligibility and prices are illustrative, not verified.']
+ ].map(([sym,txt])=>'<div class="cap40-insight"><span>'+sym+'</span><small>'+txt+'</small></div>').join(''));
+ return shell(40,metrics([['🛒','Purchase Budget (Max)',cash(4200000),'Illustrative from assumptions'],['✓','Recommended Range',cash(2800000)+'–'+cash(3500000),'Subject to circumstances'],['◕','Monthly Payment (Max)',cash(85000),'Advisory threshold'],['◷','Affordability Score',k.score.toFixed(1)+'/10','Not lending approval']])+
+ tabs(40,['Simulator','Purchase Options','Affordability Analysis','Monthly Impact','Compare Options','Scenarios','Saved Simulations'],tabValue(40,'Simulator'))+
+ '<div class="cap40-layout"><div class="cap40-left">'+simulator+'</div>'+
+ '<div class="cap40-center">'+affordability+charts+'<div class="cap40-bottom">'+goals+options+'</div></div>'+
+ '<aside class="cap40-right">'+summary+insights+'</aside></div>');
 }
 function screen41(){
  const requests=state().requests,total=requests.reduce((a,x)=>a+x.amount,0),pending=requests.filter(x=>x.status==='Pending');
