@@ -78,6 +78,37 @@ async function main(){
        await page.screenshot({path:path.join(art,'screen-'+n+'-mobile.png'),fullPage:true});
      }
    });
+
+   await check('Screen 40 summary, calculator and charts follow three-column reference structure',async()=>{
+     await page.setViewportSize({width:1536,height:1024});
+     await go(40);
+     assert.equal(await page.locator('.cap40-layout').count(),1);
+     const [left,center,right]=await Promise.all(['.cap40-left','.cap40-center','.cap40-right'].map(q=>page.locator(q).boundingBox()));
+     assert.ok(center.x>=left.x+left.width-4,'results should be next to calculator');
+     assert.ok(right.x>=center.x+center.width-4,'summary should be at far right');
+     const [afford,summary]=await Promise.all([page.locator('.cap40-center>.cap-panel').first().boundingBox(),page.locator('.cap40-right>.cap-panel').first().boundingBox()]);
+     assert.ok(Math.abs(afford.y-summary.y)<12,'summary and calculator output must align vertically');
+     assert.equal(await page.locator('.cap40-results-metrics > div').count(),4);
+     assert.equal(await page.locator('.cap40-car-visual').count(),1);
+     await page.screenshot({path:path.join(art,'screen-40-desktop.png'),fullPage:true});
+   });
+   await check('Screen 40 still computes and saves affordability examples',async()=>{
+     await go(40);
+     await page.locator('[data-capform="purchase"] input[name="price"]').fill('2400000');
+     await page.locator('[data-capform="purchase"] input[name="down"]').fill('600000');
+     await page.locator('[data-capform="purchase"] button[type="submit"]').click();
+     assert.equal((await state()).capitalV2.purchase.price,2400000);
+     await page.locator('[data-cap="savePurchase"]').click();
+     assert.ok((await state()).capitalV2.purchaseSaved.length>0);
+   });
+   await check('Screen 40 retains mobile simulator and safe responsive width',async()=>{
+     await page.setViewportSize({width:390,height:844});
+     await go(40);
+     const d=await page.evaluate(()=>({page:document.documentElement.scrollWidth,viewport:innerWidth}));
+     assert.ok(d.page<=d.viewport+2,'affordability overflow '+JSON.stringify(d));
+     assert.ok(await page.locator('[data-capform="purchase"]').isVisible());
+     await page.screenshot({path:path.join(art,'screen-40-mobile.png'),fullPage:true});
+   });
    await check('No runtime JavaScript errors',async()=>assert.deepEqual(errors,[]));
    fs.writeFileSync(path.join(art,'results.json'),JSON.stringify({passed,failed,errors},null,2));
    console.log('RESULT:',passed.length,'passed;',failed.length,'failed');
