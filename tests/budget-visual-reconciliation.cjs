@@ -109,6 +109,35 @@ async function main(){
      assert.ok(await page.locator('[data-capform="purchase"]').isVisible());
      await page.screenshot({path:path.join(art,'screen-40-mobile.png'),fullPage:true});
    });
+
+   await check('Screen 33 now matches forecast/runway columns and bottom information hierarchy',async()=>{
+     await page.setViewportSize({width:1536,height:1024});
+     await go(33);
+     assert.equal(await page.locator('.cf33-lead > .cf-panel').count(),2);
+     assert.equal(await page.locator('.cf33-bottom > .cf33-column').count(),3);
+     assert.equal(await page.locator('.cf33-forecast-plot').count(),1);
+     assert.equal(await page.locator('.cf33-runway-plot').count(),1);
+     assert.equal(await page.locator('.cf33-toolbar .cf-tabs button').count(),5);
+     const [left,right]=await Promise.all([page.locator('.cf33-lead>.cf-panel').nth(0).boundingBox(),page.locator('.cf33-lead>.cf-panel').nth(1).boundingBox()]);
+     assert.ok(right.x>left.x+left.width-4,'runway should be the right-hand top panel');
+     assert.ok(left.width>right.width*1.5,'forecast takes wider column');
+     await page.screenshot({path:path.join(art,'screen-33-desktop.png'),fullPage:true});
+   });
+   await check('Screen 33 still recalculates editable financial forecast assumptions',async()=>{
+     await go(33);
+     await page.locator('[data-cfform="scenario"] [name="incomeGrowth"]').fill('8');
+     await page.locator('[data-cfform="scenario"] button[type="submit"]').click();
+     assert.equal((await state()).incomeFlowV2.scenario.incomeGrowth,8);
+     assert.ok(await page.locator('.cf33-runway-callout').count()>0);
+   });
+   await check('Screen 33 remains usable without horizontal overflow at mobile width',async()=>{
+     await page.setViewportSize({width:390,height:844});
+     await go(33);
+     const dim=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
+     assert.ok(dim.width<=dim.viewport+2,'runway viewport overflow '+JSON.stringify(dim));
+     assert.ok(await page.locator('[data-cfform="scenario"]').isVisible());
+     await page.screenshot({path:path.join(art,'screen-33-mobile.png'),fullPage:true});
+   });
    await check('No runtime JavaScript errors',async()=>assert.deepEqual(errors,[]));
    fs.writeFileSync(path.join(art,'results.json'),JSON.stringify({passed,failed,errors},null,2));
    console.log('RESULT:',passed.length,'passed;',failed.length,'failed');
