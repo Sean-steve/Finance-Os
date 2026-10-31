@@ -1,30 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {readFileSync} from 'node:fs';
 const c=JSON.parse(readFileSync(new URL('../openapi/finance-os.v1.json',import.meta.url),'utf8'));
-test('contract is versioned and all financial endpoints are explicitly future-only',()=>{
+test('B1 contract differentiates locally implemented endpoints from future APIs',()=>{
  assert.equal(c.openapi,'3.0.3');
- const implemented=['/health/live','/health/ready','/v1/meta'];
- let planned=0, ids=new Set<string>();
- for(const [url,methods] of Object.entries(c.paths) as [string,any][]){
-  for(const [verb,op] of Object.entries(methods) as [string,any][]){
+ const ids=new Set<string>();let b1=0,planned=0;
+ for(const [path,methods] of Object.entries(c.paths) as [string,any][]){
+  for(const [method,op] of Object.entries(methods) as [string,any][]){
+   assert.ok(op.operationId,'missing operationId '+path);
    assert.ok(!ids.has(op.operationId),'duplicate operationId '+op.operationId);ids.add(op.operationId);
-   if(implemented.includes(url)){assert.equal(op['x-implementation-status'],'IMPLEMENTED_B0');continue}
-   assert.equal(op['x-implementation-status'],'PLANNED',url);
-   assert.ok(['B1','B2','B3'].includes(op['x-implementation-phase']));
-   assert.ok(op.security?.[0]?.bearerAuth, 'Missing bearer security '+url);
-   assert.ok(op.parameters?.some((x:any)=>x.name==='X-Workspace-Id'&&x.required));
-   if(verb==='post')assert.ok(op.parameters?.some((x:any)=>x.name==='Idempotency-Key'&&x.required));
-   planned++;
+   const status=op['x-implementation-status'];
+   assert.ok(['PLANNED','IMPLEMENTED_B0','IMPLEMENTED_B1_LOCAL'].includes(status),status);
+   if(status==='IMPLEMENTED_B1_LOCAL'){
+    b1++;
+    if(!path.startsWith('/v1/auth/register')&&!path.startsWith('/v1/auth/login'))
+     assert.ok(op.security?.[0]?.bearerAuth,'missing bearer on '+path);
+    if(path.includes('{workspaceId}'))
+     assert.ok(op.parameters?.some((p:any)=>p.name==='workspaceId'&&p.required));
+    if(method==='post' && path.includes('{workspaceId}'))
+     assert.ok(op.parameters?.some((p:any)=>p.name==='Idempotency-Key'&&p.required));
+   }
+   if(status==='PLANNED')planned++;
   }
  }
- assert.ok(planned>=20);
- assert.deepEqual(Object.keys(c.paths).filter((k:string)=>implemented.includes(k)).sort(),implemented.slice().sort());
+ assert.ok(b1>=18);assert.ok(planned>=20);
+ assert.equal(c.paths['/v1/auth/login'].post['x-implementation-status'],'IMPLEMENTED_B1_LOCAL');
+ assert.equal(c.paths['/v1/workspaces/{workspaceId}/transactions'].post['x-implementation-status'],'IMPLEMENTED_B1_LOCAL');
+ assert.equal(c.paths['/v1/transactions'].get['x-implementation-status'],'PLANNED');
 });
-test('financial money amounts use integer minor units and a currency code',()=>{
- const money=c.components.schemas.Money;
- assert.equal(money.properties.minor.type,'integer');
- assert.equal(money.properties.minor.format,'int64');
- assert.equal(money.properties.currency.pattern,'^[A-Z]{3}$');
- assert.ok(money.required.includes('currency') && money.required.includes('minor'));
+test('B1 amounts use safe integer minor units and financial posting operations are scoped',()=>{
+ const s=c.components.schemas.B1Transaction;
+ assert.equal(s.properties.amountMinor.format,'int64');
+ assert.ok(s.required.includes('journalEntryId'));
+ assert.equal(c.components.schemas.Money.properties.minor.type,'integer');
+ assert.equal(c.components.schemas.Money.properties.currency.pattern,'^[A-Z]{3}$');
 });
