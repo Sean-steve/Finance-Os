@@ -1,0 +1,17 @@
+/* Opt-in local B1 bridge; never changes the default 60-screen visual design. */
+.b1-local-panel{position:fixed;right:12px;bottom:12px;z-index:250;width:min(380px,calc(100vw - 24px));max-height:min(82vh,750px);overflow:auto;background:#fcfdfa;border:1px solid #b9ddd0;border-radius:12px;box-shadow:0 12px 50px #0c3c3150;padding:14px;color:#0b2c28;font:12px/1.4 system-ui,Arial,sans-serif}
+.b1-local-panel .b1-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px;color:#006044}
+.b1-local-panel .b1-kicker{font-size:11px;color:#537568}
+.b1-local-panel .b1-caution{background:#fff6dd;padding:9px;border-radius:8px;color:#684d21}
+.b1-local-panel form{display:grid;gap:8px;padding:11px 0;border-top:1px solid #e3ede8}
+.b1-local-panel h3{font-size:13px;margin:0}
+.b1-local-panel .b1-field{display:grid;gap:4px;font-size:11px;font-weight:650}
+.b1-local-panel input,.b1-local-panel select{font:12px system-ui;min-height:34px;background:#fff;border:1px solid #c6d8d0;border-radius:6px;padding:6px 9px;width:100%;box-sizing:border-box}
+.b1-local-panel button{border:1px solid #02704f;color:#fff;border-radius:6px;background:#006b4c;cursor:pointer;padding:7px 12px;min-height:32px}
+.b1-local-panel [data-b1-toggle]{background:white;color:#005f43}
+.b1-local-panel .b1-message{background:#edf9f1;color:#066b4e;padding:9px;border-radius:6px}
+.b1-local-panel ul{list-style:none;margin:5px 0;padding:0}.b1-local-panel li{padding:7px;border-bottom:1px solid #ebf1ee;font-size:11px}
+.b1-local-panel .b1-recon{border-top:1px solid #e5ede6;margin:8px 0;padding:9px 0}
+.b1-local-panel .b1-recon small{display:block;color:#537568;margin:4px 0}
+.b1-local-panel details{padding:8px 0}.b1-local-panel summary{cursor:pointer;font-weight:700}
+@media(max-width:550px){.b1-local-panel{left:8px;right:8px;width:auto;bottom:8px;max-height:55vh}}

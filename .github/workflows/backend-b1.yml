@@ -47,6 +47,8 @@ jobs:
         run: npm ci --prefix backend --no-audit --no-fund
       - name: Strict TypeScript compilation
         run: npm --prefix backend run build
+      - name: Validate opt-in local frontend bridge syntax
+        run: node --check rebuild/b1-connected.js
       - name: OpenAPI contract validation
         run: npm --prefix backend run contract:check
       - name: Unit, security and contract tests

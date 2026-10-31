@@ -1,8 +1,10 @@
-# Finance OS Backend — Phase B0
+# Finance OS Backend — B0 Foundation + B1 Local Financial Slice
 
-**Status: backend foundation only; no live financial API or authentication.** The 60-screen UI remains independently published as a demonstration on GitHub Pages.
+**Status: B1 local/test authenticated accounts and manual ledger are implemented; production authentication remains disabled.** The 60-screen UI remains independently published as a demonstration on GitHub Pages.
 
-## What exists
+See [B1 Implementation & Local Runbook](../docs/backend/B1_IMPLEMENTATION.md) for working API routes, security boundaries and setup.
+
+## B0 foundation
 
 - Strict TypeScript Fastify API server with process liveness, PostgreSQL migration readiness and `/v1/meta` status.
 - Versioned **OpenAPI 3.0.3** contract (`openapi/finance-os.v1.json`) declaring *future* B1–B3 endpoints, money units, validation/errors, workspace scope and idempotency requirements.

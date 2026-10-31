@@ -3034,7 +3034,7 @@
           }
         },
         "responses": {
-          "201": {
+          "200": {
             "description": "Locally implemented B1 response",
             "content": {
               "application/json": {
@@ -3150,15 +3150,8 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": "Locally implemented B1 response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
+          "204": {
+            "description": "Session revoked; empty response"
           },
           "400": {
             "description": "Error",
@@ -3266,7 +3259,7 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Locally implemented B1 response",
             "content": {
               "application/json": {
