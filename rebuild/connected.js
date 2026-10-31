@@ -42,8 +42,8 @@ const asMinor=input=>{
 };
 const random=()=>crypto.randomUUID()+'-'+crypto.randomUUID();
 let apiBase=null,token='',identity=null,provider=null,workspaces=[],workspaceId='',busy=false,notice='',error='';
-let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null};
-let selectedAccount='',selectedTransaction='';
+let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[]};
+let selectedAccount='',selectedTransaction='',lastEval=null,lastCheck=null;
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -69,7 +69,8 @@ async function initConfig(){
 async function request(path,authenticated=true,options={}){
  if(!apiBase)throw new Error('Finance API is unconfigured.');
  const response=await fetch(apiBase+path,{method:options.method||'GET',cache:'no-store',credentials:'omit',
-  headers:{'Accept':'application/json',...(options.body!==undefined?{'Content-Type':'application/json','Idempotency-Key':random()}:{}),
+  headers:{'Accept':'application/json',...(options.body!==undefined?{'Content-Type':'application/json'}:{}),
+   ...(options.method&&options.method!=='GET'?{'Idempotency-Key':random()}:{}),
    ...(authenticated&&token?{'Authorization':'Bearer '+token}:{})},...(options.body===undefined?{}:{body:JSON.stringify(options.body)})});
  let body={};
  try{body=await response.json();}catch{}
@@ -89,13 +90,14 @@ async function refresh(){
   workspaces=(await request('/v1/workspaces')).items||[];
   workspaceId=workspaces.some(w=>w.id===workspaceId)?workspaceId:workspaces[0]?.id||'';
   if(workspaceId){
-   const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary'];
+   const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals'];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
-    journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5]};
+    journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
+    budgets:result[6].items||[],insights:result[7],guardrails:result[8].items||[],approvals:result[9].items||[]};
    selectedAccount=data.accounts.some(a=>a.id===selectedAccount)?selectedAccount:(data.accounts[0]?.id||'');
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
-  }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null};
+  }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[]};
   error='';
  }catch(ex){error=String(ex.message||ex);}
  finally{busy=false;draw();}
@@ -199,6 +201,12 @@ function formTransaction(){
   select('Category','categoryId',data.categories.map(c=>[c.id,c.kind+' · '+c.name]))+
   field('Amount in KES (e.g. 1250.50)','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
   field('Description','description')+field('Economic date','effectiveOn','date',true,new Date().toISOString().slice(0,10))+
+  '<fieldset class="connected-allocations"><legend>Independent approvals for EXPENSE postings (select all applicable)</legend>'+
+  (data.approvals.filter(a=>a.status==='APPROVED'&&a.requestedBy===identity?.id).length?
+   data.approvals.filter(a=>a.status==='APPROVED'&&a.requestedBy===identity?.id).map(a=>
+   '<label class="connected-approval-choice"><input type="checkbox" name="approvalRequestIds" value="'+esc(a.id)+'">'+
+   esc(a.reference)+' · '+money(a.amountMinor)+'</label>').join(''):
+  '<p>No approved requests. Large expenses may require a separate person to approve them first.</p>')+'</fieldset>'+
   '<button type="submit">Post immutable transaction</button></form>')+
   card('Categories',categoryForm());
 }
@@ -228,6 +236,138 @@ function reconciliation(){
    ' debit / '+money(j.totalCreditMinor,j.currency)+' credit · '+esc(j.status)+'</span></li>').join('')+'</ul>':
    '<p>No posted journals.</p>');
 }
+
+const formatSigned=v=>money(v);
+const monthStart=()=>new Date().toISOString().slice(0,7)+'-01';
+const monthEnd=()=>new Date(new Date().getUTCFullYear(),new Date().getUTCMonth()+1,0).toISOString().slice(0,10);
+const spendCategories=()=>data.categories.filter(c=>c.kind==='EXPENSE');
+function spendingPanels(){
+ const x=data.insights;
+ if(!x)return card('Spending Intelligence','<p>Financial report is not yet loaded.</p>');
+ const total=x.categories.reduce((acc,c)=>acc+c.netSpentMinor,0);
+ return '<div class="connected-kpis"><article><span>Net recorded expense (selected months)</span>'+
+  '<strong>'+formatSigned(total)+'</strong><small>Manual posted ledger only</small></article>'+
+  '<article><span>Recorded expense categories</span><strong>'+x.categories.length+
+  '</strong><small>No merchant/Paybill verification</small></article>'+
+  '<article><span>Spending evidence</span><strong>Manual</strong><small>Not provider-verified</small></article></div>'+
+  card('Category breakdown',x.categories.length?'<div class="connected-table"><table><thead><tr><th>Category</th><th>Posted net spend</th><th>Expense entries</th></tr></thead><tbody>'+
+    x.categories.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+formatSigned(c.netSpentMinor)+'</td><td>'+esc(c.transactionCount)+'</td></tr>').join('')+
+    '</tbody></table></div>':'<p>No posted expenses for this time window.</p>')+
+  card('Monthly spending trend',x.monthlyTotals.length?
+    '<div class="connected-bars">'+x.monthlyTotals.map(p=>{
+      const max=Math.max(1,...x.monthlyTotals.map(v=>Math.abs(v.netSpentMinor)));
+      const width=Math.min(100,Math.max(0,Math.abs(p.netSpentMinor)/max*100));
+      return '<div class="connected-bar"><b>'+esc(p.period)+'</b><i style="width:'+width.toFixed(1)+'%"></i>'+
+      '<span>'+formatSigned(p.netSpentMinor)+'</span></div>';
+    }).join('')+'</div>':'<p>At least one posted journal entry is needed for a trend.</p>')+
+  '<p class="connected-muted">Corrections recorded in later months affect that later month. Trends are not audited bank statements.</p>');
+}
+function recurringSuggestions(){
+ const rows=data.insights?.potentialRecurringDescriptions||[];
+ return card('Potential recurring descriptions — review only',
+ rows.length?'<ul class="connected-list">'+rows.map(r=>'<li><b>'+esc(r.description)+'</b><span>'+
+   esc(r.occurrences)+' manually entered occurrences · '+money(r.recordedGrossMinor)+
+   ' total gross expense · NOT a confirmed subscription</span></li>').join('')+'</ul>':
+  '<p>Not enough repeated, manually posted descriptions to suggest subscriptions or possible spending leaks.</p>')+
+ '<p class="connected-muted">No merchant identity verification, provider feed, automatic cancellation or subscription prediction is available.</p>');
+}
+function budgetList(){
+ return card('Budgets · workspace-scoped and versioned',data.budgets.length?
+  '<div class="connected-table"><table><thead><tr><th>Budget</th><th>Period</th><th>Status</th><th>Amount</th><th>Allocated</th><th>Spent</th><th>Action</th></tr></thead><tbody>'+
+  data.budgets.map(b=>'<tr><td><b>'+esc(b.name)+'</b><small> · v'+esc(b.version)+'</small></td>'+
+   '<td>'+esc(b.startsOn)+' → '+esc(b.endsOn)+'</td><td>'+esc(b.status)+'</td>'+
+   '<td>'+money(b.amountMinor)+'</td><td>'+money(b.allocatedMinor)+'</td>'+
+   '<td>'+money(b.spentMinor)+'</td><td>'+(b.status==='DRAFT'?'<button data-activate-budget="'+esc(b.id)+'">Activate</button>':'—')+
+   '</td></tr>').join('')+'</tbody></table></div>':'<p>No server budgets created yet.</p>')+
+  btn('Create category budget',22)+btn('View spending intelligence',16);
+}
+function budgetDetails(){
+ const rows=data.budgets.filter(b=>b.status==='ACTIVE');
+ return card('Active budget allocations',rows.length?
+  rows.map(b=>'<h3>'+esc(b.name)+' · '+esc(b.startsOn)+' to '+esc(b.endsOn)+'</h3>'+
+   '<div class="connected-table"><table><thead><tr><th>Expense category</th><th>Limit</th><th>Net spent</th><th>Remaining</th><th>Status</th></tr></thead><tbody>'+
+   b.allocations.map(a=>'<tr><td>'+esc(a.categoryName)+'</td><td>'+money(a.limitMinor)+'</td>'+
+    '<td>'+money(a.spentMinor)+'</td><td>'+money(a.remainingMinor)+'</td><td>'+
+    (a.remainingMinor<0?'Over allocation':'Within allocation')+'</td></tr>').join('')+'</tbody></table></div>').join(''):
+   '<p>No active budgets. Draft and activate a category budget to track utilization.</p>')+
+ '<p class="connected-muted">Remaining allocation is not a safe-to-spend or verified bank-balance calculation. Rollover is not active.</p>');
+}
+function createBudget(){
+ const categories=spendCategories();
+ return card('Create an immutable budget draft',
+ '<p>Allocate the manual-spending budget to one or more expense categories. Each allocation is tracked against posted manual journals. Activate after reviewing; editing financial definitions requires a new budget.</p>'+
+ '<form data-form="budget" class="connected-budget-form">'+field('Budget name','name')+
+ field('Starts on','startsOn','date',true,monthStart())+
+ field('Ends on','endsOn','date',true,monthEnd())+
+ field('Total amount KES','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ '<fieldset class="connected-allocations"><legend>Category allocations (one or more)</legend>'+
+ (categories.length?categories.map(c=>'<label class="connected-alloc-row"><input type="checkbox" name="budgetCategory" value="'+esc(c.id)+'">'+
+  '<span>'+esc(c.name)+'</span><input type="text" name="allocation-'+esc(c.id)+'" placeholder="Amount KES" pattern="[0-9]+(\\.[0-9]{1,2})?" aria-label="Amount for '+esc(c.name)+'"></label>').join(''):
+  '<p>No EXPENSE categories. Create one under Transactions first.</p>')+'</fieldset>'+
+ '<button type="submit">Save draft</button></form>')+btn('Review budgets',21);
+}
+function allowance(){
+ const active=data.budgets.filter(b=>b.status==='ACTIVE');
+ return card('Budget-based allowance (not bank-verified safe-to-spend)',
+ active.length?'<p>The following values represent unspent category allocation only. They are not verified available cash.</p>'+
+ active.flatMap(b=>b.allocations.map(a=>'<div class="connected-budget-meter"><b>'+esc(b.name)+' · '+esc(a.categoryName)+
+ '</b><div class="connected-meter"><i style="width:'+Math.min(100,Math.max(0,a.limitMinor?100*a.spentMinor/a.limitMinor:0))+'%"></i></div>'+
+ '<p>Limit '+money(a.limitMinor)+' · Posted '+money(a.spentMinor)+' · Allocation remaining '+money(a.remainingMinor)+'</p></div>')).join(''):
+ '<p>No active budget allocations to summarize.</p>')+
+ '<p class="connected-muted">Final affordability requires actual income, obligations, cash availability, and authoritative provider data in later phases.</p>');
+}
+function guardrails(){
+ const rules=data.guardrails||[],approvals=data.approvals||[];
+ const purchase=lastCheck;
+ const decision=lastEval;
+ return card('Active financial posting rules',rules.length?
+ '<ul class="connected-list">'+rules.map(r=>'<li><b>'+esc(r.name)+'</b><span>'+esc(r.kind)+' · '+esc(r.action)+
+ ' · '+esc(r.kind==='AMOUNT'?money(r.conditions.minAmountMinor):data.categories.find(c=>c.id===r.conditions.categoryId)?.name||'Unknown category')+
+ '</span></li>').join('')+'</ul>':'<p>No guardrails configured. Manual expense entries currently have no policy restrictions beyond accounting validation.</p>')+
+ card('Create an amount guardrail','<form data-form="guardrail-amount">'+
+ field('Policy name','name')+field('Minimum expense amount KES','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ select('Action','action',[['WARN','Warn'],['REQUIRE_APPROVAL','Require independent approval'],['BLOCK','Block manual posting']])+
+ '<button type="submit">Create policy</button></form>')+
+ card('Create a category guardrail','<form data-form="guardrail-category">'+field('Policy name','name')+
+ select('Expense category','categoryId',spendCategories().map(c=>[c.id,c.name]))+
+ select('Action','action',[['WARN','Warn'],['REQUIRE_APPROVAL','Require independent approval'],['BLOCK','Block manual posting']])+
+ '<button type="submit">Create policy</button></form>')+
+ card('Evaluate a proposed manual expense','<p>The check is an advisory preview. Actual money is not moved. Matching BLOCK and approval rules also apply at the manual transaction posting endpoint.</p>'+
+ '<form data-form="purchase-check">'+
+ field('Proposed amount KES','amount','text',true,'','pattern="[0-9]+(\\.[0-9]{1,2})?"')+
+ select('Expense category','categoryId',spendCategories().map(c=>[c.id,c.name]))+
+ field('Reference','reference')+
+ '<button type="submit">Evaluate without posting</button></form>'+
+ (decision?'<div class="connected-policy-result"><strong>'+esc(decision.decision)+'</strong>'+
+ '<p>'+esc(decision.rules.map(r=>r.name+' ('+r.action+')').join('; ')||'No matching guardrail')+'</p>'+
+ '<p>'+esc(decision.budgetWarnings.filter(w=>w.wouldExceed).length)+' budget allocations would be exceeded by the proposed entry.</p>'+
+ (decision.rules.filter(r=>r.action==='REQUIRE_APPROVAL').map(rule=>'<button type="button" data-request-approval="'+esc(rule.id)+'">Request independent approval for '+esc(rule.name)+'</button>').join(''))+
+ '</div>':''));
+}
+function approvalQueue(){
+ const approvals=data.approvals||[];
+ const isApprover=['OWNER','ADMIN'].includes(workspaces.find(w=>w.id===workspaceId)?.role);
+ return card('Two-person approval queue',approvals.length?
+ '<div class="connected-table"><table><thead><tr><th>Reference</th><th>Amount</th><th>Status</th><th>Requested by</th><th>Decision</th></tr></thead><tbody>'+
+ approvals.map(a=>'<tr><td>'+esc(a.reference)+'</td><td>'+money(a.amountMinor)+'</td>'+
+ '<td>'+esc(a.status)+'</td><td>'+esc(a.requestedBy)+'</td><td>'+
+ (a.status==='PENDING'&&isApprover&&a.requestedBy!==identity.id?
+ '<button data-approval-decision="'+esc(a.id)+'" data-decision="APPROVED">Approve</button>'+
+ '<button data-approval-decision="'+esc(a.id)+'" data-decision="REJECTED">Reject</button>':
+ 'Independent decision required')+'</td></tr>').join('')+'</tbody></table></div>':
+ '<p>No approval requests in this workspace.</p>')+
+ '<p class="connected-muted">An approval authorizes a matching manual posting only once. It does NOT move funds or approve a bank/card payment.</p>');
+}
+function spendingRecovery(){
+ const flagged=data.budgets.filter(b=>b.status==='ACTIVE').flatMap(b=>b.allocations.filter(a=>a.remainingMinor<0)
+  .map(a=>({budget:b.name,category:a.categoryName,over:-a.remainingMinor})));
+ return card('Category budget review',
+ flagged.length?'<ul class="connected-list">'+flagged.map(x=>'<li><b>'+esc(x.category)+' · '+esc(x.budget)+
+ '</b><span>Manual allocation exceeded by '+money(x.over)+'</span></li>').join('')+'</ul>':
+ '<p>No active, recorded category allocation is currently over its budget. This is not a guarantee that all financial obligations are covered.</p>')+
+ recurringSuggestions()+btn('Set spending guardrails',24);
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
@@ -244,6 +384,14 @@ function renderedScreen(){
  case 12:return formTransaction();
  case 13:return imports();
  case 15:return reconciliation();
+ case 16:case 17:case 18:return spendingPanels();
+ case 19:case 20:case 25:return recurringSuggestions();
+ case 21:return budgetList()+budgetDetails();
+ case 22:return createBudget()+budgetList();
+ case 23:return allowance();
+ case 24:return guardrails()+approvalQueue();
+ case 26:return spendingRecovery();
+
  default:return soon(id);
  }
 }
@@ -295,12 +443,31 @@ async function submit(form){
    if(cat?.kind!==d.kind)throw new Error('Choose a category matching the transaction type.');
    await request(base+'/transactions',true,{method:'POST',body:{
     financialAccountId:d.financialAccountId,categoryId:d.categoryId,kind:d.kind,
-    amountMinor:asMinor(d.amount),currency:'KES',description:d.description,effectiveOn:d.effectiveOn}});
+    amountMinor:asMinor(d.amount),currency:'KES',description:d.description,effectiveOn:d.effectiveOn,
+    approvalRequestIds:[...new FormData(form).getAll('approvalRequestIds')]}});
   }else if(kind==='import')await request(base+'/statement-imports',true,{method:'POST',
    body:{financialAccountId:d.financialAccountId,rows:[{date:d.date,description:d.description,
      amountMinor:asMinor(d.amount),currency:'KES'}]}});
   else if(kind==='match')await request(base+'/reconciliation/matches',true,{method:'POST',
    body:{importRowId:d.importRowId,manualTransactionId:d.manualTransactionId}});
+  else if(kind==='budget'){
+   const ids=[...new FormData(form).getAll('budgetCategory')];
+   const allocations=ids.map(id=>({categoryId:id,limitMinor:asMinor(d['allocation-'+id]),rollover:false}));
+   if(!allocations.length)throw new Error('Select at least one expense category allocation.');
+   await request(base+'/budgets',true,{method:'POST',body:{name:d.name,
+    currency:'KES',startsOn:d.startsOn,endsOn:d.endsOn,amountMinor:asMinor(d.amount),allocations}});
+  }else if(kind==='guardrail-amount'){
+   await request(base+'/spending/guardrails',true,{method:'POST',
+    body:{name:d.name,kind:'AMOUNT',minAmountMinor:asMinor(d.amount),action:d.action}});
+  }else if(kind==='guardrail-category'){
+   await request(base+'/spending/guardrails',true,{method:'POST',
+    body:{name:d.name,kind:'CATEGORY',categoryId:d.categoryId,action:d.action}});
+  }else if(kind==='purchase-check'){
+   lastCheck={amountMinor:asMinor(d.amount),currency:'KES',categoryId:d.categoryId,reference:d.reference};
+   lastEval=await request(base+'/spending/purchase-checks',true,{method:'POST',body:lastCheck});
+   notice='Policy preview completed. No account was charged and no payment was authorized.';
+   await refresh();return;
+  }
   else throw new Error('This form is not connected to an authoritative service.');
   notice='Saved to the current workspace in PostgreSQL.';await refresh();
  }catch(ex){error=String(ex.message||ex);busy=false;draw();}
@@ -351,9 +518,32 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[]};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
+ }
+ if(button.hasAttribute('data-activate-budget')){
+  if(!confirm('Activate this immutable budget? Category allocations cannot be edited after activation.'))return;
+  try{await request(path('/budgets/'+encodeURIComponent(button.dataset.activateBudget)+'/activate'),true,{method:'POST'});
+   notice='Budget activated and checked against overlapping category budgets.';await refresh();}
+  catch(ex){error=String(ex.message||ex);draw();}
+  return;
+ }
+ if(button.hasAttribute('data-request-approval')){
+  if(!lastCheck||!lastEval)throw new Error('Evaluate a purchase first.');
+  try{await request(path('/spending/approvals'),true,{method:'POST',body:{
+   ...lastCheck,guardrailId:button.dataset.requestApproval}});
+   notice='Request submitted. A different owner/admin must decide before eligible manual posting.';await refresh();}
+  catch(ex){error=String(ex.message||ex);draw();}
+  return;
+ }
+ if(button.hasAttribute('data-approval-decision')){
+  if(!confirm('Submit an independent '+button.dataset.decision+' decision? It cannot be edited.'))return;
+  try{await request(path('/spending/approvals/'+encodeURIComponent(button.dataset.approvalDecision)+'/decision'),
+    true,{method:'POST',body:{decision:button.dataset.decision}});
+   notice='Approval decision recorded in the workspace audit trail.';await refresh();}
+  catch(ex){error=String(ex.message||ex);draw();}
+  return;
  }
  if(button.hasAttribute('data-reverse')){
   if(!confirm('Post a compensating journal entry? The original entry remains immutable.'))return;
@@ -368,7 +558,7 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;lastEval=null;lastCheck=null;void refresh();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
 });

@@ -21,3 +21,22 @@ button,input,select{font:inherit}button{cursor:pointer}
 .connected-alert,.connected-note{padding:14px 18px;border:1px solid #eeafa9;border-radius:9px;background:#fff1ef;color:#93382d;margin-bottom:18px}.connected-note{background:#e7f8f0;border-color:#a1ddc3;color:#086142}.connected-muted,.connected-disclaimer{font-size:12px!important;color:#759086!important}.connected-disclaimer{margin-top:30px}
 @media(max-width:1000px){.connected-layout{grid-template-columns:220px minmax(0,1fr)}.connected-top{padding:0 18px}.connected-main{padding:20px}}
 @media(max-width:700px){.connected-top{height:auto;min-height:70px;flex-wrap:wrap;padding:10px 14px}.connected-top-actions{font-size:12px;flex-wrap:wrap}.connected-layout{display:block}.connected-side{height:auto;position:static;max-height:220px;border-bottom:1px solid var(--line);border-right:0;overflow:auto}.connected-side details{display:inline-block;vertical-align:top;margin-right:6px}.connected-side details>button{min-width:200px}.connected-main{padding:14px}.connected-hero{padding:22px}.connected-hero h1{font-size:23px}.connected-card{padding:18px}}
+
+/* B2: real-data spending intelligence and auditable financial controls. */
+.connected-bars{display:grid;gap:10px;margin:15px 0 7px}
+.connected-bar{display:grid;grid-template-columns:90px minmax(0,1fr) 125px;gap:12px;align-items:center;font-size:12px}
+.connected-bar b{font-weight:700;color:#335e51}.connected-bar i{background:linear-gradient(90deg,#0b7d5d,#33c18e);height:16px;min-width:2px;border-radius:6px}.connected-bar span{text-align:right;font-variant-numeric:tabular-nums}
+.connected-budget-form .connected-allocations{grid-column:1/-1}
+.connected-allocations{border:1px solid #d6e5dc;border-radius:10px;padding:15px 18px;margin:0 0 12px}
+.connected-allocations legend{font-weight:700;color:#265a4b}
+.connected-alloc-row{display:grid;grid-template-columns:18px 1fr 165px;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #ecf2ee}
+.connected-alloc-row input[type=checkbox],.connected-approval-choice input[type=checkbox]{width:18px;height:18px}
+.connected-alloc-row input[type=text]{width:100%;border:1px solid #cadfd3;border-radius:7px;min-height:38px;padding:8px 10px}
+.connected-approval-choice{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:12px}
+.connected-budget-meter{border:1px solid #d9ebe0;padding:14px;border-radius:9px;margin:12px 0}
+.connected-meter{background:#e7f2eb;height:12px;border-radius:8px;overflow:hidden;margin:12px 0}
+.connected-meter i{display:block;background:#129574;height:100%;min-width:0}
+.connected-policy-result{background:#e6f5ef;border:1px solid #9ddcc3;border-radius:9px;padding:16px;margin:14px 0}
+.connected-policy-result strong{font-weight:800;color:#085d48}
+.connected-policy-result button{display:inline-block}
+@media(max-width:700px){.connected-alloc-row{grid-template-columns:18px 1fr}.connected-alloc-row input[type=text]{grid-column:2}.connected-bar{grid-template-columns:72px minmax(0,1fr) 88px;gap:7px;font-size:10px}}
