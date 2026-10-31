@@ -82,14 +82,14 @@ async function fetchAccounts(db:pg.PoolClient,wid:string,accountId?:string){
 async function fetchTransactions(db:pg.PoolClient,wid:string,transactionId?:string){
  const result=await db.query<{
   id:string;financial_account_id:string;category_id:string;kind:string;amount_minor:string;currency:string;
-  description:string;occurred_at:Date;entry_id:string;origin:string
- }>(`SELECT id,financial_account_id,category_id,kind,amount_minor,currency,description,occurred_at,entry_id,origin
+  description:string;occurred_at:Date;entry_id:string;origin:string;reverses_transaction_id:string|null
+ }>(`SELECT id,financial_account_id,category_id,kind,amount_minor,currency,description,occurred_at,entry_id,origin,reverses_transaction_id
  FROM manual_transactions WHERE workspace_id=$1 AND ($2::uuid IS NULL OR id=$2::uuid)
  ORDER BY occurred_at DESC,id DESC LIMIT 100`,[wid,transactionId??null]);
  return result.rows.map(r=>({id:r.id,financialAccountId:r.financial_account_id,categoryId:r.category_id,
   kind:r.kind,amountMinor:asMoney(r.amount_minor),currency:r.currency,description:r.description,
   occurredAt:r.occurred_at instanceof Date?r.occurred_at.toISOString():String(r.occurred_at),
-  journalEntryId:r.entry_id,origin:r.origin,status:'POSTED'}));
+  journalEntryId:r.entry_id,origin:r.origin,reversesTransactionId:r.reverses_transaction_id,status:'POSTED'}));
 }
 export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg.Pool){
  app.get('/v1/workspaces/:workspaceId/accounts',async(request,reply)=>{
@@ -265,4 +265,53 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
    await finish(db,idem.id,created.id);return {id:created.id,matched:true,replayed:false};
   });return reply.code(match.replayed?200:201).send(match);
  });
+ app.post('/v1/workspaces/:workspaceId/transactions/:transactionId/reverse',async(request,reply)=>{
+  const key=headerIdempotency(request);
+  const transactionId=(request.params as {transactionId:string}).transactionId;
+  if(!uuid.safeParse(transactionId).success)throw new DomainError(400,'INVALID_TRANSACTION','Invalid transaction identifier');
+  const item=await scoped(request,finance,auth,'write',async(db,actor)=>{
+   const wid=params(request).workspaceId,idem=await reserve(db,wid,key,'transactions.reverse',{transactionId});
+   if(!idem.fresh){
+    const prior=await fetchTransactions(db,wid,idem.resultId!);
+    if(!prior[0])throw new DomainError(409,'REPLAY_NOT_FOUND','Prior reversal missing');
+    return {...prior[0],replayed:true};
+   }
+   const original=(await db.query<{id:string;financial_account_id:string;category_id:string|null;entry_id:string;
+      currency:string;amount_minor:string;description:string;kind:string;occurred_at:Date}>(`
+     SELECT id,financial_account_id,category_id,entry_id,currency,amount_minor::text,
+      description,kind,occurred_at FROM manual_transactions
+     WHERE workspace_id=$1 AND id=$2 FOR SHARE`,[wid,transactionId])).rows[0];
+   if(!original)throw new DomainError(404,'TRANSACTION_NOT_FOUND','Transaction not found');
+   if(original.kind==='REVERSAL')throw new DomainError(409,'REVERSAL_CANNOT_REVERSE','A reversal cannot be reversed; post a new adjusting transaction');
+   const existing=await db.query(`SELECT id FROM manual_transactions WHERE workspace_id=$1 AND reverses_transaction_id=$2`,[wid,transactionId]);
+   if(existing.rows.length)throw new DomainError(409,'ALREADY_REVERSED','Transaction was already reversed');
+   const entry=(await db.query<{id:string}>(`INSERT INTO journal_entries
+     (workspace_id,currency,effective_on,source_type,memo,status,idempotency_key,created_by,reverses_entry_id)
+     VALUES($1,$2,$3,'REVERSAL',$4,'DRAFT',$5,$6,$7) RETURNING id`,[
+      wid,original.currency,new Date().toISOString().slice(0,10),
+      'Reversal: '+original.description,key,actor.id,original.entry_id
+     ])).rows[0]!;
+   const oldLines=await db.query<{line_number:number;ledger_account_id:string;debit_minor:string;credit_minor:string}>(`
+     SELECT line_number,ledger_account_id,debit_minor::text,credit_minor::text
+     FROM journal_lines WHERE workspace_id=$1 AND entry_id=$2 ORDER BY line_number`,[wid,original.entry_id]);
+   if(oldLines.rows.length<2)throw new DomainError(409,'INVALID_ORIGINAL_JOURNAL','Original journal has no balanced lines');
+   for(const line of oldLines.rows){
+    await db.query(`INSERT INTO journal_lines(workspace_id,entry_id,line_number,ledger_account_id,debit_minor,credit_minor)
+     VALUES($1,$2,$3,$4,$5,$6)`,[wid,entry.id,line.line_number,line.ledger_account_id,line.credit_minor,line.debit_minor]);
+   }
+   await db.query(`UPDATE journal_entries SET status='POSTED',posted_at=now() WHERE workspace_id=$1 AND id=$2`,[wid,entry.id]);
+   const created=(await db.query<{id:string}>(`INSERT INTO manual_transactions
+      (workspace_id,financial_account_id,category_id,entry_id,kind,amount_minor,currency,description,
+       occurred_at,created_by,reverses_transaction_id)
+      VALUES($1,$2,$3,$4,'REVERSAL',$5,$6,$7,now(),$8,$9) RETURNING id`,[
+       wid,original.financial_account_id,original.category_id,entry.id,
+       -asMoney(original.amount_minor),original.currency,'Reversal: '+original.description,actor.id,original.id
+      ])).rows[0]!;
+   await audit(db,wid,actor,'transaction.reversed','manual_transaction',created.id,request);
+   await finish(db,idem.id,created.id);
+   return (await fetchTransactions(db,wid,created.id))[0]!;
+  });
+  return reply.code('replayed' in item?200:201).send(item);
+ });
+
 }
