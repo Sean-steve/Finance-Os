@@ -30,6 +30,7 @@ GRANT UPDATE(status,posted_at) ON journal_entries TO finance_app;
 GRANT UPDATE(result_id) ON idempotency_records TO finance_app;
 GRANT UPDATE(disposition,entry_id) ON import_rows TO finance_app;
 GRANT UPDATE(status,version) ON budgets TO finance_app;
+GRANT UPDATE(active,version) ON spending_guardrails TO finance_app;
 GRANT UPDATE(status,decided_by,decided_at) ON approval_requests TO finance_app;
 
 -- finance_auth handles only registration and opaque sessions. It has no finance ledger privileges.
