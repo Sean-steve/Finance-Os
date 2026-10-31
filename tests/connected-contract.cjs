@@ -28,4 +28,16 @@ for(const endpoint of ['/budgets','/spending/insights','/spending/guardrails','/
 assert.match(ui,/APPROVAL|approvalRequestIds/);
 assert.match(ui,/Manual posted ledger only|MANUAL_POSTED_LEDGER/);
 assert.doesNotMatch(ui,/autoPay|authorizeBankPayment|approveCardPayment/i,'Manual controls are not real payments');
-console.log('PASS connected frontend: 60 routes, B2 controls, fail-closed financial truth and no demo imports');
+for(const n of [27,28,29,30,31,32,33,34])
+ assert.ok(ui.includes('case '+n+':return'),'missing B3 authenticated service route '+n);
+for(const endpoint of ['/income/sources','/income/overview','/income/forecast','/bills','/bills/calendar',
+ '/cash-flow/forecast','/cash-flow/timeline','/cash-flow/shortfalls'])
+ assert.ok(ui.includes(endpoint),'missing B3 server-backed endpoint '+endpoint);
+for(const form of ["kind==='income-source'","kind==='bill-create'","kind==='bill-settlement'"])
+ assert.ok(ui.includes(form),'missing B3 form '+form);
+assert.match(ui,/Expected, NOT received|Expected KES amount/);
+assert.match(ui,/POSTED manual/);
+assert.match(ui,/No payment was initiated/);
+assert.match(ui,/Financial records unavailable/);
+assert.match(ui,/loadFailed=true/);
+console.log('PASS connected frontend: 60 routes, B1–B3 real data controls, manual-only obligations and no demo imports');

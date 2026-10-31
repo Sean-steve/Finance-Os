@@ -7,6 +7,7 @@ import type {Queryable} from './db/client.js';
 import {installAuthRoutes,sessionIdentity,DomainError} from './auth.js';
 import {installFinanceRoutes,type IdentityResolver} from './finance.js';
 import {installB2Routes} from './b2.js';
+import {installB3Routes} from './b3.js';
 import {createOidcVerifier,createOidcIdentity,installOidcRoutes} from './oidc.js';
 
 export const API_CONTRACT='finance-os.v1';
@@ -56,7 +57,7 @@ export async function buildApp({config,database,financePool,authPool,oidcFetch}:
    const result=await database.query('SELECT version FROM schema_migrations ORDER BY version');
    const versions=new Set(result.rows.map(row=>(row as {version:string}).version));
    const required=['001_identity_workspaces.sql','002_financial_domains.sql','003_integrity_rls.sql'];
-   if(config.localAuthEnabled||config.oidc)required.push('004_b1_identity_ledger.sql','005_b1_reversals.sql','006_b2_spending_controls.sql');
+   if(config.localAuthEnabled||config.oidc)required.push('004_b1_identity_ledger.sql','005_b1_reversals.sql','006_b2_spending_controls.sql','007_b3_income_bills_cashflow.sql');
    if(!required.every(version=>versions.has(version)))throw new Error('Migrations not applied');
    return {status:'ready',migrationTracking:true};
   }catch{
@@ -64,7 +65,7 @@ export async function buildApp({config,database,financePool,authPool,oidcFetch}:
   }
  });
  const enabled=Boolean((config.localAuthEnabled||config.oidc)&&financePool&&authPool);
- app.get('/v1/meta',async()=>({api:API_CONTRACT,stage:enabled?'B2':'B0',implementation:enabled?'connected-server':'foundation-only',
+ app.get('/v1/meta',async()=>({api:API_CONTRACT,stage:enabled?'B3':'B0',implementation:enabled?'connected-server':'foundation-only',
   financialEndpointsAvailable:enabled,authenticationAvailable:enabled,productionReady:false,
   authenticationScope:config.oidc?'OIDC_VERIFIED_MFA':config.localAuthEnabled?'LOCAL_TEST_ONLY':'DISABLED',
   reference:'openapi/finance-os.v1.json'}));
@@ -80,6 +81,7 @@ export async function buildApp({config,database,financePool,authPool,oidcFetch}:
   }
   installFinanceRoutes(app,financePool!,identity);
   installB2Routes(app,financePool!,identity);
+  installB3Routes(app,financePool!,identity);
  }
  app.setNotFoundHandler((_request,reply)=>reply.code(404).send({error:{code:'ROUTE_NOT_IMPLEMENTED',message:'Route not available'}}));
  app.setErrorHandler((error,request,reply)=>{

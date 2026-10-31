@@ -1,9 +1,9 @@
 {
   "name": "@finance-os/backend",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "description": "Finance OS B2 server-authoritative budgets, spending insights, guardrails and two-person approvals",
+  "description": "Finance OS B3 income sources, immutable obligations, journal-backed settlements and indicative cash-flow",
   "engines": {
     "node": ">=22"
   },
@@ -12,14 +12,15 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test test/unit.test.ts test/contracts.test.ts test/auth.test.ts test/oidc.test.ts test/b2.unit.test.ts",
+    "test": "tsx --test test/unit.test.ts test/contracts.test.ts test/auth.test.ts test/oidc.test.ts test/b2.unit.test.ts test/b3.unit.test.ts",
     "test:db": "tsx --test test/database.test.ts",
     "migrate": "tsx src/db/migrate.ts",
     "contract:check": "tsx test/check-openapi.ts",
     "test:b1": "tsx --test test/b1.integration.test.ts",
     "test:oidc": "tsx --test test/oidc.test.ts",
     "test:oidc:db": "tsx --test test/oidc.integration.test.ts",
-    "test:b2": "tsx --test test/b2.integration.test.ts"
+    "test:b2": "tsx --test test/b2.integration.test.ts",
+    "test:b3": "tsx --test test/b3.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",

@@ -346,6 +346,15 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,identit
        wid,original.financial_account_id,original.category_id,entry.id,
        -asMoney(original.amount_minor),original.currency,'Reversal: '+original.description,actor.id,original.id
       ])).rows[0]!;
+   // B3: re-open a manually recorded obligation when its linked expense is reversed.
+   // The original bill settlement row remains historical; a new matching posted expense may be linked.
+   const voided=await db.query<{id:string}>(`UPDATE bill_settlements
+    SET status='REVERSED',reversed_at=now()
+    WHERE workspace_id=$1 AND manual_transaction_id=$2 AND status='RECORDED'
+    RETURNING id`,[wid,original.id]);
+   for(const settlement of voided.rows){
+    await audit(db,wid,actor,'bill.settlement.reversed','bill_settlement',settlement.id,request);
+   }
    await audit(db,wid,actor,'transaction.reversed','manual_transaction',created.id,request);
    await finish(db,idem.id,created.id);
    return (await fetchTransactions(db,wid,created.id))[0]!;
