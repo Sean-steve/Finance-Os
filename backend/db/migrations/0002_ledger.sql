@@ -137,13 +137,13 @@ END $$;
 CREATE TRIGGER trg_guard_posted_lines BEFORE UPDATE OR DELETE ON journal_lines
  FOR EACH ROW EXECUTE FUNCTION finance_guard_posted_lines();
 
-CREATE FUNCTION finance_guard_insert_line() RETURNS trigger LANGUAGE plpgsql AS $
+CREATE FUNCTION finance_guard_insert_line() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE s text;
 BEGIN
  SELECT status INTO s FROM journals WHERE workspace_id=NEW.workspace_id AND id=NEW.journal_id;
  IF s IS DISTINCT FROM 'DRAFT' THEN RAISE EXCEPTION 'Lines can only be inserted into draft journals'; END IF;
  RETURN NEW;
-END $;
+END $$;
 CREATE TRIGGER trg_guard_insert_line BEFORE INSERT ON journal_lines
  FOR EACH ROW EXECUTE FUNCTION finance_guard_insert_line();
 
