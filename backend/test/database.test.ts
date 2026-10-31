@@ -23,7 +23,7 @@ test('real PostgreSQL migrations, tenant RLS, immutability and journal invariant
  try{
   await t.test('all B0 migrations recorded and checksum-bound',async()=>{
    const {rows}=await admin.query('SELECT version,sha256 FROM schema_migrations ORDER BY version');
-   assert.deepEqual(rows.map(x=>x.version),['001_identity_workspaces.sql','002_financial_domains.sql','003_integrity_rls.sql','004_b1_identity_ledger.sql','005_b1_reversals.sql','006_b2_spending_controls.sql']);
+   assert.deepEqual(rows.map(x=>x.version),['001_identity_workspaces.sql','002_financial_domains.sql','003_integrity_rls.sql','004_b1_identity_ledger.sql','005_b1_reversals.sql','006_b2_spending_controls.sql','007_b3_income_bills_cashflow.sql']);
    assert.ok(rows.every(x=>/^[0-9a-f]{64}$/.test(x.sha256)));
   });
   await t.test('API role cannot SELECT any workspace without transaction scope',async()=>{

@@ -10,7 +10,7 @@ test('B1 contract differentiates locally implemented endpoints from future APIs'
    assert.ok(op.operationId,'missing operationId '+path);
    assert.ok(!ids.has(op.operationId),'duplicate operationId '+op.operationId);ids.add(op.operationId);
    const status=op['x-implementation-status'];
-   assert.ok(['PLANNED','IMPLEMENTED_B0','IMPLEMENTED_B1_LOCAL','IMPLEMENTED_B1_1','IMPLEMENTED_B2'].includes(status),status);
+   assert.ok(['PLANNED','IMPLEMENTED_B0','IMPLEMENTED_B1_LOCAL','IMPLEMENTED_B1_1','IMPLEMENTED_B2','IMPLEMENTED_B3'].includes(status),status);
    if(status==='IMPLEMENTED_B1_LOCAL'){
     b1++;
     if(!path.startsWith('/v1/auth/register')&&!path.startsWith('/v1/auth/login'))
@@ -22,6 +22,7 @@ test('B1 contract differentiates locally implemented endpoints from future APIs'
    }
    if(status==='IMPLEMENTED_B1_1')assert.equal(path,'/v1/auth/provider');
    if(status==='IMPLEMENTED_B2'){assert.ok(path.startsWith('/v1/workspaces/{workspaceId}/'));assert.ok(op.security?.[0]?.bearerAuth);}
+   if(status==='IMPLEMENTED_B3'){assert.ok(path.startsWith('/v1/workspaces/{workspaceId}/'));assert.ok(op.security?.[0]?.bearerAuth);}
    if(status==='PLANNED')planned++;
   }
  }

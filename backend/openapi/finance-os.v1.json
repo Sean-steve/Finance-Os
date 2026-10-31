@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Finance OS API",
-    "version": "1.0.0-draft.0",
-    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status."
+    "version": "0.4.0",
+    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments."
   },
   "servers": [
     {
@@ -6223,6 +6223,1173 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspaceId}/income/sources": {
+      "get": {
+        "operationId": "listB3IncomeSources",
+        "summary": "listB3IncomeSources",
+        "description": "B3: manual records, user-reported obligations and estimates; no provider verification or money movement.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B3IncomeSource"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB3IncomeEstimate",
+        "summary": "createB3IncomeEstimate",
+        "description": "B3: manual records, user-reported obligations and estimates; no provider verification or money movement.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "categoryId",
+                  "cadence",
+                  "expectedMinor",
+                  "currency",
+                  "firstExpectedOn"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 150
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "cadence": {
+                    "type": "string",
+                    "enum": [
+                      "WEEKLY",
+                      "MONTHLY",
+                      "QUARTERLY",
+                      "YEARLY",
+                      "VARIABLE"
+                    ]
+                  },
+                  "expectedMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "firstExpectedOn": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "lastExpectedOn": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3IncomeSource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/income/sources/{sourceId}/disable": {
+      "post": {
+        "operationId": "disableB3IncomeTemplate",
+        "summary": "disableB3IncomeTemplate",
+        "description": "One-time disable of immutable user-estimated income schedule. Does not touch journal deposits.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3IncomeSource"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/income/overview": {
+      "get": {
+        "operationId": "getB3IncomeOverview",
+        "summary": "getB3IncomeOverview",
+        "description": "Only income in POSTED manual journals is actual. User estimates are separate and unverified.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/income/forecast": {
+      "get": {
+        "operationId": "getB3IncomeForecast",
+        "summary": "getB3IncomeForecast",
+        "description": "Only user-provided forecast estimates, never bank deposits or cash ledger postings.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/bills": {
+      "get": {
+        "operationId": "listB3Obligations",
+        "summary": "listB3Obligations",
+        "description": "B3: manual records, user-reported obligations and estimates; no provider verification or money movement.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B3Bill"
+                      }
+                    },
+                    "overview": {
+                      "type": "object"
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB3RecurringBill",
+        "summary": "createB3RecurringBill",
+        "description": "B3: manual records, user-reported obligations and estimates; no provider verification or money movement.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "categoryId",
+                  "cadence",
+                  "amountMinor",
+                  "currency",
+                  "firstDueOn"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 150
+                  },
+                  "payeeLabel": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "cadence": {
+                    "type": "string",
+                    "enum": [
+                      "ONCE",
+                      "WEEKLY",
+                      "MONTHLY",
+                      "QUARTERLY",
+                      "YEARLY"
+                    ]
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "firstDueOn": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "lastDueOn": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3Bill"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/bills/calendar": {
+      "get": {
+        "operationId": "getB3ObligationCalendar",
+        "summary": "getB3ObligationCalendar",
+        "description": "Date-only UTC recurring due occurrences; manually linked posted expenses marked RECORDED_UNVERIFIED, never bank-paid.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "KES"
+                      ]
+                    },
+                    "from": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "to": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "isProviderVerified": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/bills/{billId}": {
+      "get": {
+        "operationId": "getB3BillDetails",
+        "summary": "getB3BillDetails",
+        "description": "B3: manual records, user-reported obligations and estimates; no provider verification or money movement.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "billId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bill": {
+                      "$ref": "#/components/schemas/B3Bill"
+                    },
+                    "settlements": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B3Settlement"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/bills/{billId}/cancel": {
+      "post": {
+        "operationId": "cancelB3BillSchedule",
+        "summary": "cancelB3BillSchedule",
+        "description": "Irreversible cancellation of future scheduled occurrences. Historical settlements preserved.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "billId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3Bill"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/bills/{billId}/settlements": {
+      "get": {
+        "operationId": "listB3ManualBillSettlements",
+        "summary": "listB3ManualBillSettlements",
+        "description": "B3: manual records, user-reported obligations and estimates; no provider verification or money movement.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "billId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/B3Settlement"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordB3BillPaymentEvidence",
+        "summary": "recordB3BillPaymentEvidence",
+        "description": "Links existing POSTED KES EXPENSE exactly to a due occurrence, category and amount. Not a provider receipt, bank transfer or automatic payment.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "billId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "dueOn",
+                  "manualTransactionId"
+                ],
+                "properties": {
+                  "dueOn": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "manualTransactionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3Settlement"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/cash-flow/timeline": {
+      "get": {
+        "operationId": "getB3PostedCashflowTimeline",
+        "summary": "getB3PostedCashflowTimeline",
+        "description": "Manual POSTED ledger entries by economic date; reversals net out. No provider verification.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3CashflowTimeline"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/cash-flow/forecast": {
+      "get": {
+        "operationId": "getB3IndicativeCashflowForecast",
+        "summary": "getB3IndicativeCashflowForecast",
+        "description": "Indicative manual KES balance with user-estimated income and unverified scheduled obligations; not safe-to-spend or guaranteed solvency.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3Forecast"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/cash-flow/shortfalls": {
+      "get": {
+        "operationId": "getB3ShortfallReview",
+        "summary": "getB3ShortfallReview",
+        "description": "Non-actionable independent review suggestions; no external payment or financial advice.",
+        "x-implementation-phase": "B3",
+        "x-implementation-status": "IMPLEMENTED_B3",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped, server-authoritative response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3Shortfall"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Role/permission denied"
+          },
+          "404": {
+            "description": "Workspace or resource absent"
+          },
+          "409": {
+            "description": "Idempotency/state conflict"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8385,6 +9552,356 @@
             "items": {
               "type": "object"
             }
+          }
+        }
+      },
+      "B3IncomeSource": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "expectedMinor",
+          "currency",
+          "cadence",
+          "evidence",
+          "enabled",
+          "firstExpectedOn"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "cadence": {
+            "type": "string",
+            "enum": [
+              "WEEKLY",
+              "MONTHLY",
+              "QUARTERLY",
+              "YEARLY",
+              "VARIABLE"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "USER_ESTIMATE",
+              "MANUAL_RECORD",
+              "PROVIDER_VERIFIED"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "firstExpectedOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastExpectedOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer"
+          },
+          "projectionQuality": {
+            "type": "string"
+          }
+        }
+      },
+      "B3Bill": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "categoryId",
+          "amountMinor",
+          "currency",
+          "firstDueOn",
+          "cadence",
+          "status",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "payeeLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "firstDueOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastDueOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "cadence": {
+            "type": "string",
+            "enum": [
+              "ONCE",
+              "WEEKLY",
+              "MONTHLY",
+              "QUARTERLY",
+              "YEARLY"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "CANCELLED"
+            ]
+          },
+          "version": {
+            "type": "integer"
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "MANUAL_USER_OBLIGATION"
+            ]
+          }
+        }
+      },
+      "B3Settlement": {
+        "type": "object",
+        "required": [
+          "id",
+          "billId",
+          "dueOn",
+          "manualTransactionId",
+          "status",
+          "paymentEvidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "billId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dueOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "manualTransactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECORDED",
+              "REVERSED"
+            ]
+          },
+          "paymentEvidence": {
+            "type": "string",
+            "enum": [
+              "POSTED_MANUAL_LEDGER_UNVERIFIED"
+            ]
+          }
+        }
+      },
+      "B3Forecast": {
+        "type": "object",
+        "required": [
+          "currency",
+          "asOf",
+          "days",
+          "sourceQuality",
+          "manualBalanceMinor",
+          "expectedIncomeMinor",
+          "futureObligationsMinor",
+          "endingIndicativeMinor",
+          "isProviderVerified"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "integer"
+          },
+          "sourceQuality": {
+            "type": "string",
+            "enum": [
+              "MANUAL_LEDGER_PLUS_USER_ESTIMATES"
+            ]
+          },
+          "isProviderVerified": {
+            "type": "boolean"
+          },
+          "manualBalanceMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedIncomeMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "futureObligationsMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overdueUnverifiedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "endingIndicativeMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "endingAfterOverdueExposureMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "firstPotentialShortfallOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "risks": {
+            "type": "object"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "B3CashflowTimeline": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "days": {
+            "type": "integer"
+          },
+          "sourceQuality": {
+            "type": "string"
+          },
+          "isProviderVerified": {
+            "type": "boolean"
+          },
+          "netRecordedCashFlowMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "daysWithRecords": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "B3Shortfall": {
+        "type": "object",
+        "properties": {
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "days": {
+            "type": "integer"
+          },
+          "sourceQuality": {
+            "type": "string"
+          },
+          "firstPotentialShortfallOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "overdueUnverifiedMinor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "risks": {
+            "type": "object"
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "advisoryOnly": {
+            "type": "boolean"
+          },
+          "paymentAuthorized": {
+            "type": "boolean"
+          },
+          "isProviderVerified": {
+            "type": "boolean"
           }
         }
       }
