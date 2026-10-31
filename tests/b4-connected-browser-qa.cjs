@@ -87,19 +87,11 @@ async function main(){
   await page.locator('form[data-form=b4-scenario] input[name=name]').fill('CI hypothetical');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyIncome]').fill('100');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyExpense]').fill('80');
-  const validity=await page.locator('form[data-form=b4-scenario]').evaluate(form=>({
-    valid:form.checkValidity(),fields:[...form.elements].filter(x=>x.name).map(x=>({
-      name:x.name,value:x.value,valid:x.validity.valid,patternMismatch:x.validity.patternMismatch,
-      validationMessage:x.validationMessage,outerHTML:x.outerHTML.slice(0,280)}))}));
-  console.log('B4 scenario form validation: '+JSON.stringify(validity));
+  // Regression: async workspace refresh must not silently clear partially filled scenario inputs.
+  const valid=await page.locator('form[data-form=b4-scenario]').evaluate(form=>form.checkValidity());
+  assert.equal(valid,true,'Scenario form must remain valid after navigation and data refresh');
   await page.locator('form[data-form=b4-scenario] button[type=submit]').click();
-  try{await page.getByText('Hypothetical end cash:').first().waitFor({timeout:10000});}
-  catch(e){
-    console.error('B4 scenario after submit: '+JSON.stringify({
-      main:(await page.locator('main').innerText()).slice(0,5000),
-      errors,route:page.url(),saved:state.scenarios.length}));
-    throw e;
-  }
+  await page.getByText('Hypothetical end cash:').first().waitFor({timeout:10000});
   assert.deepEqual(errors,[],'Authenticated B4 views should not throw runtime errors');
   assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[],'No finance state in localStorage');
   await page.setViewportSize({width:390,height:844});
