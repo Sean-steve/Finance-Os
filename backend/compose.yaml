@@ -1,0 +1,20 @@
+# LOCAL ONLY: PostgreSQL does not expose public ports.
+# FINANCE_DB_MIGRATOR_PASSWORD must be set in the local shell; never commit secrets.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: finance_migrator
+      POSTGRES_PASSWORD: ${FINANCE_DB_MIGRATOR_PASSWORD:?Set_FINANCE_DB_MIGRATOR_PASSWORD}
+      POSTGRES_DB: finance_os
+    ports:
+      - "127.0.0.1:5544:5432"
+    volumes:
+      - finance_os_local_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U finance_migrator -d finance_os"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  finance_os_local_db:
