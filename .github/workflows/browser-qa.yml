@@ -60,6 +60,8 @@ jobs:
         run: node tests/priority-screen-fidelity.cjs
       - name: Certify connected 60-route authentication and demo-data segregation
         run: node tests/connected-browser-qa.cjs
+      - name: Exercise authenticated Finance OS B4 capital UI with isolated CI API interception
+        run: node tests/b4-connected-browser-qa.cjs
       - name: Measure 59 reference screens and adapted Screen 22 visual difference
         run: node tests/visual-parity-score.cjs
       - name: Audit accessibility and color contrast
