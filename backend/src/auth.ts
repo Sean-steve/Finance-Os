@@ -43,9 +43,9 @@ export async function sessionIdentity(request:FastifyRequest, authPool:pg.Pool):
  const digest=sha256(raw);
  const result=await authPool.query<{
   id:string;email_normalized:string;display_name:string;session_id:string
- }>(\`SELECT u.id,u.email_normalized,u.display_name,s.id AS session_id
+ }>(`SELECT u.id,u.email_normalized,u.display_name,s.id AS session_id
      FROM app.sessions s JOIN public.app_users u ON u.id=s.user_id
-     WHERE s.token_digest=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND u.disabled_at IS NULL\`,[digest]);
+     WHERE s.token_digest=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND u.disabled_at IS NULL`,[digest]);
  const row=result.rows[0];
  if(!row)throw new DomainError(401,'AUTH_EXPIRED','Session invalid or expired');
  return {id:row.id,email:row.email_normalized,displayName:row.display_name,sessionId:row.session_id,tokenDigest:digest};
@@ -53,7 +53,7 @@ export async function sessionIdentity(request:FastifyRequest, authPool:pg.Pool):
 async function issueToken(client:pg.PoolClient,userId:string){
  const accessToken=token();
  const response=await client.query<{expires_at:Date}>(
-  \`INSERT INTO app.sessions(user_id,token_digest,expires_at) VALUES($1,$2,now()+interval '8 hours') RETURNING expires_at\`,
+  `INSERT INTO app.sessions(user_id,token_digest,expires_at) VALUES($1,$2,now()+interval '8 hours') RETURNING expires_at`,
   [userId,sha256(accessToken)]
  );
  return {tokenType:'Bearer',accessToken,expiresAt:response.rows[0]!.expires_at.toISOString()};
@@ -78,12 +78,12 @@ export function installAuthRoutes(app:FastifyInstance,authPool:pg.Pool){
   const client=await authPool.connect();
   try{
    await client.query('BEGIN');
-   const user=(await client.query<{id:string}>(\`INSERT INTO app_users(email_normalized,display_name) VALUES($1,$2) RETURNING id\`,
+   const user=(await client.query<{id:string}>(`INSERT INTO app_users(email_normalized,display_name) VALUES($1,$2) RETURNING id`,
       [email,parsed.data.displayName])).rows[0]!;
    await client.query('INSERT INTO app.password_credentials(user_id,password_verifier) VALUES($1,$2)',[user.id,verifier]);
-   const workspace=(await client.query<{id:string}>(\`INSERT INTO workspaces(owner_user_id,name,kind) VALUES($1,$2,'PERSONAL') RETURNING id\`,
+   const workspace=(await client.query<{id:string}>(`INSERT INTO workspaces(owner_user_id,name,kind) VALUES($1,$2,'PERSONAL') RETURNING id`,
       [user.id,parsed.data.workspaceName||parsed.data.displayName+' — Personal'])).rows[0]!;
-   await client.query(\`INSERT INTO workspace_members(workspace_id,user_id,role,status) VALUES($1,$2,'OWNER','ACTIVE')\`,[workspace.id,user.id]);
+   await client.query(`INSERT INTO workspace_members(workspace_id,user_id,role,status) VALUES($1,$2,'OWNER','ACTIVE')`,[workspace.id,user.id]);
    const credentials=await issueToken(client,user.id);
    await client.query('COMMIT');
    return reply.code(201).send({...credentials,user:{id:user.id,email,displayName:parsed.data.displayName},
@@ -99,10 +99,10 @@ export function installAuthRoutes(app:FastifyInstance,authPool:pg.Pool){
   if(!parsed.success)return failed(reply,422,'VALIDATION_ERROR','Valid email and password are required');
   const email=normalizeEmail(parsed.data.email),key=safeRateKey(request,email);
   if(rejectLocked(key))return failed(reply,429,'TOO_MANY_ATTEMPTS','Try again later');
-  const results=await authPool.query<{id:string;display_name:string;password_verifier:string}>(\`
+  const results=await authPool.query<{id:string;display_name:string;password_verifier:string}>(`
     SELECT u.id,u.display_name,c.password_verifier FROM app_users u
     JOIN app.password_credentials c ON c.user_id=u.id
-    WHERE u.email_normalized=$1 AND u.disabled_at IS NULL AND c.disabled_at IS NULL\`,[email]);
+    WHERE u.email_normalized=$1 AND u.disabled_at IS NULL AND c.disabled_at IS NULL`,[email]);
   const user=results.rows[0];
   const ok=await verifyPassword(parsed.data.password,user?.password_verifier??await dummyPromise);
   if(!ok||!user){recordFailure(key);return failed(reply,401,'INVALID_CREDENTIALS','Invalid email or password');}
@@ -122,9 +122,9 @@ export function installAuthRoutes(app:FastifyInstance,authPool:pg.Pool){
  });
  app.get('/v1/workspaces',async(request,reply)=>{
   const actor=await sessionIdentity(request,authPool);
-  const result=await authPool.query(\`SELECT w.id,w.name,w.kind,w.base_currency AS "baseCurrency",
+  const result=await authPool.query(`SELECT w.id,w.name,w.kind,w.base_currency AS "baseCurrency",
    m.role FROM workspaces w JOIN workspace_members m ON m.workspace_id=w.id
-   WHERE m.user_id=$1 AND m.status='ACTIVE' AND w.archived_at IS NULL ORDER BY w.created_at,w.id\`,[actor.id]);
+   WHERE m.user_id=$1 AND m.status='ACTIVE' AND w.archived_at IS NULL ORDER BY w.created_at,w.id`,[actor.id]);
   return reply.send({items:result.rows});
  });
  app.post('/v1/workspaces',async(request,reply)=>{
@@ -133,9 +133,9 @@ export function installAuthRoutes(app:FastifyInstance,authPool:pg.Pool){
   const client=await authPool.connect();
   try{
    await client.query('BEGIN');
-   const row=(await client.query<{id:string}>(\`INSERT INTO workspaces(owner_user_id,name,kind) VALUES($1,$2,$3) RETURNING id\`,
+   const row=(await client.query<{id:string}>(`INSERT INTO workspaces(owner_user_id,name,kind) VALUES($1,$2,$3) RETURNING id`,
       [actor.id,parsed.data.name,parsed.data.kind])).rows[0]!;
-   await client.query(\`INSERT INTO workspace_members(workspace_id,user_id,role,status) VALUES($1,$2,'OWNER','ACTIVE')\`,[row.id,actor.id]);
+   await client.query(`INSERT INTO workspace_members(workspace_id,user_id,role,status) VALUES($1,$2,'OWNER','ACTIVE')`,[row.id,actor.id]);
    await client.query('COMMIT');
    return reply.code(201).send({id:row.id,name:parsed.data.name,kind:parsed.data.kind,baseCurrency:'KES',role:'OWNER'});
   }catch(error){await client.query('ROLLBACK').catch(()=>undefined);throw error;}
