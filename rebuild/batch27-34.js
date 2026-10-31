@@ -23,11 +23,11 @@ const defaults={
  {id:'b7',name:'Netflix',category:'Subscriptions',amount:1200,due:'2026-11-15',account:'KCB Main Account',status:'Upcoming',reminder:false,autopay:false,customer:'SUB-2340',period:'Nov 2026',previous:1200},
  {id:'b8',name:'Car Insurance',category:'Insurance',amount:18500,due:'2026-11-19',account:'KCB Main Account',status:'Upcoming',reminder:true,autopay:false,customer:'CAR-INS-789',period:'2026/2027',previous:17000}
  ],
- scenario:{incomeGrowth:5,expenseGrowth:3,horizon:6,buffer:100000,minimum:75000},
+ scenario:{incomeGrowth:5,expenseGrowth:3,horizon:12,buffer:100000,minimum:75000},
  shortfall:{completed:[],actions:[],target:150000,notes:''},
  paymentHistory:[], billDrafts:[], alerts:[],
 };
-let v={period:'Last 6 months',incomeType:'All Sources',incomeTab:'All Sources',incomeSearch:'',incomeDetail:null, billTab:'All Bills',billSearch:'',billFilter:'All',billId:'b1',billDetailTab:'Overview',paymentMode:'MPESA',cashTab:'Daily',forecastScenario:'Baseline',forecastHorizon:6,modal:null,notice:'',selectedDate:'2026-10-20',groupBy:'Monthly',recoveryTab:'All'};
+let v={period:'Last 6 months',incomeType:'All Sources',incomeTab:'All Sources',incomeSearch:'',incomeDetail:null, billTab:'All Bills',billSearch:'',billFilter:'All',billId:'b1',billDetailTab:'Overview',paymentMode:'MPESA',cashTab:'Daily',forecastScenario:'Baseline',forecastTab:'Forecast Overview',forecastHorizon:12,modal:null,notice:'',selectedDate:'2026-10-20',groupBy:'Monthly',recoveryTab:'All'};
 function init(bridge){
 ctx=bridge;
 if(!ctx.model.incomeFlowV2){ctx.model.incomeFlowV2=structuredClone(defaults);ctx.save()}
@@ -192,19 +192,58 @@ function scenarioControls(){
 const s=state().scenario;
 return '<form data-cfform="scenario" class="cf-form"><div class="cf-fields"><label class="cf-label">Income Growth (% per month)<input class="cfinput" name="incomeGrowth" type="number" min="-50" max="100" value="'+s.incomeGrowth+'" required></label><label class="cf-label">Expense Growth (% per month)<input class="cfinput" name="expenseGrowth" type="number" min="-50" max="100" value="'+s.expenseGrowth+'" required></label><label class="cf-label">Forecast horizon<select class="cf-select" name="horizon">'+[3,6,9,12].map(n=>'<option '+(s.horizon===n?'selected':'')+' value="'+n+'">'+n+' months</option>').join('')+'</select></label><label class="cf-label">Minimum Buffer (KES)<input class="cfinput" name="minimum" type="number" min="0" value="'+s.minimum+'"></label></div><button class="cf-btn green" type="submit">Recalculate Forecast</button></form>'
 }
+
+function cf33ForecastGraph(rows,mode='forecast'){
+const n=rows.length,vals=rows.map(x=>x.cash),peak=Math.max(...vals,1),low=Math.min(0,...vals),scale=peak-low,baseY=176;
+let svg='<svg viewBox="0 0 900 220" class="cf33-forecast-plot" role="img" aria-label="Monthly income, expenses and projected balance">';
+for(let i=0;i<5;i++){const y=20+i*39;svg+='<line x1="45" y1="'+y+'" x2="875" y2="'+y+'" stroke="#e9eff0"/><text x="2" y="'+(y+4)+'" font-size="12" fill="#477db4">'+Math.round((4-i)*peak/4/1000)+'K</text>'}
+let points=[];
+rows.forEach((r,i)=>{const x=70+i*(770/Math.max(1,n-1));const incomeHeight=Math.max(6,Math.min(105,90*r.income/Math.max(...rows.map(x=>x.income))));const expenseHeight=Math.max(6,Math.min(70,65*(r.expenses+r.obligations)/Math.max(...rows.map(x=>x.expenses+x.obligations))));
+svg+='<rect x="'+(x-13)+'" y="'+(baseY-incomeHeight)+'" width="12" height="'+incomeHeight+'" rx="2" fill="#34c38d"/><rect x="'+(x+1)+'" y="'+(baseY-expenseHeight)+'" width="12" height="'+expenseHeight+'" rx="2" fill="#ff576e"/>';
+const y=baseY-(r.cash-low)/Math.max(1,scale)*126;points.push([x,y]);svg+='<text x="'+(x-13)+'" y="205" font-size="11" fill="#456fa5">'+safe(r.month)+'</text>'});
+const d=points.map(([x,y],i)=>(i?'L':'M')+x+' '+y).join(' ');
+svg+='<path d="'+d+' L'+points.at(-1)[0]+' 176 L'+points[0][0]+' 176 Z" fill="#dcedff" opacity=".5"/>';
+svg+='<path d="'+d+'" stroke="#1676ff" stroke-width="3" fill="none"/>';
+for(const [x,y] of points)svg+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="#1676ff" stroke="#fff" stroke-width="2"/>';
+svg+='<line x1="96" y1="18" x2="96" y2="180" stroke="#5d9ffe" stroke-dasharray="5 5"/><rect x="68" y="1" width="59" height="20" rx="5" fill="#e4f1ff"/><text x="81" y="15" font-size="12" fill="#147aff">Today</text>';
+return svg+'</svg>'
+}
+function cf33RunwayGraph(rows){
+const peak=Math.max(...rows.map(r=>r.cash),1),n=rows.length;
+let points=rows.map((r,i)=>[28+i*392/Math.max(1,n-1),142-r.cash/peak*106]),path=points.map(([x,y],i)=>(i?'L':'M')+x+' '+y).join(' ');
+return '<svg viewBox="0 0 450 180" class="cf33-runway-plot" role="img" aria-label="Illustrative cash runway projection">'+
+[40,75,110,145].map(y=>'<line x1="20" y1="'+y+'" x2="435" y2="'+y+'" stroke="#e8f0ed"/>').join('')+
+'<path d="'+path+'L'+points.at(-1)[0]+' 145 L'+points[0][0]+' 145Z" fill="#d9f8e8" opacity=".75"/>'+
+'<path d="'+path+'" stroke="#26bd8c" stroke-width="2.5" fill="none"/>'+
+points.map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="2.5" fill="#12a875"/>').join('')+
+rows.map((r,i)=>'<text x="'+(28+i*392/Math.max(1,n-1)-14)+'" y="165" font-size="10" fill="#4476a5">'+safe(r.month)+'</text>').join('')+'</svg>'
+}
 function screen33(){
 const projections=forecastData(),last=projections.at(-1),low=Math.min(...projections.map(x=>x.cash)),breach=projections.filter(x=>x.cash<state().scenario.minimum);
-const base=ctx.model.accounts.slice(0,3).reduce((n,x)=>n+Number(x[1]),0);
-return shell(33,metric([['▣','Current Cash Position',money(base),'Manual personal accounts'],['▥','Projected Ending Balance',money(last.cash),'Selected horizon'],['✓','Runway Indicator',breach.length?'Needs attention':'Within buffer',breach.length+' forecast breaches'],['◈','Cash Flow Headroom',money(Math.max(0,low-state().scenario.minimum)),'Worst projected period']])+
-'<div class="cf-grid"><section class="cf-panel cf-col2"><div class="cf-head"><h2>Cash Flow Forecast (Next '+state().scenario.horizon+' Months)</h2>'+bc('Export Forecast','forecastExport')+'</div>'+graph('split',12)+'<div class="cf-legend">🟩 Projected inflow　🟥 Outflow　🟦 Ending balance</div></section>'+
-panel('Financial Runway Projection',graph('area',9)+mtext('Assumes all planned income arrives and obligations are paid.'))+
-panel('Projected Income & Expenses',table(['Month','Income','Expenses','Bills','Net','Cash Balance'],projections.map(x=>'<tr><td>'+safe(x.month)+'</td><td>'+money(x.income)+'</td><td>'+money(x.expenses)+'</td><td>'+money(x.obligations)+'</td><td>'+money(x.net)+'</td><td>'+money(x.cash)+'</td></tr>')))+
-panel('Forecast Scenarios',tabs(['Baseline','Conservative','Optimistic'],v.forecastScenario,'scenario')+scenarioControls())+
-panel('Runway & Risk Analysis',row('⚑','Months below cash buffer','Minimum '+money(state().scenario.minimum),breach.length+' months')+
-row('◷','Lowest projected balance','Across this scenario',money(low))+row('✓','Emergency Reserve Goal','Plan ahead',money(state().scenario.buffer))+nav('Recovery Plan',34,'green'))+
-panel('Cash Flow Distribution',donut([['Income',vals()],['Bills',outstanding()],['Expenses',monthExpenses()]],vals()+outstanding()+monthExpenses()))+
-panel('Upcoming Obligations',state().bills.filter(x=>x.status!=='Paid').slice(0,5).map(b=>row('▣',b.name,b.due,money(b.amount))).join(''))+
-panel('Financial Insights',alertPanelContent())+'</div>')}
+const base=ctx.model.accounts.slice(0,3).reduce((n,x)=>n+Number(x[1]),0),months=state().scenario.horizon;
+const monthlyGoal=Math.max(0,vals()-monthExpenses()-monthDue());
+const scenarioCards=[['Conservative',Math.round(low*.67),'−20% income, +10% expenses'],['Current Plan',last.cash,'Based on saved assumptions'],['Optimistic',Math.round(last.cash*1.26),'+20% income, −10% expenses']];
+return shell(33,metric([['▣','Current Cash Position',money(base),'Manual personal accounts'],['▥','Projected Ending Balance',money(last.cash),'Next '+months+' months'],['✓','Estimated Runway',breach.length?breach.length+' risk periods':months+'+ months','Illustrative'],['◈','Monthly Savings Potential',money(monthlyGoal),'Based on current local entries']])+
+'<div class="cf33-toolbar">'+tabs(['Forecast Overview','Scenario Analysis','Income & Expenses','Runway Analysis','Key Assumptions'],v.forecastTab||'Forecast Overview','forecastTab')+
+'<div class="cf33-tools">'+bc('Filters','cashToday')+bc('＋ Adjust Forecast','forecastAdjust','green')+'</div></div>'+
+'<div class="cf33-lead">'+
+panel('Cash Flow Forecast ('+months+' Months)',cf33ForecastGraph(projections)+
+'<div class="cf33-legend"><span>🟩 Income</span><span>🟥 Expenses</span><span>🔵 Projected Balance</span><span>◻ Forecast Range (Illustrative)</span></div>',bc('Export Forecast','forecastExport'))+
+panel('Financial Runway Projection',cf33RunwayGraph(projections)+
+'<div class="cf33-runway-callout"><b>At your current plan, projected cash is '+money(last.cash)+'</b><small>Forecast assumes planned income arrives and liabilities are recorded.</small></div>')+
+'</div><div class="cf33-bottom">'+
+'<div class="cf33-column">'+
+panel('Forecasted Income & Expenses',table(['Month','Income','Expenses','Net','Projected Balance'],projections.map(x=>'<tr><td>'+safe(x.month)+'</td><td>'+money(x.income)+'</td><td>'+money(x.expenses+x.obligations)+'</td><td style="color:#007d60">'+money(x.net)+'</td><td>'+money(x.cash)+'</td></tr>')))+
+panel('Monthly Cash Flow Breakdown (Average)',donut([['Income',vals()],['Bills',outstanding()],['Expenses',monthExpenses()]],vals()+outstanding()+monthExpenses()))+
+'</div><div class="cf33-column">'+
+panel('Scenario Analysis',tabs(['Conservative','Current Plan','Optimistic'],v.forecastScenario==='Baseline'?'Current Plan':v.forecastScenario,'scenario')+
+'<div class="cf33-scenarios">'+scenarioCards.map((x,i)=>'<div class="'+(i===1?'selected':'')+'"><b>'+x[0]+'</b><small>'+x[2]+'</small><strong>'+money(x[1])+'</strong><div class="cf33-scenario-track"><i style="width:'+(i===0?33:i===1?68:93)+'%"></i></div></div>').join('')+'</div>')+
+panel('Top Cash Flow Drivers',state().incomes.slice(0,5).map(x=>row('↗',x.name,x.category,money(x.amount))).join(''))+
+'</div><div class="cf33-column">'+
+panel('Key Assumptions',scenarioControls())+
+panel('Recommendations',alertPanelContent()+nav('Recovery Plan',34,'green'))+
+'</div></div>');
+}
 function screen34(){
 const projections=forecastData(),low=Math.min(...projections.map(x=>x.cash)),shortfall=Math.max(0,state().scenario.minimum-low),rec=state().shortfall;
 const tasks=[
@@ -264,6 +303,7 @@ switch(name){
    else if(key==='billTab'){v.billTab=val;v.billFilter=['All Bills','Recurring','One-off','Insurance','Taxes'].includes(val)?'All':val}
    else if(key==='billDetailTab')v.billDetailTab=val;
    else if(key==='cashTab')v.cashTab=val;
+   else if(key==='forecastTab')v.forecastTab=val;
    else if(key==='scenario'){v.forecastScenario=val;const growth={Baseline:[5,3],Conservative:[-8,7],Optimistic:[12,2]};let g=growth[val]||[5,3];state().scenario.incomeGrowth=g[0];state().scenario.expenseGrowth=g[1]}
    save();break}
  case 'income':v.incomeDetail=arg;v.modal='income';save();break;
@@ -280,6 +320,7 @@ switch(name){
  case 'billExport':download('finance-os-bills-demo.csv',['Bill','Category','Amount','Due','Status'],state().bills.map(b=>[b.name,b.category,b.amount,b.due,b.status]));save('Bill summary CSV exported.');break;
  case 'forecastExport':download('finance-os-cash-forecast-demo.csv',['Month','Income','Expenses','Bills','Net','Projected Cash'],forecastData().map(x=>[x.month,x.income,x.expenses,x.obligations,x.net,x.cash]));save('Forecast CSV exported.');break;
  case 'calendarDay':v.selectedDate='2026-10-'+String(arg).padStart(2,'0');save('Selected '+v.selectedDate+' on payment calendar.');break;
+ case 'forecastAdjust':v.forecastTab='Key Assumptions';save('Edit forecast assumptions in the Key Assumptions panel.');break;
  case 'cashPrev':case 'cashNext':case 'cashToday':save('Timeline view updated; reference chart uses illustrative month data.');break;
  case 'period':save('This reference view displays a representative multi-month scenario.');break;
  case 'closeModal':v.modal=null;save();break;
