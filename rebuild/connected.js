@@ -43,7 +43,7 @@ const asMinor=input=>{
 const random=()=>crypto.randomUUID()+'-'+crypto.randomUUID();
 let apiBase=null,token='',identity=null,provider=null,workspaces=[],workspaceId='',busy=false,notice='',error='';
 let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
-let selectedAccount='',selectedTransaction='',selectedBill='',lastEval=null,lastCheck=null,b3LoadedFor='',loadFailed=false;
+let selectedAccount='',selectedTransaction='',selectedBill='',lastEval=null,lastCheck=null,b3LoadedFor='',loadFailed=false,billHistory=null;
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -106,12 +106,19 @@ async function refresh(){
     cashflow:b3Active?result[15]:data.cashflow||null,
     history:b3Active?result[16]:data.history||null,
     shortfalls:b3Active?result[17]:data.shortfalls||null};
-   if(b3Active)b3LoadedFor=workspaceId;
+   if(b3Active){
+    b3LoadedFor=workspaceId;
+    billHistory=null;
+    if(screen()===31){
+     selectedBill=data.bills.some(b=>b.id===selectedBill)?selectedBill:(data.bills[0]?.id||'');
+     if(selectedBill)billHistory=await request(path('/bills/'+encodeURIComponent(selectedBill)));
+    }
+   }
    selectedAccount=data.accounts.some(a=>a.id===selectedAccount)?selectedAccount:(data.accounts[0]?.id||'');
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
   }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   error='';loadFailed=false;
- }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{location.hash='screen/'+n;window.scrollTo(0,0);draw();};
@@ -455,6 +462,17 @@ function billsScreen(){
  '<button type="submit">Add unpaid obligation</button></form>')+
  (cats.length?'':card('Expense category required',btn('Create an expense category',12)));
 }
+async function loadSelectedBill(){
+ if(!token||!workspaceId||!selectedBill||!apiBase)return;
+ const target=selectedBill;
+ billHistory=null;
+ try{
+  const details=await request(path('/bills/'+encodeURIComponent(target)));
+  if(target===selectedBill){billHistory=details;error='';draw();}
+ }catch(ex){
+  if(target===selectedBill){billHistory=null;error=String(ex.message||ex);draw();}
+ }
+}
 function billDetailScreen(){
  const bills=data.bills||[];
  if(!bills.length)return card('Obligation details', '<p>Create a bill to view expected dues and link manually posted evidence.</p>'+btn('Add a bill',30));
@@ -484,7 +502,16 @@ function billDetailScreen(){
    select('Matching manually POSTED expense','manualTransactionId',eligible.map(t=>[t.id,t.description+' · '+money(-t.amountMinor)]))+
    '<button type="submit">Link manual record (unverified)</button></form>':
    '<p>Requires an unrecorded due occurrence and a matching POSTED expense visible in your most recent 100 transactions.</p>')+
-   btn('Record a manual expense',12));
+   btn('Record a manual expense',12))+
+ card('Recorded settlement evidence history',
+  billHistory?.bill?.id===bill.id?
+   (billHistory.settlements?.length?
+    '<div class="connected-table"><table><thead><tr><th>Due date</th><th>Record status</th><th>Linked</th><th>Evidence</th></tr></thead><tbody>'+
+    billHistory.settlements.map(e=>'<tr><td>'+esc(e.dueOn)+'</td><td>'+esc(e.status)+'</td>'+
+     '<td>'+esc(String(e.linkedAt).slice(0,10))+'</td><td>'+esc(e.paymentEvidence)+'</td></tr>').join('')+
+    '</tbody></table></div>':
+    '<p>No manually recorded settlement history for this obligation.</p>'):
+   '<p>Loading authoritative settlement history…</p>');
 }
 function cashflowHistoryScreen(){
  const history=data.history;
@@ -722,7 +749,7 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
  }
@@ -795,10 +822,10 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;lastEval=null;lastCheck=null;b3LoadedFor='';data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
- if(t.name==='selectedBill'){selectedBill=t.value;draw();}
+ if(t.name==='selectedBill'){selectedBill=t.value;billHistory=null;draw();void loadSelectedBill();}
 });
 window.addEventListener('hashchange',()=>{
  // Invalidate cached planning data whenever the user leaves B3, as B1/B2 postings
@@ -807,6 +834,8 @@ window.addEventListener('hashchange',()=>{
  if(!active)b3LoadedFor='';
  draw();
  if(token&&workspaceId&&active&&b3LoadedFor!==workspaceId&&!busy)void refresh();
+ else if(token&&workspaceId&&active&&screen()===31&&selectedBill&&billHistory?.bill?.id!==selectedBill&&!busy)
+  void loadSelectedBill();
 });
 (async()=>{await initConfig();if(apiBase)try{await finishOidc();}catch(ex){error=String(ex.message||ex);}draw();})();
 })();
