@@ -129,4 +129,27 @@ CREATE POLICY b2_approval_decision ON approval_requests FOR UPDATE
   EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=app.current_workspace_id()
     AND m.user_id=app.current_actor_id() AND m.status='ACTIVE' AND m.role IN ('OWNER','ADMIN')));
 
+-- Govern disabling a guardrail without mutating its past policy definition.
+CREATE OR REPLACE FUNCTION app.b2_guardrail_lifecycle() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $
+BEGIN
+ IF OLD.active<>true OR NEW.active<>false OR NEW.version<>OLD.version+1 OR
+    NEW.workspace_id<>OLD.workspace_id OR NEW.id<>OLD.id OR
+    NEW.name<>OLD.name OR NEW.kind<>OLD.kind OR NEW.conditions<>OLD.conditions OR
+    NEW.action<>OLD.action OR NEW.created_at<>OLD.created_at THEN
+  RAISE EXCEPTION 'Guardrail policy is immutable except one-time deactivation'
+   USING ERRCODE='23514';
+ END IF;
+ RETURN NEW;
+END $;
+CREATE TRIGGER b2_guardrail_lifecycle BEFORE UPDATE ON spending_guardrails
+FOR EACH ROW EXECUTE FUNCTION app.b2_guardrail_lifecycle();
+CREATE POLICY b2_guardrail_deactivate ON spending_guardrails FOR UPDATE
+ USING (workspace_id=app.current_workspace_id() AND active=true AND EXISTS(
+  SELECT 1 FROM workspace_members m WHERE m.workspace_id=app.current_workspace_id()
+   AND m.user_id=app.current_actor_id() AND m.status='ACTIVE' AND m.role IN ('OWNER','ADMIN')))
+ WITH CHECK(workspace_id=app.current_workspace_id() AND active=false AND EXISTS(
+  SELECT 1 FROM workspace_members m WHERE m.workspace_id=app.current_workspace_id()
+   AND m.user_id=app.current_actor_id() AND m.status='ACTIVE' AND m.role IN ('OWNER','ADMIN')));
+
 -- Financial role never gains DELETE, ledger bypass, payment or member management privileges.
