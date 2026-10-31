@@ -192,6 +192,21 @@ export function installB2Routes(app:FastifyInstance,finance:pg.Pool,identity:Ide
    return (await readBudgets(db,wid,id))[0]!;
   });return reply.code('replayed' in result?200:201).send(result);
  });
+ app.post('/v1/workspaces/:workspaceId/budgets/:budgetId/archive',async(request,reply)=>{
+  const {workspaceId:wid,budgetId}=params(request),id=parse(uuid,budgetId),key=headerIdempotency(request);
+  const result=await scopedB2(request,'write',async(db,actor)=>{
+   const idem=await reserve(db,wid,key,'budget.archive',{id});
+   if(!idem.fresh){const old=await readBudgets(db,wid,idem.resultId!);
+    if(!old[0])throw new DomainError(409,'REPLAY_MISSING','Budget missing');
+    return {...old[0],replayed:true};}
+   const changed=await db.query(`UPDATE budgets SET status='ARCHIVED',version=version+1
+     WHERE workspace_id=$1 AND id=$2 AND status='ACTIVE' RETURNING id`,[wid,id]);
+   if(!changed.rowCount)throw new DomainError(409,'BUDGET_STATE','Only an ACTIVE budget can be archived');
+   await audit(db,wid,actor,'budget.archived','budget',id,request);
+   await finish(db,idem.id,id);
+   return (await readBudgets(db,wid,id))[0]!;
+  });return reply.code('replayed' in result?200:201).send(result);
+ });
  app.get('/v1/workspaces/:workspaceId/spending/insights',async(request)=>{
   const q=request.query as {months?:string};
   const months=Number(q?.months??6);
@@ -222,6 +237,20 @@ export function installB2Routes(app:FastifyInstance,finance:pg.Pool,identity:Ide
    return (await readRules(db,wid)).find(r=>r.id===row.id)!;
   });return reply.code('replayed' in result?200:201).send(result);
  });
+ app.post('/v1/workspaces/:workspaceId/spending/guardrails/:guardrailId/deactivate',async(request,reply)=>{
+  const wid=params(request).workspaceId,id=parse(uuid,(request.params as {guardrailId:string}).guardrailId);
+  const key=headerIdempotency(request);
+  const result=await scopedB2(request,'write',async(db,actor)=>{
+   const idem=await reserve(db,wid,key,'guardrail.deactivate',{id});
+   if(!idem.fresh)return {id,active:false,replayed:true};
+   const changed=await db.query(`UPDATE spending_guardrails SET active=false,version=version+1
+     WHERE workspace_id=$1 AND id=$2 AND active=true RETURNING id,version`,[wid,id]);
+   if(!changed.rowCount)throw new DomainError(409,'GUARDRAIL_STATE','Guardrail must be active and actor must be owner/admin');
+   await audit(db,wid,actor,'guardrail.deactivated','spending_guardrail',id,request);
+   await finish(db,idem.id,id);
+   return {id,active:false,version:changed.rows[0]!.version};
+  });return reply.code('replayed' in result?200:201).send(result);
+ });
  app.post('/v1/workspaces/:workspaceId/spending/purchase-checks',async(request)=>{
   const body=parse(purchaseSchema,request.body);
   return scopedB2(request,'read',async db=>{
@@ -229,7 +258,10 @@ export function installB2Routes(app:FastifyInstance,finance:pg.Pool,identity:Ide
    const valid=await db.query(`SELECT id FROM financial_categories WHERE workspace_id=$1 AND kind='EXPENSE' AND id=$2`,
     [wid,body.categoryId]);
    if(!valid.rowCount)throw new DomainError(422,'INVALID_CATEGORY','Expense category does not belong to the workspace');
-   const matches=matchingRules(await readRules(db,wid),body);
+   const rules=await readRules(db,wid);
+   if(rules.some(r=>!['AMOUNT','CATEGORY'].includes(r.kind)&&['BLOCK','REQUIRE_APPROVAL'].includes(r.action)))
+    throw new DomainError(409,'UNSUPPORTED_ACTIVE_POLICY','Workspace has an unevaluable legacy policy. Resolve it before posting.');
+   const matches=matchingRules(rules,body);
    const budgets=await readBudgets(db,wid);
    const flags=budgets.filter(b=>b.status==='ACTIVE'&&b.currency===body.currency&&
      b.startsOn<=new Date().toISOString().slice(0,10)&&b.endsOn>=new Date().toISOString().slice(0,10))
