@@ -67,7 +67,7 @@
 .fo-priority-42 .fo-series-legend span,.fo-priority-29 .fo-series-legend span{display:flex;align-items:center;gap:5px;white-space:nowrap}
 .fo-priority-42 .fo-series-legend i,.fo-priority-29 .fo-series-legend i{width:9px;height:9px;border-radius:3px;background:var(--fo-color);display:inline-block}
 .fo-priority-29 .cf-grid{grid-template-columns:minmax(0,1.9fr) minmax(0,.82fr) minmax(0,.90fr);grid-template-areas:"forecast summary scenarios" "sources sources growth" "monthly mix insights" "gap gap gap";gap:10px;align-items:stretch}
-.fo-priority-29 .cf-grid>[data-fo-section]{grid-area:var(--fo-area);grid-column:auto;grid-row:auto}
+.fo-priority-29 .cf-grid>[data-fo-section]{grid-area:var(--fo-area);min-width:0}
 .fo-priority-29 [data-fo-section="forecast"]{--fo-area:forecast}
 .fo-priority-29 [data-fo-section="summary"]{--fo-area:summary}
 .fo-priority-29 [data-fo-section="scenarios"]{--fo-area:scenarios}
