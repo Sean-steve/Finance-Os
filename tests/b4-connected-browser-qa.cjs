@@ -88,7 +88,13 @@ async function main(){
   await page.locator('form[data-form=b4-scenario] input[name=monthlyIncome]').fill('100');
   await page.locator('form[data-form=b4-scenario] input[name=monthlyExpense]').fill('80');
   await page.locator('form[data-form=b4-scenario] button[type=submit]').click();
-  await page.getByText('Hypothetical end cash:').first().waitFor({timeout:10000});
+  try{await page.getByText('Hypothetical end cash:').first().waitFor({timeout:10000});}
+  catch(e){
+    console.error('B4 scenario after submit: '+JSON.stringify({
+      main:(await page.locator('main').innerText()).slice(0,5000),
+      errors,route:page.url(),saved:state.scenarios.length}));
+    throw e;
+  }
   assert.deepEqual(errors,[],'Authenticated B4 views should not throw runtime errors');
   assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[],'No finance state in localStorage');
   await page.setViewportSize({width:390,height:844});
