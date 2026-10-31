@@ -68,7 +68,7 @@ async function initConfig(){
 }
 async function request(path,authenticated=true,options={}){
  if(!apiBase)throw new Error('Finance API is unconfigured.');
- const response=await fetch(apiBase+path,{method:options.method||'GET',cache:'no-store',
+ const response=await fetch(apiBase+path,{method:options.method||'GET',cache:'no-store',credentials:'omit',
   headers:{'Accept':'application/json',...(options.body!==undefined?{'Content-Type':'application/json','Idempotency-Key':random()}:{}),
    ...(authenticated&&token?{'Authorization':'Bearer '+token}:{})},...(options.body===undefined?{}:{body:JSON.stringify(options.body)})});
  let body={};
