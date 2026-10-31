@@ -217,8 +217,8 @@ export function installFinanceRoutes(app:FastifyInstance,finance:pg.Pool,auth:pg
    const sh=hash(JSON.stringify(body.rows));
    const batch=await db.query<{id:string}>(`INSERT INTO import_batches(workspace_id,financial_account_id,source_sha256,status)
        VALUES($1,$2,$3,'STAGED') ON CONFLICT(workspace_id,financial_account_id,source_sha256)
-       DO UPDATE SET status=import_batches.status RETURNING id`,[wid,body.financialAccountId,sh]);
-   const id=batch.rows[0]!.id;
+       DO NOTHING RETURNING id`,[wid,body.financialAccountId,sh]);
+   const id=batch.rows[0]?.id ?? (await db.query<{id:string}>(`SELECT id FROM import_batches WHERE workspace_id=$1 AND financial_account_id=$2 AND source_sha256=$3`,[wid,body.financialAccountId,sh])).rows[0]!.id;
    for(const row of body.rows){
     const fingerprint=hash(JSON.stringify(row));
     await db.query(`INSERT INTO import_rows(workspace_id,batch_id,row_fingerprint,transaction_on,description,
