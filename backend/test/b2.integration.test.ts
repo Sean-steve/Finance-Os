@@ -127,6 +127,19 @@ test('B2: immutable budgets, real manual spending, effective guardrails and inde
   assert.equal(reversed.statusCode,201,reversed.body);
   const net=(await ask('GET',prefix+'/budgets',token)).json().items.find(x=>x.id===created.json().id);
   assert.equal(net.allocations[0].spentMinor,4500,'Reversal must reduce budget usage without editing the original ledger');
+  // Recovery paths must not permanently lock the workspace after an accidental policy.
+  const disable=await ask('POST',prefix+'/spending/guardrails/'+block.json().id+'/deactivate',token,undefined,key());
+  assert.equal(disable.statusCode,201,disable.body);assert.equal(disable.json().active,false);
+  const afterDisable=await ask('POST',prefix+'/spending/purchase-checks',token,{...purchase,amountMinor:200000});
+  assert.equal(afterDisable.statusCode,200,afterDisable.body);
+  assert.equal(afterDisable.json().decision,'APPROVAL_REQUIRED','Disabling BLOCK must leave independent approval policy intact');
+  assert.equal((await ask('POST',prefix+'/spending/guardrails/'+block.json().id+'/deactivate',token,undefined,key())).statusCode,409);
+  const archive=await ask('POST',prefix+'/budgets/'+created.json().id+'/archive',token,undefined,key());
+  assert.equal(archive.statusCode,201,archive.body);
+  assert.equal(archive.json().status,'ARCHIVED');assert.equal(archive.json().version,3);
+  const nowActivate=await ask('POST',prefix+'/budgets/'+another.json().id+'/activate',token,undefined,key());
+  assert.equal(nowActivate.statusCode,201,nowActivate.body);
+  assert.equal(nowActivate.json().status,'ACTIVE');
   const other=await ask('GET','/v1/workspaces/'+b.workspace.id+'/budgets',token);
   assert.equal(other.statusCode,404,'RLS/membership denies cross-tenant budgets');
   const readDenied=await ask('GET','/v1/workspaces/'+b.workspace.id+'/spending/insights',token);
