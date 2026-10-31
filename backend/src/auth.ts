@@ -1,10 +1,11 @@
 import { randomBytes, createHash, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
-import { promisify } from 'node:util';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type pg from 'pg';
 import { z } from 'zod';
 
-const scrypt=promisify(scryptCallback);
+const derive=(password:string,salt:Buffer)=>new Promise<Buffer>((resolve,reject)=>
+  scryptCallback(password,salt,64,passwordOptions,(err,key)=>err?reject(err):resolve(key as Buffer)));
+
 const sha256=(value:string)=>createHash('sha256').update(value).digest('hex');
 const token=()=> 'f1_'+randomBytes(32).toString('base64url');
 const SESSION_HOURS=8;
@@ -19,7 +20,7 @@ const normalizeEmail=(email:string)=>email.trim().toLowerCase();
 const passwordOptions={N:32768,r:8,p:1,maxmem:64*1024*1024};
 export async function hashPassword(password:string):Promise<string>{
  const salt=randomBytes(16).toString('base64url');
- const digest=await scrypt(password,Buffer.from(salt,'base64url'),64,passwordOptions) as Buffer;
+ const digest=await derive(password,Buffer.from(salt,'base64url'));
  return 'scrypt$32768$8$1$'+salt+'$'+digest.toString('base64url');
 }
 async function verifyPassword(password:string,verifier:string):Promise<boolean>{
@@ -27,7 +28,7 @@ async function verifyPassword(password:string,verifier:string):Promise<boolean>{
  if(parts.length!==6||parts[0]!=='scrypt'||parts[1]!=='32768'||parts[2]!=='8'||parts[3]!=='1')return false;
  const expected=Buffer.from(parts[5]??'','base64url');
  if(expected.length!==64)return false;
- const actual=await scrypt(password,Buffer.from(parts[4]??'','base64url'),64,passwordOptions) as Buffer;
+ const actual=await derive(password,Buffer.from(parts[4]??'','base64url'));
  return timingSafeEqual(expected,actual);
 }
 const dummyPromise=hashPassword('unavailable-account-placeholder-not-secret');
