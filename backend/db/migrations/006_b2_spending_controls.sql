@@ -131,7 +131,7 @@ CREATE POLICY b2_approval_decision ON approval_requests FOR UPDATE
 
 -- Govern disabling a guardrail without mutating its past policy definition.
 CREATE OR REPLACE FUNCTION app.b2_guardrail_lifecycle() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $b2guard$
 BEGIN
  IF OLD.active<>true OR NEW.active<>false OR NEW.version<>OLD.version+1 OR
     NEW.workspace_id<>OLD.workspace_id OR NEW.id<>OLD.id OR
@@ -141,7 +141,7 @@ BEGIN
    USING ERRCODE='23514';
  END IF;
  RETURN NEW;
-END $;
+END $b2guard$;
 CREATE TRIGGER b2_guardrail_lifecycle BEFORE UPDATE ON spending_guardrails
 FOR EACH ROW EXECUTE FUNCTION app.b2_guardrail_lifecycle();
 CREATE POLICY b2_guardrail_deactivate ON spending_guardrails FOR UPDATE
