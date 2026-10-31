@@ -104,13 +104,16 @@ BEGIN
     NEW.created_by<>OLD.created_by THEN
   RAISE EXCEPTION 'Planning record economics are immutable' USING ERRCODE='23514';
  END IF;
- IF TG_TABLE_NAME='money_buckets' AND (NEW.purpose<>OLD.purpose OR NEW.priority<>OLD.priority) THEN
-  RAISE EXCEPTION 'Bucket definition immutable' USING ERRCODE='23514';
- ELSIF TG_TABLE_NAME='savings_goals' AND
-  (NEW.kind<>OLD.kind OR NEW.target_minor<>OLD.target_minor OR
+ IF TG_TABLE_NAME='money_buckets' THEN
+  IF NEW.purpose<>OLD.purpose OR NEW.priority<>OLD.priority THEN
+   RAISE EXCEPTION 'Bucket definition immutable' USING ERRCODE='23514';
+  END IF;
+ ELSE
+  IF NEW.kind<>OLD.kind OR NEW.target_minor<>OLD.target_minor OR
    NEW.monthly_essential_minor IS DISTINCT FROM OLD.monthly_essential_minor OR
-   NEW.due_on IS DISTINCT FROM OLD.due_on) THEN
-  RAISE EXCEPTION 'Goal definition immutable' USING ERRCODE='23514';
+   NEW.due_on IS DISTINCT FROM OLD.due_on THEN
+   RAISE EXCEPTION 'Goal definition immutable' USING ERRCODE='23514';
+  END IF;
  END IF;
  IF TG_TABLE_NAME='money_buckets' THEN
    IF (SELECT COALESCE(SUM(amount_minor),0) FROM capital_allocations
