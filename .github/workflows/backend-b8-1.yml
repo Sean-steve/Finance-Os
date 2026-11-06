@@ -1,0 +1,135 @@
+name: Finance OS B8.1 — Dedicated Staging Packaging, PostgreSQL & Evidence Gate
+on:
+  workflow_dispatch:
+    inputs:
+      probe_live_staging:
+        description: 'Run read-only HTTPS OIDC/API probe against operator-provisioned staging'
+        required: false
+        type: boolean
+        default: false
+      stage_ui_origin:
+        required: false
+        type: string
+      stage_api_origin:
+        required: false
+        type: string
+      stage_idp_issuer:
+        required: false
+        type: string
+      stage_release_sha:
+        required: false
+        type: string
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'docs/backend/B8_1_*'
+      - '.github/workflows/backend-b8-1.yml'
+  push:
+    branches: [main, 'phase-b8-1*']
+    paths:
+      - 'backend/**'
+      - 'docs/backend/B8_1_*'
+      - '.github/workflows/backend-b8-1.yml'
+permissions:
+  contents: read
+jobs:
+  staging-packaging:
+    name: Validate staging isolation and build API/SPA images — no live deployment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Locked dependencies, TypeScript and staging security contracts
+        run: |
+          npm ci --prefix backend --no-audit --no-fund
+          npm --prefix backend run build
+          npm --prefix backend run contract:check
+          npm --prefix backend run test:staging
+          node tests/connected-contract.cjs
+      - name: A real environment cannot pass without operator evidence
+        run: |
+          npm --prefix backend run release:gate -- --assert-blocked
+      - name: Validate staging Docker Compose wiring with disposable config
+        run: |
+          printf '%s\n' 'NODE_ENV=production' 'LOCAL_AUTH_ENABLED=false' > /tmp/finance-stage-ci.env
+          printf '%s\n' '{"apiBase":"https://api.stage.finance.example.org"}' > /tmp/finance-stage-ci-config.json
+          FINANCE_STAGE_API_ENV_FILE=/tmp/finance-stage-ci.env \
+          FINANCE_STAGE_WEB_CONFIG_FILE=/tmp/finance-stage-ci-config.json \
+          FINANCE_STAGE_API_ORIGIN=https://api.stage.finance.example.org \
+          FINANCE_STAGE_IDP_ISSUER=https://id.stage.finance.example.org/realms/finance \
+          docker compose -f backend/deploy/staging.compose.yaml config --quiet
+      - name: Build standalone restricted staging API image
+        run: docker build -f backend/deploy/api.Dockerfile -t finance-os-api:ci .
+      - name: Build isolated authenticated staging web image
+        run: docker build -f backend/deploy/web.Dockerfile -t finance-os-web:ci .
+
+  disposable-stage-database:
+    name: PostgreSQL 17 dedicated staging-style DB role, RLS and checksum tests — CI only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: finance_migrator
+          POSTGRES_PASSWORD: ci-migrator-only
+          POSTGRES_DB: finance_os_staging
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U finance_migrator -d finance_os_staging"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      MIGRATION_DATABASE_URL: postgresql://finance_migrator:ci-migrator-only@127.0.0.1:5432/finance_os_staging
+      TEST_APP_DATABASE_URL: postgresql://finance_app:ci-app-only@127.0.0.1:5432/finance_os_staging
+      TEST_AUTH_DATABASE_URL: postgresql://finance_auth:ci-auth-only@127.0.0.1:5432/finance_os_staging
+      PGPASSWORD: ci-migrator-only
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Locked install and verified forward-only migrations
+        run: |
+          npm ci --prefix backend --no-audit --no-fund
+          npm --prefix backend run migrate
+          npm --prefix backend run migrate
+      - name: Provision distinct local CI app/auth roles
+        run: |
+          psql -h 127.0.0.1 -U finance_migrator -d finance_os_staging \
+            -v app_password="ci-app-only" -v auth_password="ci-auth-only" \
+            -f backend/scripts/provision-app-role.sql
+      - name: Independently verify staging-style DB checksums, FORCE RLS and role limits
+        run: npm --prefix backend run test:staging:db
+      - name: Re-run real B8 cross-module finance integrity against dedicated staging-style DB
+        run: npm --prefix backend run test:b8
+      - name: Certify that stage DB cannot be misrepresented as hosted production
+        run: npm --prefix backend run release:gate -- --assert-blocked
+
+  live-operator-probe:
+    name: Operator-initiated HTTPS staging reachability probe only
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.probe_live_staging }}
+    environment: finance-os-staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      NODE_ENV: production
+      LOCAL_AUTH_ENABLED: 'false'
+      FINANCE_STAGE_UI_ORIGIN: ${{ inputs.stage_ui_origin }}
+      FINANCE_STAGE_API_ORIGIN: ${{ inputs.stage_api_origin }}
+      FINANCE_STAGE_IDP_ISSUER: ${{ inputs.stage_idp_issuer }}
+      FINANCE_STAGE_RELEASE_SHA: ${{ inputs.stage_release_sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read-only HTTPS API, OIDC and staging UI probe (never claim real MFA enrollment)
+        run: node backend/scripts/staging-readiness.mjs --probe
