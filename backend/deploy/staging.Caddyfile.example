@@ -1,0 +1,13 @@
+# Run on the staging host only after replacing BOTH sample domain names.
+# DNS A/AAAA, trusted HTTPS certificates, upstream health and firewall are operator prerequisites.
+# Caddy auto-TLS terminates HTTPS; containers serve HTTP on loopback only.
+api.stage.YOUR_DOMAIN {
+  encode zstd gzip
+  header Strict-Transport-Security "max-age=31536000"
+  reverse_proxy 127.0.0.1:3101
+}
+finance.stage.YOUR_DOMAIN {
+  encode zstd gzip
+  header Strict-Transport-Security "max-age=31536000"
+  reverse_proxy 127.0.0.1:8080
+}
