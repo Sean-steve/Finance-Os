@@ -11,7 +11,7 @@ test('B8.1 dedicated disposable staging-style PostgreSQL 17 validates checksum, 
   const report=await certifyStagingDatabase(db,'finance_os_staging');
   assert.equal(report.status,'STAGING_DB_INTERNAL_CHECKS_PASS',JSON.stringify(report));
   assert.equal(report.failures.length,0);
-  assert.equal(report.checks.length,5);
+  assert.equal(report.checks.length,6);
   assert.equal(report.customerRecordsRead,false);
   assert.equal(report.providerReconciliationVerified,false);
   assert.equal(report.productionReady,false);
