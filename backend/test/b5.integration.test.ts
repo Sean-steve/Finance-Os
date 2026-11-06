@@ -83,10 +83,12 @@ test('B5: all five domains, no false provider authority, idempotency, tenant and
     description:'Manually recorded repayment'},key());
   assert.equal(expense.statusCode,201,expense.body);
   const expenseId=expense.json().id;
-  const before=(await ask('GET',base+'/ledger/summary',t)).json();
+  const beforeDebtLink=(await ask('GET',base+'/ledger/summary',t)).json();
   const paymentBody={manualTransactionId:expenseId,amountMinor:150000};
   const payment=await ask('POST',base+'/debts/'+debtId+'/payments',t,paymentBody,key());
   assert.equal(payment.statusCode,201,payment.body);
+  const afterDebtLink=(await ask('GET',base+'/ledger/summary',t)).json();
+  assert.deepEqual(afterDebtLink.accounts,beforeDebtLink.accounts,'Debt reference must not create a financial posting');
   assert.equal((await ask('GET',base+'/debts',t)).json().items[0].estimatedOutstandingMinor,1850000);
   assert.equal((await ask('POST',base+'/tax/obligations/'+taxId+'/payments',t,
    {manualTransactionId:expenseId,amountMinor:50000},key())).statusCode,409,
@@ -99,6 +101,7 @@ test('B5: all five domains, no false provider authority, idempotency, tenant and
    {...txPayload,categoryId:expenseCat.json().id,kind:'EXPENSE',amountMinor:120000,
     description:'Manually recorded tax payment'},key());
   assert.equal(expense2.statusCode,201,expense2.body);
+  const before=(await ask('GET',base+'/ledger/summary',t)).json();
   const linked=await ask('POST',base+'/tax/obligations/'+taxId+'/payments',t,
    {manualTransactionId:expense2.json().id,amountMinor:100000},key());
   assert.equal(linked.statusCode,201,linked.body);
