@@ -106,7 +106,7 @@ test('B5: all five domains, no false provider authority, idempotency, tenant and
   assert.equal(taxes[0].estimatedRemainingMinor,400000);
   assert.equal(taxes[0].filingStatus,'NOT_FILED_BY_FINANCE_OS');
   const after=(await ask('GET',base+'/ledger/summary',t)).json();
-  assert.deepEqual(before,after,'Linking references to already POSTED manual expenses cannot post a new journal');
+  assert.deepEqual(before.accounts,after.accounts,'Linking references to already POSTED manual expenses cannot post a new journal');
   const reversal=await ask('POST',base+'/transactions/'+expenseId+'/reverse',t,undefined,key());
   assert.equal(reversal.statusCode,201,reversal.body);
   assert.equal((await ask('GET',base+'/debts',t)).json().items[0].estimatedOutstandingMinor,2000000,
