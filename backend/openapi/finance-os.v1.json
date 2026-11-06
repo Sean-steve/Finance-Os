@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Finance OS API",
-    "version": "0.7.0",
-    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability. B5 implements owner-private estate readiness, user-recorded debt and tax estimates with linked POSTED manual expenses, unverified insurance records and nominal retirement scenarios. No lending payment, tax filing, cover verification, legal document or asset execution. B6 adds workspace-scoped unverified manual asset, investment, liability and valuation records and a current estimated KES net worth: manually POSTED cash plus latest user estimates minus B5 linked-debt estimates, overdrafts and non-loan liabilities. No live market, automatic trade, double-counted virtual capital, historical returns, or verified net-worth claim."
+    "version": "0.8.0",
+    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability. B5 implements owner-private estate readiness, user-recorded debt and tax estimates with linked POSTED manual expenses, unverified insurance records and nominal retirement scenarios. No lending payment, tax filing, cover verification, legal document or asset execution. B6 adds workspace-scoped unverified manual asset, investment, liability and valuation records and a current estimated KES net worth: manually POSTED cash plus latest user estimates minus B5 linked-debt estimates, overdrafts and non-loan liabilities. No live market, automatic trade, double-counted virtual capital, historical returns, or verified net-worth claim. B7 adds evidence-limited financial health with no fabricated score, consent-gated on-server rule-based guidance (not an LLM), manual monthly/category reports, unconfigured provider catalog and owner-only immutable settings, privacy review requests, integration information interests and audit. No real bank syncing, third-party AI data sharing, automatic erasure or automated private-data export."
   },
   "servers": [
     {
@@ -10681,6 +10681,751 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspaceId}/financial-health": {
+      "get": {
+        "operationId": "getB7FinancialHealth",
+        "summary": "Get evidence-limited KES financial health indicators",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/advisor": {
+      "get": {
+        "operationId": "getB7Advisor",
+        "summary": "Get opt-in explainable local rules suggestions (never LLM)",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/reports/monthly": {
+      "get": {
+        "operationId": "getB7MonthlyReport",
+        "summary": "Get limited manual posted monthly income and expense report",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12,
+              "default": 6
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/reports/categories": {
+      "get": {
+        "operationId": "getB7CategoryReport",
+        "summary": "Get manual posted transaction category report",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12,
+              "default": 6
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/integrations/catalog": {
+      "get": {
+        "operationId": "getB7IntegrationsCatalog",
+        "summary": "List unconfigured provider categories; no live connections",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/integrations/requests": {
+      "get": {
+        "operationId": "getB7IntegrationRequests",
+        "summary": "Owner-only review of information requests (not provider connections)",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB7IntegrationRequest",
+        "summary": "Owner-only request for future integration information only",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "providerKind",
+                  "intentKind"
+                ],
+                "properties": {
+                  "providerKind": {
+                    "type": "string",
+                    "enum": [
+                      "BANK",
+                      "MOBILE_MONEY",
+                      "BROKER",
+                      "TAX",
+                      "OTHER"
+                    ]
+                  },
+                  "intentKind": {
+                    "type": "string",
+                    "enum": [
+                      "REQUEST_INFORMATION"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "201": {
+            "description": "Immutable snapshot or request created"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          },
+          "428": {
+            "description": "Idempotency key required"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/settings": {
+      "get": {
+        "operationId": "getB7Settings",
+        "summary": "Owner-only privacy-first workspace settings",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      },
+      "post": {
+        "operationId": "saveB7Settings",
+        "summary": "Owner-only append-only consent/settings snapshot",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "advisorEnabled",
+                  "analyticsSharingEnabled",
+                  "monthlyReviewDay",
+                  "periodMonths"
+                ],
+                "properties": {
+                  "advisorEnabled": {
+                    "type": "boolean"
+                  },
+                  "analyticsSharingEnabled": {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  "monthlyReviewDay": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 28
+                  },
+                  "periodMonths": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "default": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "201": {
+            "description": "Immutable snapshot or request created"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          },
+          "428": {
+            "description": "Idempotency key required"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/privacy/requests": {
+      "get": {
+        "operationId": "getB7PrivacyRequests",
+        "summary": "Owner-only privacy requests awaiting authorized review",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB7PrivacyRequest",
+        "summary": "Owner-only queue privacy review (not export or automatic erasure)",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "requestKind"
+                ],
+                "properties": {
+                  "requestKind": {
+                    "type": "string",
+                    "enum": [
+                      "EXPORT_REVIEW",
+                      "ERASURE_REVIEW",
+                      "ACCESS_REVIEW"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "201": {
+            "description": "Immutable snapshot or request created"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          },
+          "428": {
+            "description": "Idempotency key required"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/security/audit": {
+      "get": {
+        "operationId": "getB7AuditEvents",
+        "summary": "Owner-only bounded security audit trail",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/privacy/status": {
+      "get": {
+        "operationId": "getB7PrivacyStatus",
+        "summary": "Owner-only disclosure of privacy, deletion and export capabilities",
+        "description": "Connected B7. Reports and advisor are derived from POSTED manual KES data only. Owner privacy requests do not auto-erase or export sensitive records, and providers are never connected. No external model, tokens, taxes, custody, or investment orders.",
+        "x-implementation-phase": "B7",
+        "x-implementation-status": "IMPLEMENTED_B7",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated, bounded workspace response"
+          },
+          "401": {
+            "description": "Identity required"
+          },
+          "403": {
+            "description": "Owner only when applicable"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "409": {
+            "description": "Idempotency or result limit conflict"
+          },
+          "422": {
+            "description": "Invalid or unsupported request"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13875,6 +14620,81 @@
           "recordedOn": {
             "type": "string",
             "format": "date"
+          }
+        }
+      },
+      "B7SettingsInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "advisorEnabled",
+          "analyticsSharingEnabled",
+          "monthlyReviewDay",
+          "periodMonths"
+        ],
+        "properties": {
+          "advisorEnabled": {
+            "type": "boolean"
+          },
+          "analyticsSharingEnabled": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "monthlyReviewDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 28
+          },
+          "periodMonths": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "default": 6
+          }
+        }
+      },
+      "B7PrivacyRequestInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requestKind"
+        ],
+        "properties": {
+          "requestKind": {
+            "type": "string",
+            "enum": [
+              "EXPORT_REVIEW",
+              "ERASURE_REVIEW",
+              "ACCESS_REVIEW"
+            ]
+          }
+        }
+      },
+      "B7IntegrationInterestInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "providerKind",
+          "intentKind"
+        ],
+        "properties": {
+          "providerKind": {
+            "type": "string",
+            "enum": [
+              "BANK",
+              "MOBILE_MONEY",
+              "BROKER",
+              "TAX",
+              "OTHER"
+            ]
+          },
+          "intentKind": {
+            "type": "string",
+            "enum": [
+              "REQUEST_INFORMATION"
+            ]
           }
         }
       }

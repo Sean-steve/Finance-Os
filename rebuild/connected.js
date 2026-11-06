@@ -48,6 +48,7 @@ let b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[]
 let b4LoadedFor='',selectedGoal='';
 let b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]},b5LoadedFor='';
 let b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''},b6LoadedFor='';
+let b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]},b7LoadedFor='';
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -98,12 +99,15 @@ async function refresh(){
    const b4Active=screen()>=35&&screen()<=42;
    const b5Active=screen()>=43&&screen()<=49;
    const b6Active=screen()>=50&&screen()<=55;
+   const b7Active=screen()>=56&&screen()<=60;
    const estateOwner=workspaces.find(w=>w.id===workspaceId)?.role==='OWNER';
    const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals',
     ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[]),
     ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[]),
     ...(b5Active?['/debts','/tax/obligations','/insurance/policies','/retirement/scenarios',...(estateOwner?['/estate/checklists']:[])]:[]),
-    ...(b6Active?['/wealth/summary','/wealth/analytics','/wealth/assets','/wealth/investments','/wealth/liabilities']:[])];
+    ...(b6Active?['/wealth/summary','/wealth/analytics','/wealth/assets','/wealth/investments','/wealth/liabilities']:[]),
+    ...(b7Active?['/financial-health','/advisor','/reports/monthly?months=6','/reports/categories?months=6','/integrations/catalog',
+     ...(estateOwner?['/settings','/integrations/requests','/privacy/requests','/privacy/status','/security/audit']:[])]:[])];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
     journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
@@ -138,6 +142,16 @@ async function refresh(){
      assets:result[offset+2].items||[],investments:result[offset+3].items||[],
      liabilities:result[offset+4].items||[]};b6LoadedFor=workspaceId;
    }
+   if(b7Active){
+    const offset=10+(b3Active?8:0)+(b4Active?6:0)+(b5Active?(estateOwner?5:4):0)+(b6Active?5:0);
+    b7={health:result[offset],advisor:result[offset+1],monthly:result[offset+2],
+     categories:result[offset+3],catalog:result[offset+4],
+     settings:estateOwner?result[offset+5]:null,
+     requests:estateOwner?result[offset+6].items||[]:[],
+     privacy:estateOwner?result[offset+7].items||[]:[],
+     privacyStatus:estateOwner?result[offset+8]:null,
+     audit:estateOwner?result[offset+9].items||[]:[]};b7LoadedFor=workspaceId;
+   }
    if(b3Active){
     b3LoadedFor=workspaceId;
     billHistory=null;
@@ -150,7 +164,7 @@ async function refresh(){
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
   }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   error='';loadFailed=false;
- }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b6LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b6LoadedFor='';b7LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{const target='screen/'+n;const changed=location.hash.slice(1)!==target;location.hash=target;window.scrollTo(0,0);if(!changed)draw();};
@@ -1009,6 +1023,109 @@ function b6AnalyticsScreen(){
   b6Caveat;
 }
 
+
+const b7Caveat='<p class="connected-muted">Manual KES records only, not provider-verified. This dashboard cannot confirm complete finances, give regulated advice or make financial decisions. No information is sent to an external AI or banking provider.</p>';
+const b7Empty='<p>No eligible records for this workspace and period. This does not prove zero real-world activity.</p>';
+const b7Owner=()=>workspaces.find(w=>w.id===workspaceId)?.role==='OWNER';
+function b7HealthScreen(){
+ const h=b7.health;
+ if(!h)return card('Financial health unavailable','<p>Current financial evidence could not be loaded.</p>');
+ return card('Financial health · evidence-based indicators',
+  '<div class="connected-kpis"><article><span>Review status</span><strong>'+esc(h.status.replaceAll('_',' '))+'</strong><small>No synthetic 0–100 score</small></article>'+
+  '<article><span>Posted manual income</span><strong>'+money(h.incomeMinor)+'</strong></article>'+
+  '<article><span>Posted manual expenses</span><strong>'+money(h.expenseMinor)+'</strong></article>'+
+  '<article><span>Net posted cash flow</span><strong>'+money(h.netCashFlowMinor)+'</strong></article></div>'+
+  '<p>Observations: '+esc(h.postedTransactionCount)+' · Months with records: '+esc(h.monthsWithRecords)+
+  ' · Coverage: '+esc(h.dataQuality)+'</p>'+
+  '<p>Indicative savings rate: '+(h.savingsRateBasisPoints===null?'Not enough income evidence':
+   esc((h.savingsRateBasisPoints/100).toFixed(2))+'%')+
+  ' · Estimated net worth: '+money(h.estimatedNetWorthMinor)+'</p>')+
+  card('Why there is no fabricated financial score',
+   '<p>'+esc(h.scoreReason)+'. Indicators use posted manual transactions and estimated assets.'+
+   ' Missing or provider-unverified records can change the result materially.</p>')+
+  b7Caveat+btn('Review explainable guidance',57)+btn('Open reports',58);
+}
+function b7AdvisorScreen(){
+ const a=b7.advisor;
+ if(!a)return card('Advisor unavailable','<p>The advice-policy service could not be loaded.</p>');
+ return card('Financial advisor · explainable rule engine',
+  '<p>This is <b>not a generative AI or licensed financial advisor</b>. No third-party AI endpoint is configured.</p>'+
+  '<p>Mode: '+esc(a.mode)+' · External AI used: No · Provider data sent: No</p>'+
+  (!a.enabled?'<p>Guidance is switched off by default. The workspace owner can opt in via Settings, Privacy & Security.</p>'+
+   (b7Owner()?btn('Open advisor preferences',60):'<p>Only the workspace owner may change this consent.</p>'):
+  a.items.length?'<ul class="connected-list">'+a.items.map(x=>
+   '<li><b>'+esc(x.code.replaceAll('_',' '))+'</b><span>'+esc(x.message)+
+   ' · Evidence: '+esc(x.evidence)+'</span></li>').join('')+'</ul>':b7Empty))+
+  card('Human approval remains authoritative',
+  '<p>No loan, investment, savings transfer, tax filing or other financial action can be initiated from these suggestions. Verify information before acting.</p>')+
+  b7Caveat;
+}
+function b7ReportsScreen(){
+ const m=b7.monthly,c=b7.categories;
+ if(!m||!c)return card('Financial reports unavailable','<p>Real posted-manual reports could not be retrieved.</p>');
+ return card('Financial reports · last '+esc(m.months)+' calendar months',
+  '<p>All figures are posted manual KES amounts. Reversed and future postings are excluded.</p>'+
+  '<div class="connected-kpis"><article><span>Income</span><strong>'+money(m.totals.incomeMinor)+'</strong></article>'+
+  '<article><span>Expenses</span><strong>'+money(m.totals.expenseMinor)+'</strong></article>'+
+  '<article><span>Net cash flow</span><strong>'+money(m.totals.netMinor)+'</strong></article></div>'+
+  '<button type="button" data-b7-csv="monthly">Export monthly CSV locally</button>')+
+  card('Monthly posted transaction totals',
+   '<div class="connected-table"><table><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th><th>Count</th></tr></thead><tbody>'+
+   m.periods.map(x=>'<tr><td>'+esc(x.month)+'</td><td>'+money(x.incomeMinor)+
+   '</td><td>'+money(x.expenseMinor)+'</td><td>'+money(x.netMinor)+'</td><td>'+esc(x.transactionCount)+'</td></tr>').join('')+
+   '</tbody></table></div>')+
+  card('Recorded category totals',
+   c.items.length?'<div class="connected-table"><table><thead><tr><th>Category</th><th>Kind</th><th>Total</th></tr></thead><tbody>'+
+   c.items.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.kind)+
+   '</td><td>'+money(x.amountMinor)+'</td></tr>').join('')+
+   '</tbody></table></div><button type="button" data-b7-csv="categories">Export category CSV locally</button>':b7Empty)+
+  b7Caveat;
+}
+function b7IntegrationsScreen(){
+ const catalog=b7.catalog;
+ if(!catalog)return card('Integrations unavailable','<p>Connection capabilities are not available.</p>');
+ return card('Integration readiness · no live bank or broker connections',
+  '<p>All provider integrations are currently <b>unconfigured</b>. Finance OS does not store bank passwords, run OAuth bank consent, import bank feeds, submit tax returns or fetch broker holdings in B7.</p>'+
+  '<ul class="connected-list">'+catalog.items.map(x=>
+   '<li><b>'+esc(x.providerKind)+'</b><span>'+esc(x.capability)+
+   ' · '+esc(x.connectionStatus)+' · Connection unavailable</span></li>').join('')+'</ul>')+
+  card('Request provider integration information',
+  !b7Owner()?'<p>Workspace owners control requests for future integration setup.</p>':
+  '<p>An information request records interest only; it does not authorize access or connect a provider.</p>'+
+  '<form data-form="b7-integration">'+select('Provider category','providerKind',
+   catalog.items.map(x=>[x.providerKind,x.capability]))+
+  '<button type="submit">Record information request</button></form>'+
+  (b7.requests.length?'<ul class="connected-list">'+b7.requests.map(x=>
+   '<li><b>'+esc(x.providerKind)+'</b><span>'+esc(x.connectionStatus)+' · '+esc(x.intentKind)+'</span></li>').join('')+'</ul>':b7Empty))+
+  b7Caveat;
+}
+function b7SettingsScreen(){
+ if(!b7Owner())return card('Private settings and audit','<p>Only the workspace owner may view or update privacy, settings, integration requests and security audit history.</p>')+b7Caveat;
+ const s=b7.settings,p=b7.privacyStatus;
+ if(!s||!p)return card('Settings unavailable','<p>Workspace privacy settings could not be loaded.</p>');
+ return card('Settings · consent and privacy controls',
+  '<form data-form="b7-settings">'+
+  '<label class="connected-field"><input type="checkbox" name="advisorEnabled" value="yes" '+(s.advisorEnabled?'checked':'')+'> Enable rules-only financial guidance (no external AI)</label>'+
+  '<p>Analytics sharing: <b>Disabled and unavailable</b>. No external data sharing is supported in this phase.</p>'+
+  select('Monthly review day','monthlyReviewDay',Array.from({length:28},(_,i)=>[String(i+1),'Day '+(i+1)]),String(s.monthlyReviewDay))+
+  select('Default report period','periodMonths',Array.from({length:12},(_,i)=>[String(i+1),(i+1)+' months']),String(s.periodMonths))+
+  '<button type="submit">Save owner preferences</button></form>'+
+  '<p>Settings source: '+esc(s.configurationSource)+' · Bank sync: Disabled · External AI: Disabled</p>')+
+  card('Privacy requests · human review required',
+   '<p>Data export, access and erasure are <b>review requests</b>, not completed actions. Financial records and audits cannot be deleted without retention, identity and legal review.</p>'+
+   '<form data-form="b7-privacy">'+select('Privacy request','requestKind',[
+    ['EXPORT_REVIEW','Request data export review'],['ACCESS_REVIEW','Request access review'],
+    ['ERASURE_REVIEW','Request erasure eligibility review']])+
+   '<button type="submit">Submit privacy request</button></form>'+
+   '<p>Requests awaiting review: '+esc(p.unresolvedRequests)+' · Automatic erasure: No · Automatic export: No</p>'+
+   (b7.privacy.length?'<ul class="connected-list">'+b7.privacy.map(x=>
+    '<li><b>'+esc(x.requestKind)+'</b><span>'+esc(x.status)+' · '+esc(x.createdAt)+'</span></li>').join('')+'</ul>':b7Empty))+
+  card('Security audit · last 50 events',
+   b7.audit.length?'<ul class="connected-list">'+b7.audit.map(x=>
+    '<li><b>'+esc(x.eventType)+'</b><span>'+esc(x.entityType)+' · '+esc(x.occurredAt)+'</span></li>').join('')+'</ul>':b7Empty)+
+  b7Caveat;
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
@@ -1017,7 +1134,7 @@ function renderedScreen(){
   '<p>Authenticated workspace data could not be loaded. No balance, income, bill or cash-flow zero is implied. Check the API connection and retry.</p>'+
   '<button data-retry>Retry loading records</button>');
  switch(id){
- case 1:case 3:case 60:return profile();
+ case 1:case 3:return profile();
  case 2:return workspace();
  case 4:return dashboard();
  case 7:return accounts();
@@ -1064,6 +1181,11 @@ function renderedScreen(){
   case 53:return b6PortfolioScreen();
   case 54:return b6InvestmentDetailsScreen();
   case 55:return b6AnalyticsScreen();
+  case 56:return b7HealthScreen();
+  case 57:return b7AdvisorScreen();
+  case 58:return b7ReportsScreen();
+  case 59:return b7IntegrationsScreen();
+  case 60:return b7SettingsScreen();
 
  default:return soon(id);
  }
@@ -1162,6 +1284,26 @@ async function submit(form){
   }
   
 
+
+  else if(kind==='b7-settings'){
+   if(!b7Owner())throw new Error('Only workspace owners can update advisor consent.');
+   await request(base+'/settings',true,{method:'POST',body:{
+    advisorEnabled:d.advisorEnabled==='yes',analyticsSharingEnabled:false,
+    monthlyReviewDay:Number(d.monthlyReviewDay),periodMonths:Number(d.periodMonths)}});
+   notice='Privacy-first preferences saved; no external AI or financial provider accessed.';
+   await refresh();return;
+  }else if(kind==='b7-integration'){
+   if(!b7Owner())throw new Error('Only workspace owners can request integration information.');
+   await request(base+'/integrations/requests',true,{method:'POST',
+    body:{providerKind:d.providerKind,intentKind:'REQUEST_INFORMATION'}});
+   notice='Information request saved. Provider connection remains NOT_CONNECTED.';
+   await refresh();return;
+  }else if(kind==='b7-privacy'){
+   if(!b7Owner())throw new Error('Only workspace owners can submit privacy requests.');
+   await request(base+'/privacy/requests',true,{method:'POST',body:{requestKind:d.requestKind}});
+   notice='Privacy request logged for authorized review. Nothing was exported or deleted.';
+   await refresh();return;
+  }
   else if(kind==='b6-asset'){
    await request(base+'/wealth/assets',true,{method:'POST',body:{
     name:d.name,assetKind:d.assetKind,initialValueMinor:b4Minor(d.initial),
@@ -1296,6 +1438,24 @@ document.addEventListener('click',async event=>{
  if(!button)return;
  if(button.hasAttribute('data-go')){nav(Number(button.dataset.go));return;}
  if(button.hasAttribute('data-retry')){void refresh();return;}
+ if(button.hasAttribute('data-b7-csv')){
+  const kind=button.dataset.b7Csv;
+  if(!['monthly','categories'].includes(kind)){error='Invalid export kind';draw();return;}
+  const dataset=kind==='monthly'?b7.monthly?.periods:b7.categories?.items;
+  if(!Array.isArray(dataset)){error='No report is available';draw();return;}
+  // Export only the explicitly loaded, bounded manual report; never persist in browser storage.
+  const fields=kind==='monthly'?['month','incomeMinor','expenseMinor','netMinor','transactionCount']:
+   ['name','kind','amountMinor','recordCount'];
+  const cell=v=>'"'+String(v??'').replaceAll('"','""')+'"';
+  const csv=[fields.map(cell).join(','),...dataset.map(row=>fields.map(k=>cell(row[k])).join(','))].join('\\r\\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download='finance-os-manual-'+kind+'.csv';
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  notice='Local manual-data CSV prepared. No bank, cloud or external AI export occurred.';draw();
+  return;
+ }
+
  if(button.hasAttribute('data-b6-history')){
   const [kind,id]=String(button.dataset.b6History||'').split(':');
   const resource=kind==='ASSET'?'assets':kind==='INVESTMENT'?'investments':kind==='LIABILITY'?'liabilities':null;
@@ -1313,7 +1473,7 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
  }
@@ -1409,7 +1569,7 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='b4SelectedGoal'){selectedGoal=t.value;draw();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
@@ -1445,6 +1605,14 @@ window.addEventListener('hashchange',()=>{
  if(!active)b6LoadedFor='';
  if(token&&workspaceId&&active&&b6LoadedFor!==workspaceId&&!busy){
   b6={...b6,summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};
+  void refresh();
+ }
+});
+window.addEventListener('hashchange',()=>{
+ const active=screen()>=56&&screen()<=60;
+ if(!active)b7LoadedFor='';
+ if(token&&workspaceId&&active&&b7LoadedFor!==workspaceId&&!busy){
+  b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};
   void refresh();
  }
 });

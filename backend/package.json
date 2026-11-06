@@ -1,9 +1,9 @@
 {
   "name": "@finance-os/backend",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
-  "description": "Finance OS B6 estimated net worth, manual assets, liabilities, investments and wealth analytics",
+  "description": "Finance OS B7 explainable financial health, review reports, integration status and privacy controls",
   "engines": {
     "node": ">=22"
   },
@@ -12,7 +12,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test test/unit.test.ts test/contracts.test.ts test/auth.test.ts test/oidc.test.ts test/b2.unit.test.ts test/b3.unit.test.ts test/b4.unit.test.ts test/b5.unit.test.ts test/b6.unit.test.ts",
+    "test": "tsx --test test/unit.test.ts test/contracts.test.ts test/auth.test.ts test/oidc.test.ts test/b2.unit.test.ts test/b3.unit.test.ts test/b4.unit.test.ts test/b5.unit.test.ts test/b6.unit.test.ts test/b7.unit.test.ts",
     "test:db": "tsx --test test/database.test.ts",
     "migrate": "tsx src/db/migrate.ts",
     "contract:check": "tsx test/check-openapi.ts",
@@ -23,7 +23,8 @@
     "test:b3": "tsx --test test/b3.integration.test.ts",
     "test:b4": "tsx --test test/b4.integration.test.ts",
     "test:b5": "tsx --test test/b5.integration.test.ts",
-    "test:b6": "tsx --test test/b6.integration.test.ts"
+    "test:b6": "tsx --test test/b6.integration.test.ts",
+    "test:b7": "tsx --test test/b7.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",

@@ -66,6 +66,8 @@ jobs:
         run: node tests/b5-connected-browser-qa.cjs
       - name: Certify connected B6 net worth, investment and valuation workflows
         run: node tests/b6-connected-browser-qa.cjs
+      - name: Certify connected B7 financial health, privacy, advisor, integration and reporting UX
+        run: node tests/b7-connected-browser-qa.cjs
       - name: Measure 59 reference screens and adapted Screen 22 visual difference
         run: node tests/visual-parity-score.cjs
       - name: Audit accessibility and color contrast
