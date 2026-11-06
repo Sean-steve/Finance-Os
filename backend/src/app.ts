@@ -11,6 +11,7 @@ import {installB3Routes} from './b3.js';
 import {installB4Routes} from './b4.js';
 import {installB5Routes} from './b5.js';
 import {installB6Routes} from './b6.js';
+import {installB7Routes} from './b7.js';
 import {createOidcVerifier,createOidcIdentity,installOidcRoutes} from './oidc.js';
 
 export const API_CONTRACT='finance-os.v1';
@@ -60,7 +61,7 @@ export async function buildApp({config,database,financePool,authPool,oidcFetch}:
    const result=await database.query('SELECT version FROM schema_migrations ORDER BY version');
    const versions=new Set(result.rows.map(row=>(row as {version:string}).version));
    const required=['001_identity_workspaces.sql','002_financial_domains.sql','003_integrity_rls.sql'];
-   if(config.localAuthEnabled||config.oidc)required.push('004_b1_identity_ledger.sql','005_b1_reversals.sql','006_b2_spending_controls.sql','007_b3_income_bills_cashflow.sql','008_b4_capital_goals_scenarios.sql','009_b5_protection_lifecycle.sql','010_b6_wealth_analytics.sql');
+   if(config.localAuthEnabled||config.oidc)required.push('004_b1_identity_ledger.sql','005_b1_reversals.sql','006_b2_spending_controls.sql','007_b3_income_bills_cashflow.sql','008_b4_capital_goals_scenarios.sql','009_b5_protection_lifecycle.sql','010_b6_wealth_analytics.sql','011_b7_financial_governance.sql');
    if(!required.every(version=>versions.has(version)))throw new Error('Migrations not applied');
    return {status:'ready',migrationTracking:true};
   }catch{
@@ -68,7 +69,7 @@ export async function buildApp({config,database,financePool,authPool,oidcFetch}:
   }
  });
  const enabled=Boolean((config.localAuthEnabled||config.oidc)&&financePool&&authPool);
- app.get('/v1/meta',async()=>({api:API_CONTRACT,stage:enabled?'B6':'B0',implementation:enabled?'connected-server':'foundation-only',
+ app.get('/v1/meta',async()=>({api:API_CONTRACT,stage:enabled?'B7':'B0',implementation:enabled?'connected-server':'foundation-only',
   financialEndpointsAvailable:enabled,authenticationAvailable:enabled,productionReady:false,
   authenticationScope:config.oidc?'OIDC_VERIFIED_MFA':config.localAuthEnabled?'LOCAL_TEST_ONLY':'DISABLED',
   reference:'openapi/finance-os.v1.json'}));
@@ -88,6 +89,7 @@ export async function buildApp({config,database,financePool,authPool,oidcFetch}:
   installB4Routes(app,financePool!,identity);
   installB5Routes(app,financePool!,identity);
   installB6Routes(app,financePool!,identity);
+  installB7Routes(app,financePool!,identity);
  }
  app.setNotFoundHandler((_request,reply)=>reply.code(404).send({error:{code:'ROUTE_NOT_IMPLEMENTED',message:'Route not available'}}));
  app.setErrorHandler((error,request,reply)=>{
