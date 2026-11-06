@@ -1,14 +1,20 @@
-# Finance OS Backend — B0–B3 Certified Manual-Finance Services
+# Finance OS Backend — Phases B0–B8 (Manual Finance)
 
-**Status: B1 local/test authenticated accounts and manual ledger are implemented; production authentication remains disabled.** The 60-screen UI remains independently published as a demonstration on GitHub Pages.
+**Development status:** Backend domains B0–B7 are implemented, connected to the authenticated 60-screen frontend, and validated in disposable PostgreSQL 17 CI. **B8 adds read-only cross-module reconciliation, production startup migration checks, backup/restore rehearsal and an explicit release evidence gate. Production activation is NOT certified.**
 
-**Phase B3** adds income-source projections, recurring bill obligations, unverified manual settlement evidence and indicative cash flow: [B3 Engineering](../docs/backend/B3_ENGINEERING.md). B3 does **not** authenticate bank payments, automatically transfer funds, or verify planned income. A real finance production IdP/API remains unconfigured.
+No live bank, broker, lender, tax, insurer or generative AI provider is connected. Bank/provider-verified balances and legally effective export/erasure workflows are **not** implemented. GitHub Pages hosts the separate prototype and connected frontend; it is not a finance API host.
 
-**Phase B2** extends the immutable journal with PostgreSQL budgets, spending insights, enforced guardrails and two-person approvals: [B2 Engineering](../docs/backend/B2_ENGINEERING.md). A disposable real-Keycloak protocol test and the production IdP readiness register are in [OIDC Activation](../docs/backend/OIDC_KEYCLOAK_ACTIVATION.md); no production provider is activated.
+- [B8 Full-System Engineering, Release Gates & Recovery](../docs/backend/B8_ENGINEERING.md) — start here for integration, certification, staging and production requirements.
+- [B7 Financial Health, Reports & Privacy](../docs/backend/B7_ENGINEERING.md)
+- [B6 Net Worth & Wealth Analytics](../docs/backend/B6_ENGINEERING.md)
+- [B5 Debt, Tax, Insurance, Retirement & Estate](../docs/backend/B5_ENGINEERING.md)
+- [B4 Savings and Virtual Capital](../docs/backend/B4_ENGINEERING.md)
+- [B3 Income, Bills and Cashflow](../docs/backend/B3_ENGINEERING.md)
+- [B2 Spending Controls](../docs/backend/B2_ENGINEERING.md)
+- [B1.1 OIDC MFA & Connected Frontend](../docs/backend/B1_1_IDENTITY_SECURITY_FRONTEND.md)
+- [B1 Local Manual Finance](../docs/backend/B1_IMPLEMENTATION.md)
 
-The B1.1 OIDC and authenticated frontend design is documented in [B1.1 Security & Connected Frontend](../docs/backend/B1_1_IDENTITY_SECURITY_FRONTEND.md). Production identity and recovery require an external provider and staged certification.
-
-See [B1 Implementation & Local Runbook](../docs/backend/B1_IMPLEMENTATION.md) for working API routes, security boundaries and setup.
+For an existing local PostgreSQL setup, provision restricted database roles, enable local auth for **localhost only**, apply migrations and run the backend plus `connected.html`. Production requires a real MFA-backed OIDC identity provider, encrypted backup/recovery, legal privacy review, TLS and independent release evidence.
 
 ## B0 foundation
 
