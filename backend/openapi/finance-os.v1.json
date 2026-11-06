@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Finance OS API",
-    "version": "0.6.0",
-    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability. B5 implements owner-private estate readiness, user-recorded debt and tax estimates with linked POSTED manual expenses, unverified insurance records and nominal retirement scenarios. No lending payment, tax filing, cover verification, legal document or asset execution."
+    "version": "0.7.0",
+    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability. B5 implements owner-private estate readiness, user-recorded debt and tax estimates with linked POSTED manual expenses, unverified insurance records and nominal retirement scenarios. No lending payment, tax filing, cover verification, legal document or asset execution. B6 adds workspace-scoped unverified manual asset, investment, liability and valuation records and a current estimated KES net worth: manually POSTED cash plus latest user estimates minus B5 linked-debt estimates, overdrafts and non-loan liabilities. No live market, automatic trade, double-counted virtual capital, historical returns, or verified net-worth claim."
   },
   "servers": [
     {
@@ -9686,6 +9686,1001 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/summary": {
+      "get": {
+        "operationId": "getB6NetWorth",
+        "summary": "Get unverified KES manual-asset and liabilities net worth",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/analytics": {
+      "get": {
+        "operationId": "getB6WealthAnalytics",
+        "summary": "Calculate estimated asset mix and nominal cost differences",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/assets": {
+      "get": {
+        "operationId": "listB6Assets",
+        "summary": "List user-reported assets and latest estimated valuations",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB6Asset",
+        "summary": "Record user-reported physical or business asset",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "assetKind",
+                  "initialValueMinor",
+                  "currency"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "assetKind": {
+                    "type": "string",
+                    "enum": [
+                      "PROPERTY",
+                      "LAND",
+                      "VEHICLE",
+                      "BUSINESS",
+                      "EQUIPMENT",
+                      "OTHER"
+                    ]
+                  },
+                  "initialValueMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "acquiredOn": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "201": {
+            "description": "New immutable wealth record; replay returns 200"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          },
+          "409": {
+            "description": "Duplicate, constraint, or result-set limit conflict"
+          },
+          "422": {
+            "description": "Invalid amount, date or unsupported input"
+          },
+          "428": {
+            "description": "Idempotency key required for mutation"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/investments": {
+      "get": {
+        "operationId": "listB6Investments",
+        "summary": "List manual holdings; not a brokerage position",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB6Investment",
+        "summary": "Record self-reported investment quantity, cost and estimate",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "investmentKind",
+                  "quantityMicros",
+                  "costBasisMinor",
+                  "initialValueMinor",
+                  "currency"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "investmentKind": {
+                    "type": "string",
+                    "enum": [
+                      "EQUITY",
+                      "BOND",
+                      "FUND",
+                      "SACCO",
+                      "OTHER"
+                    ]
+                  },
+                  "quantityMicros": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  },
+                  "costBasisMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "initialValueMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "201": {
+            "description": "New immutable wealth record; replay returns 200"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          },
+          "409": {
+            "description": "Duplicate, constraint, or result-set limit conflict"
+          },
+          "422": {
+            "description": "Invalid amount, date or unsupported input"
+          },
+          "428": {
+            "description": "Idempotency key required for mutation"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/liabilities": {
+      "get": {
+        "operationId": "listB6Liabilities",
+        "summary": "List non-debt liabilities; exclude B5 loans",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB6Liability",
+        "summary": "Record a non-loan liability not already in B5 or B3",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "liabilityKind",
+                  "initialValueMinor",
+                  "currency"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "liabilityKind": {
+                    "type": "string",
+                    "enum": [
+                      "UNPAID_OBLIGATION",
+                      "OTHER"
+                    ]
+                  },
+                  "initialValueMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "201": {
+            "description": "New immutable wealth record; replay returns 200"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          },
+          "409": {
+            "description": "Duplicate, constraint, or result-set limit conflict"
+          },
+          "422": {
+            "description": "Invalid amount, date or unsupported input"
+          },
+          "428": {
+            "description": "Idempotency key required for mutation"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/assets/{assetId}/valuations": {
+      "get": {
+        "operationId": "listB6AssetValuations",
+        "summary": "Read user-supplied dated asset valuations",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB6AssetValuation",
+        "summary": "Append an asset revaluation; no journal",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "valueMinor",
+                  "currency",
+                  "note",
+                  "recordedOn"
+                ],
+                "properties": {
+                  "valueMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  },
+                  "recordedOn": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "201": {
+            "description": "New immutable wealth record; replay returns 200"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          },
+          "409": {
+            "description": "Duplicate, constraint, or result-set limit conflict"
+          },
+          "422": {
+            "description": "Invalid amount, date or unsupported input"
+          },
+          "428": {
+            "description": "Idempotency key required for mutation"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/investments/{investmentId}/valuations": {
+      "get": {
+        "operationId": "listB6InvestmentValuations",
+        "summary": "Read dated investment estimates, not market history",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "investmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB6InvestmentValuation",
+        "summary": "Append a manual investment value; no trade",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "investmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "valueMinor",
+                  "currency",
+                  "note",
+                  "recordedOn"
+                ],
+                "properties": {
+                  "valueMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  },
+                  "recordedOn": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "201": {
+            "description": "New immutable wealth record; replay returns 200"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          },
+          "409": {
+            "description": "Duplicate, constraint, or result-set limit conflict"
+          },
+          "422": {
+            "description": "Invalid amount, date or unsupported input"
+          },
+          "428": {
+            "description": "Idempotency key required for mutation"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/wealth/liabilities/{liabilityId}/valuations": {
+      "get": {
+        "operationId": "listB6LiabilityValuations",
+        "summary": "Read user-reported outstanding liability estimates",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "liabilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB6LiabilityValuation",
+        "summary": "Append manual non-loan liability adjustment",
+        "description": "B6 manual, estimated KES only. No live prices, provider verification, security trades, or independent valuation.",
+        "x-implementation-phase": "B6",
+        "x-implementation-status": "IMPLEMENTED_B6",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "liabilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "valueMinor",
+                  "currency",
+                  "note",
+                  "recordedOn"
+                ],
+                "properties": {
+                  "valueMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  },
+                  "recordedOn": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded workspace wealth estimate, not provider verified"
+          },
+          "201": {
+            "description": "New immutable wealth record; replay returns 200"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace role denied"
+          },
+          "404": {
+            "description": "Workspace or wealth record not found"
+          },
+          "409": {
+            "description": "Duplicate, constraint, or result-set limit conflict"
+          },
+          "422": {
+            "description": "Invalid amount, date or unsupported input"
+          },
+          "428": {
+            "description": "Idempotency key required for mutation"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12713,6 +13708,173 @@
             "format": "int64",
             "minimum": 1,
             "maximum": 1000000000000
+          }
+        }
+      },
+      "B6AssetInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "assetKind",
+          "initialValueMinor",
+          "currency"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "assetKind": {
+            "type": "string",
+            "enum": [
+              "PROPERTY",
+              "LAND",
+              "VEHICLE",
+              "BUSINESS",
+              "EQUIPMENT",
+              "OTHER"
+            ]
+          },
+          "initialValueMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "acquiredOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        }
+      },
+      "B6InvestmentInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "investmentKind",
+          "quantityMicros",
+          "costBasisMinor",
+          "initialValueMinor",
+          "currency"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "investmentKind": {
+            "type": "string",
+            "enum": [
+              "EQUITY",
+              "BOND",
+              "FUND",
+              "SACCO",
+              "OTHER"
+            ]
+          },
+          "quantityMicros": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000000
+          },
+          "costBasisMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "initialValueMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          }
+        }
+      },
+      "B6LiabilityInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "liabilityKind",
+          "initialValueMinor",
+          "currency"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "liabilityKind": {
+            "type": "string",
+            "enum": [
+              "UNPAID_OBLIGATION",
+              "OTHER"
+            ]
+          },
+          "initialValueMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000000
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          }
+        }
+      },
+      "B6ValuationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "valueMinor",
+          "currency",
+          "note",
+          "recordedOn"
+        ],
+        "properties": {
+          "valueMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "recordedOn": {
+            "type": "string",
+            "format": "date"
           }
         }
       }

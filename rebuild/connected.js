@@ -47,6 +47,7 @@ let selectedAccount='',selectedTransaction='',selectedBill='',lastEval=null,last
 let b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};
 let b4LoadedFor='',selectedGoal='';
 let b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]},b5LoadedFor='';
+let b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''},b6LoadedFor='';
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -96,11 +97,13 @@ async function refresh(){
    const b3Active=screen()>=27&&screen()<=34;
    const b4Active=screen()>=35&&screen()<=42;
    const b5Active=screen()>=43&&screen()<=49;
+   const b6Active=screen()>=50&&screen()<=55;
    const estateOwner=workspaces.find(w=>w.id===workspaceId)?.role==='OWNER';
    const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals',
     ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[]),
     ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[]),
-    ...(b5Active?['/debts','/tax/obligations','/insurance/policies','/retirement/scenarios',...(estateOwner?['/estate/checklists']:[])]:[])];
+    ...(b5Active?['/debts','/tax/obligations','/insurance/policies','/retirement/scenarios',...(estateOwner?['/estate/checklists']:[])]:[]),
+    ...(b6Active?['/wealth/summary','/wealth/analytics','/wealth/assets','/wealth/investments','/wealth/liabilities']:[])];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
     journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
@@ -129,6 +132,12 @@ async function refresh(){
      estate:estateOwner?result[offset+4].items||[]:[]};
     b5LoadedFor=workspaceId;
    }
+   if(b6Active){
+    const offset=10+(b3Active?8:0)+(b4Active?6:0)+(b5Active?(estateOwner?5:4):0);
+    b6={...b6,summary:result[offset],analytics:result[offset+1],
+     assets:result[offset+2].items||[],investments:result[offset+3].items||[],
+     liabilities:result[offset+4].items||[]};b6LoadedFor=workspaceId;
+   }
    if(b3Active){
     b3LoadedFor=workspaceId;
     billHistory=null;
@@ -141,7 +150,7 @@ async function refresh(){
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
   }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   error='';loadFailed=false;
- }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b6LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{const target='screen/'+n;const changed=location.hash.slice(1)!==target;location.hash=target;window.scrollTo(0,0);if(!changed)draw();};
@@ -861,6 +870,145 @@ function b5EstateScreen(){
    ' marked complete · '+esc(latest.reviewedOn)+'. This is not a legal document.</p>':b5Empty)+b5Note;
 }
 
+
+const b6Caveat='<p class="connected-muted">Estimated KES net worth from manually POSTED cash and user-reported holdings/valuations. No broker links, live prices, professional appraisals, returns or guaranteed balances. B4 earmarks and B5 retirement projections are not additional assets.</p>';
+const b6Empty='<p>No matching user-reported wealth records have been saved. Empty does not confirm a zero real-world balance.</p>';
+const b6Amount=(label,key,zero=false)=>field(label,key,'text',true,zero?'0':'','pattern="[0-9]+(\\.[0-9]{1,2})?"');
+const b6Date=()=>new Date().toISOString().slice(0,10);
+const b6Units=value=>{
+ const s=String(value||'').trim(),m=/^([0-9]{1,6})(?:[.]([0-9]{1,6}))?$/.exec(s);
+ if(!m)throw new Error('Enter 1–6 decimal places of quantity.');
+ const x=Number(m[1])*1000000+Number((m[2]||'').padEnd(6,'0'));
+ if(!Number.isSafeInteger(x)||x<=0)throw new Error('Quantity must be positive.');
+ return x;
+};
+function b6NetWorthScreen(){
+ const s=b6.summary;
+ if(!s)return card('Net worth unavailable','<p>Wealth API data could not be loaded. No zero net worth is assumed.</p>');
+ return card('Net worth command centre · estimated', 
+  '<div class="connected-kpis"><article><span>Estimated net worth</span><strong>'+money(s.estimatedNetWorthMinor)+'</strong><small>Not provider verified</small></article>'+
+  '<article><span>Estimated total assets</span><strong>'+money(s.assetTotalMinor)+'</strong><small>Manual + self-reported</small></article>'+
+  '<article><span>Reported liabilities</span><strong>'+money(s.liabilityTotalMinor)+'</strong><small>Includes B5 debts</small></article></div>'+
+  '<p>Manual cash: '+money(s.breakdown.manualCashAssetsMinor)+' · Other assets: '+money(s.breakdown.otherAssetsMinor)+
+   ' · Investment estimates: '+money(s.breakdown.investmentEstimatesMinor)+'</p>')+
+  card('How this estimate is assembled',
+  '<ul class="connected-list"><li>Manually posted cash and bank balances, excluding future-dated journal entries</li>'+
+  '<li>User-supplied estimated values of property, vehicles, business assets and investment holdings</li>'+
+  '<li>Less B5 reported loan balances, negative cash/overdraft positions and other non-loan obligations</li>'+
+  '<li>B3 future bills, B4 virtual reserves, insurance cover and retirement scenarios are deliberately excluded</li></ul>')+
+  b6Caveat+btn('View assets and liabilities',51)+btn('View investment positions',53)+btn('Review wealth analytics',55);
+}
+function b6AssetLiabilityScreen(){
+ const s=b6.summary;
+ return card('Record an asset · user-reported value only',
+  '<form data-form="b6-asset">'+field('Asset nickname','name')+
+  select('Asset type','assetKind',[['PROPERTY','Property'],['LAND','Land'],['VEHICLE','Vehicle'],
+   ['BUSINESS','Business'],['EQUIPMENT','Equipment'],['OTHER','Other']])+
+  b6Amount('Initial estimated value KES','initial',true)+field('Acquired on (optional)','acquiredOn','date',false)+
+  '<button type="submit">Save asset estimate</button></form>')+
+  card('Register non-loan liability',
+   '<p>Do not duplicate existing B5 debt or B3 bill entries.</p>'+
+   '<form data-form="b6-liability">'+field('Nonloan liability name','name')+
+   select('Type','liabilityKind',[['UNPAID_OBLIGATION','Other obligation'],['OTHER','Other']])+
+   b6Amount('Starting estimated amount KES','initial')+
+   '<button type="submit">Save nonloan liability</button></form>')+
+  card('Physical and business assets',b6.assets.length?
+   '<ul class="connected-list">'+b6.assets.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>'+esc(x.assetKind)+' · User estimate '+money(x.estimatedValueMinor)+
+    ' · Not independently appraised</span></li>').join('')+'</ul>':b6Empty)+
+  card('Reported obligations', 
+   '<p>B5 debt estimates: '+money(s?.breakdown?.reportedDebtsMinor||0)+
+   ' · Other nonloan obligations: '+money(s?.breakdown?.otherLiabilitiesMinor||0)+
+   ' · Manual cash overdrafts: '+money(s?.breakdown?.manualCashOverdraftMinor||0)+'</p>'+
+   (b6.liabilities.length?'<ul class="connected-list">'+b6.liabilities.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>'+esc(x.liabilityKind)+' · '+money(x.estimatedValueMinor)+'</span></li>').join('')+'</ul>':b6Empty))+
+  b6Caveat+btn('Update estimated values',52);
+}
+function b6HistoryPanel(){
+ if(!b6.historyTarget)return '';
+ return card('Append-only valuation history · '+esc(b6.historyTarget),
+  b6.history.length?'<ul class="connected-list">'+b6.history.map(x=>
+   '<li><b>'+money(x.valueMinor)+'</b><span>'+esc(x.recordedOn)+' · '+esc(x.note)+
+    ' · '+esc(x.evidence)+'</span></li>').join('')+'</ul>':b6Empty);
+}
+function b6AssetDetailsScreen(){
+ const assets=b6.assets,liabs=b6.liabilities;
+ return card('Asset value review',
+  '<p>New appraisals are never overwritten; every user estimate is appended with its own observation date.</p>'+
+  (assets.length?'<form data-form="b6-asset-value">'+
+   select('Asset','id',assets.map(x=>[x.id,x.name+' · '+money(x.estimatedValueMinor)]))+
+   b6Amount('Revised estimated value KES','value',true)+
+   field('As-of date','recordedOn','date',true,b6Date())+
+   field('Basis for user estimate','note')+
+   '<button type="submit">Append estimate (no ledger entry)</button></form>':b6Empty)+
+  (assets.length?assets.map(x=>
+   '<button type="button" data-b6-history="ASSET:'+esc(x.id)+'">View '+esc(x.name)+' valuation history</button>').join(''):'') )+
+  card('Non-loan liability value review',
+   liabs.length?'<form data-form="b6-liability-value">'+
+   select('Liability','id',liabs.map(x=>[x.id,x.name+' · '+money(x.estimatedValueMinor)]))+
+   b6Amount('Updated estimated amount KES (zero is allowed)','value',true)+
+   field('As-of date','recordedOn','date',true,b6Date())+field('Change explanation','note')+
+   '<button type="submit">Append non-loan liability estimate</button></form>':b6Empty)+
+  b6HistoryPanel()+b6Caveat;
+}
+function b6PortfolioScreen(){
+ return card('Investment portfolio · manually reported positions',
+  '<p>Quantities, cost basis and current values are entered by you. This does not buy securities or connect a stockbroker.</p>'+
+  '<form data-form="b6-investment">'+field('Investment name','name')+
+  select('Investment type','investmentKind',[['EQUITY','Equity'],['BOND','Bond'],
+   ['FUND','Fund'],['SACCO','SACCO'],['OTHER','Other']])+
+  field('Holding quantity (up to 6 decimal places)','quantity','text',true,'1','pattern="[0-9]+(\\.[0-9]{1,6})?"')+
+  b6Amount('Self-reported total cost KES','cost',true)+
+  b6Amount('Self-reported current estimated total KES','initial',true)+
+  '<button type="submit">Save a manual investment</button></form>')+
+  card('Investment positions',b6.investments.length?
+   '<ul class="connected-list">'+b6.investments.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>'+esc(x.investmentKind)+
+    ' · Reported quantity '+esc((x.quantityMicros/1000000).toFixed(6))+
+    ' · Estimated value '+money(x.estimatedValueMinor)+' · Cost '+money(x.costBasisMinor)+'</span></li>').join('')+'</ul>':b6Empty)+
+  b6Caveat+btn('Investment valuations',54)+btn('Portfolio analysis',55);
+}
+function b6InvestmentDetailsScreen(){
+ const positions=b6.investments;
+ return card('Investment details & user-supplied values',
+  '<p>Append a position-value estimate without changing quantity, cost basis or executing trades. Any nominal difference is not verified investment performance.</p>'+
+  (positions.length?'<form data-form="b6-investment-value">'+
+   select('Holding','id',positions.map(x=>[x.id,x.name+' · '+money(x.estimatedValueMinor)]))+
+   b6Amount('Updated total holding value KES','value',true)+
+   field('Observed on','recordedOn','date',true,b6Date())+field('Source of manual estimate','note')+
+   '<button type="submit">Append investment valuation only</button></form>':b6Empty)+
+  (positions.length?positions.map(x=>
+   '<button type="button" data-b6-history="INVESTMENT:'+esc(x.id)+'">View '+esc(x.name)+' valuation history</button>').join(''):'') )+
+  card('Cost-vs-estimate summary',positions.length?
+   '<ul class="connected-list">'+positions.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>Self-reported cost '+money(x.costBasisMinor)+
+    ' · Estimated value '+money(x.estimatedValueMinor)+
+    ' · Nominal difference '+money(x.nominalUnrealizedDifferenceMinor)+
+    ' · No realised/annualised return verified</span></li>').join('')+'</ul>':b6Empty)+
+  b6HistoryPanel()+b6Caveat;
+}
+function b6AnalyticsScreen(){
+ const a=b6.analytics,s=b6.summary;
+ if(!a||!s)return card('Wealth insights unavailable','<p>No certified local estimate was loaded.</p>');
+ return card('Wealth analytics · non-provider-verified',
+  '<div class="connected-kpis"><article><span>Estimated net worth</span><strong>'+money(a.estimatedNetWorthMinor)+'</strong></article>'+
+  '<article><span>Investment estimated value</span><strong>'+money(a.estimatedInvestmentValueMinor)+'</strong></article>'+
+  '<article><span>Nominal value minus reported cost</span><strong>'+money(a.nominalUnrealizedDifferenceMinor)+'</strong><small>Not a verified return</small></article></div>')+
+  card('Estimated asset allocation',a.assetsByClass.length?
+   '<div class="connected-table"><table><thead><tr><th>Class</th><th>Estimated value</th><th>Share</th></tr></thead><tbody>'+
+   a.assetsByClass.map(x=>
+    '<tr><td>'+esc(x.name)+'</td><td>'+money(x.amountMinor)+'</td>'+
+    '<td>'+(x.shareBasisPoints===null?'Not applicable':esc((x.shareBasisPoints/100).toFixed(2))+'%')+'</td></tr>').join('')+
+   '</tbody></table></div>':b6Empty)+
+  card('Portfolio concentration and quality',
+   '<p>Largest self-reported investment: '+(a.largestExposure?esc(a.largestExposure.name)+
+    ' · '+money(a.largestExposure.estimatedValueMinor):'No positions recorded')+'</p>'+
+   '<p>Cost basis: '+money(a.estimatedInvestmentCostMinor)+
+    ' · Nominal unverified difference: '+money(a.nominalUnrealizedDifferenceMinor)+'</p>'+
+   '<p>Verification: unavailable. Tax effects, dividends, inflation and time-weighted investment performance are not calculated.</p>')+
+  b6Caveat;
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
@@ -910,6 +1058,12 @@ function renderedScreen(){
  case 47:return b5InsuranceScreen();
  case 48:return b5RetirementScreen();
  case 49:return b5EstateScreen();
+  case 50:return b6NetWorthScreen();
+  case 51:return b6AssetLiabilityScreen();
+  case 52:return b6AssetDetailsScreen();
+  case 53:return b6PortfolioScreen();
+  case 54:return b6InvestmentDetailsScreen();
+  case 55:return b6AnalyticsScreen();
 
  default:return soon(id);
  }
@@ -1007,6 +1161,28 @@ async function submit(form){
    await refresh();return;
   }
   
+
+  else if(kind==='b6-asset'){
+   await request(base+'/wealth/assets',true,{method:'POST',body:{
+    name:d.name,assetKind:d.assetKind,initialValueMinor:b4Minor(d.initial),
+    currency:'KES',acquiredOn:d.acquiredOn||null}});
+   notice='User-estimated asset saved; no independent appraisal.';await refresh();return;
+  }else if(kind==='b6-liability'){
+   await request(base+'/wealth/liabilities',true,{method:'POST',body:{
+    name:d.name,liabilityKind:d.liabilityKind,initialValueMinor:asMinor(d.initial),currency:'KES'}});
+   notice='Manual nonloan liability saved; do not duplicate B5 debts.';await refresh();return;
+  }else if(kind==='b6-investment'){
+   await request(base+'/wealth/investments',true,{method:'POST',body:{
+    name:d.name,investmentKind:d.investmentKind,quantityMicros:b6Units(d.quantity),
+    costBasisMinor:b4Minor(d.cost),initialValueMinor:b4Minor(d.initial),currency:'KES'}});
+   notice='Self-reported investment saved. No trade or provider connection occurred.';await refresh();return;
+  }else if(['b6-asset-value','b6-investment-value','b6-liability-value'].includes(kind)){
+   const resource=kind==='b6-asset-value'?'assets':kind==='b6-investment-value'?'investments':'liabilities';
+   await request(base+'/wealth/'+resource+'/'+encodeURIComponent(d.id)+'/valuations',true,{method:'POST',
+    body:{valueMinor:b4Minor(d.value),recordedOn:d.recordedOn,note:d.note,currency:'KES'}});
+   b6.historyTarget='';b6.history=[];
+   notice='Append-only user valuation saved. No journal, trade or financial transfer occurred.';await refresh();return;
+  }
   else if(kind==='b5-debt'){
    await request(base+'/debts',true,{method:'POST',body:{
     name:d.name,lenderName:d.lenderName,currency:'KES',originalMinor:asMinor(d.original),
@@ -1120,12 +1296,24 @@ document.addEventListener('click',async event=>{
  if(!button)return;
  if(button.hasAttribute('data-go')){nav(Number(button.dataset.go));return;}
  if(button.hasAttribute('data-retry')){void refresh();return;}
+ if(button.hasAttribute('data-b6-history')){
+  const [kind,id]=String(button.dataset.b6History||'').split(':');
+  const resource=kind==='ASSET'?'assets':kind==='INVESTMENT'?'investments':kind==='LIABILITY'?'liabilities':null;
+  if(!resource||!/^[a-fA-F0-9-]{36}$/.test(id||'')){error='Invalid wealth record';draw();return;}
+  try{
+   const rows=await request(path('/wealth/'+resource+'/'+encodeURIComponent(id)+'/valuations'));
+   b6.history=rows.items||[];
+   b6.historyTarget=resource+': '+(kind==='ASSET'?b6.assets:kind==='INVESTMENT'?b6.investments:b6.liabilities).find(x=>x.id===id)?.name;
+   error='';draw();
+  }catch(ex){error=String(ex.message||ex);draw();}
+  return;
+ }
  if(button.hasAttribute('data-oidc-start')){
   try{await startOidc();}catch(ex){error=String(ex.message||ex);draw();}
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
  }
@@ -1221,7 +1409,7 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='b4SelectedGoal'){selectedGoal=t.value;draw();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
@@ -1250,6 +1438,14 @@ window.addEventListener('hashchange',()=>{
  if(!active)b5LoadedFor='';
  if(token&&workspaceId&&active&&b5LoadedFor!==workspaceId&&!busy){
   b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};void refresh();
+ }
+});
+window.addEventListener('hashchange',()=>{
+ const active=screen()>=50&&screen()<=55;
+ if(!active)b6LoadedFor='';
+ if(token&&workspaceId&&active&&b6LoadedFor!==workspaceId&&!busy){
+  b6={...b6,summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};
+  void refresh();
  }
 });
 (async()=>{await initConfig();if(apiBase)try{await finishOidc();}catch(ex){error=String(ex.message||ex);}draw();})();
