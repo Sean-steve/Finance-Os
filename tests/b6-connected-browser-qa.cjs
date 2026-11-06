@@ -59,7 +59,7 @@ function api(endpoint,method,body){
    const value={...body,id:uuid(),evidence:'USER_ESTIMATE'};data[section].push(value);writes++;
    return {id:value.id,replayed:false};
   }
-  return {items:wealth()[section],nextCursor:null};
+  return {items:section==='liabilities'?wealth().otherLiabilities:wealth()[section],nextCursor:null};
  }
  const m=/^\/wealth\/(assets|investments|liabilities)\/([0-9a-f-]+)\/valuations$/.exec(part);
  if(m){
