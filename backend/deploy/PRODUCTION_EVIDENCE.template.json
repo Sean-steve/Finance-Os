@@ -1,0 +1,67 @@
+{
+  "environment": "production",
+  "origin": "https://REPLACE_AFTER_ACTUAL_DEPLOYMENT",
+  "releaseCommit": "REPLACE_WITH_40_HEX_SHA",
+  "checks": {
+    "live_oidc_mfa": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "production_tls_dns": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "least_privilege_database": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "staging_cross_module_reconciliation": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "backup_restore_observed": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "monitoring_alerts_incident_drill": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "privacy_dpia_retention_review": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "privacy_requests_operational": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "accessibility_performance": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    },
+    "deployment_rollback_and_signoff": {
+      "status": "PENDING",
+      "evidenceRef": null,
+      "approvedBy": null,
+      "verifiedAt": null
+    }
+  }
+}
