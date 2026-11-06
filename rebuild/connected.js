@@ -46,6 +46,7 @@ let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[
 let selectedAccount='',selectedTransaction='',selectedBill='',lastEval=null,lastCheck=null,b3LoadedFor='',loadFailed=false,billHistory=null;
 let b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};
 let b4LoadedFor='',selectedGoal='';
+let b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]},b5LoadedFor='';
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -94,9 +95,12 @@ async function refresh(){
   if(workspaceId){
    const b3Active=screen()>=27&&screen()<=34;
    const b4Active=screen()>=35&&screen()<=42;
+   const b5Active=screen()>=43&&screen()<=49;
+   const estateOwner=workspaces.find(w=>w.id===workspaceId)?.role==='OWNER';
    const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals',
     ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[]),
-    ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[])];
+    ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[]),
+    ...(b5Active?['/debts','/tax/obligations','/insurance/policies','/retirement/scenarios',...(estateOwner?['/estate/checklists']:[])]:[])];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
     journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
@@ -118,6 +122,13 @@ async function refresh(){
     b4LoadedFor=workspaceId;
     selectedGoal=b4.goals.some(g=>g.id===selectedGoal)?selectedGoal:(b4.goals[0]?.id||'');
    }
+   if(b5Active){
+    const offset=10+(b3Active?8:0)+(b4Active?6:0);
+    b5={debts:result[offset].items||[],taxes:result[offset+1].items||[],
+     policies:result[offset+2].items||[],retirement:result[offset+3].items||[],
+     estate:estateOwner?result[offset+4].items||[]:[]};
+    b5LoadedFor=workspaceId;
+   }
    if(b3Active){
     b3LoadedFor=workspaceId;
     billHistory=null;
@@ -130,7 +141,7 @@ async function refresh(){
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
   }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   error='';loadFailed=false;
- }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{const target='screen/'+n;const changed=location.hash.slice(1)!==target;location.hash=target;window.scrollTo(0,0);if(!changed)draw();};
@@ -738,6 +749,118 @@ function scenarioScreen(){
  b4MonthNote;
 }
 
+
+const b5Note='<p class="connected-muted">These are user-reported records, estimates or non-executing simulations. No creditor, KRA or insurer connection, payment, return filing, guaranteed investment result or legal instrument.</p>';
+const b5Empty='<p>No records saved in this workspace; no zero balance is implied.</p>';
+const b5Amount=(label,name,zero=false)=>field(label,name,'text',true,zero?'0':'','pattern="[0-9]+(\\.[0-9]{1,2})?"');
+function b5DebtScreen(){
+ return card('Debt register · lender not connected',
+  '<form data-form="b5-debt">'+field('Debt name','name')+
+  field('Lender label (no account or ID numbers)','lenderName')+
+  b5Amount('Original principal KES','original')+b5Amount('Starting outstanding KES','outstanding')+
+  field('User-entered APR %','apr','number',true,'0','min="0" max="1000" step="0.01"')+
+  b5Amount('Estimated minimum monthly payment KES','minimum',true)+
+  field('Next expected due date','nextDueOn','date',false)+
+  '<button type="submit">Record user-reported debt</button></form>')+
+  card('Estimated debt positions',b5.debts.length?
+   '<ul class="connected-list">'+b5.debts.map(x=>'<li><b>'+esc(x.name)+'</b>'+
+   '<span>'+esc(x.lenderName)+' · Estimated outstanding '+money(x.estimatedOutstandingMinor)+
+   ' · APR '+esc((x.aprBasisPoints/100).toFixed(2))+'% · '+esc(x.evidence)+'</span></li>').join('')+'</ul>':b5Empty)+
+  b5Note+btn('Debt detail & manual repayment links',44)+btn('Payoff illustrations',45);
+}
+function b5DebtDetailScreen(){
+ const expenses=data.transactions.filter(x=>x.kind==='EXPENSE'&&!x.reversesTransactionId);
+ return card('Manual debt principal cross-reference',
+  '<p>Link an already POSTED expense to a reported principal reduction. No loan repayment is initiated. A journal reversal automatically invalidates the derived reduction.</p>'+
+  (b5.debts.length&&expenses.length?
+   '<form data-form="b5-debt-payment">'+select('Debt','debtId',b5.debts.map(x=>[x.id,x.name]))+
+    select('Posted expense','manualTransactionId',expenses.map(x=>[x.id,x.description+' · '+money(Math.abs(x.amountMinor))]))+
+    b5Amount('Principal portion KES','amount')+
+    '<button type="submit">Link recorded expense</button></form>':
+    '<p>First record a debt and an EXPENSE in the manual ledger.</p>'))+
+  card('Principal tracking',b5.debts.length?'<ul class="connected-list">'+b5.debts.map(x=>
+   '<li><b>'+esc(x.name)+'</b><span>Initial '+money(x.startingOutstandingMinor)+
+   ' · linked principal '+money(x.linkedPrincipalMinor)+
+   ' · estimated remaining '+money(x.estimatedOutstandingMinor)+'</span></li>').join('')+'</ul>':b5Empty)+b5Note;
+}
+function b5DebtOptimizerScreen(){
+ return card('Debt repayment optimizer · indicative only',
+  '<p>Fixed-rate payoff estimates use your APR and minimum monthly payment. They exclude lender fees, changing rates and exact amortization schedules.</p>'+
+  (b5.debts.length?'<div class="connected-table"><table><thead><tr><th>Debt</th><th>Est. outstanding</th><th>APR</th><th>Illustrative payoff</th></tr></thead><tbody>'+
+    [...b5.debts].sort((a,b)=>b.aprBasisPoints-a.aprBasisPoints).map(x=>
+     '<tr><td>'+esc(x.name)+'</td><td>'+money(x.estimatedOutstandingMinor)+'</td>'+
+     '<td>'+esc((x.aprBasisPoints/100).toFixed(2))+'%</td><td>'+
+     (x.payoffIllustration?esc(x.payoffIllustration.months)+' months; '+money(x.payoffIllustration.interestMinor)+' estimated interest':
+      'Cannot confirm payoff from current assumptions')+'</td></tr>').join('')+'</tbody></table></div>':b5Empty)+b5Note);
+}
+function b5TaxScreen(){
+ const expenses=data.transactions.filter(x=>x.kind==='EXPENSE'&&!x.reversesTransactionId);
+ return card('Tax overview · user-entered estimates only',
+  '<p>Not a KRA integration. No legal tax determination, filings, payment initiation or receipt verification.</p>'+
+  '<form data-form="b5-tax">'+field('Tax estimate label','label')+
+  select('Tax category','taxKind',[['INCOME_TAX','Income tax'],['VAT','VAT'],['TURNOVER_TAX','Turnover tax'],['OTHER','Other']])+
+  field('Tax year','taxYear','number',true,String(new Date().getFullYear()),'min="2000" max="2100" step="1"')+
+  b5Amount('Estimated tax KES','estimated',true)+field('Estimated due date','dueOn','date')+
+  '<button type="submit">Save manual estimate</button></form>')+
+  card('Estimated obligations',b5.taxes.length?'<ul class="connected-list">'+b5.taxes.map(x=>
+   '<li><b>'+esc(x.label)+'</b><span>'+esc(x.taxKind)+' · '+esc(x.dueOn)+
+   ' · Estimated remaining '+money(x.estimatedRemainingMinor)+
+   ' · Not filed by Finance OS</span></li>').join('')+'</ul>':b5Empty)+
+  card('Cross-reference a POSTED manual expense',b5.taxes.length&&expenses.length?
+   '<form data-form="b5-tax-payment">'+select('Tax estimate','obligationId',b5.taxes.map(x=>[x.id,x.label]))+
+   select('Manual expense','manualTransactionId',expenses.map(x=>[x.id,x.description+' · '+money(Math.abs(x.amountMinor))]))+
+   b5Amount('Tax portion KES','amount')+'<button type="submit">Link existing expense (no KRA receipt)</button></form>':
+   '<p>Record a tax estimate and a manual EXPENSE first.</p>')+b5Note;
+}
+function b5InsuranceScreen(){
+ return card('Insurance & protection · unverified register',
+  '<p>Coverage is user-reported. Dates are reminders, not insurer-confirmed protection or claims eligibility.</p>'+
+  '<form data-form="b5-insurance">'+field('Cover nickname','name')+
+  field('Insurer label (never enter a policy number)','insurerLabel')+
+  select('Cover type','coverageKind',[['HEALTH','Health'],['LIFE','Life'],['MOTOR','Motor'],
+   ['PROPERTY','Property'],['DISABILITY','Disability'],['OTHER','Other']])+
+  field('Start date','startOn','date')+field('Expiry date','expiresOn','date')+
+  b5Amount('Reported premium KES','premium',true)+b5Amount('Reported cover limit KES','limit',true)+
+  '<button type="submit">Save unverified cover</button></form>')+
+  card('Insurance register',b5.policies.length?'<ul class="connected-list">'+b5.policies.map(x=>
+   '<li><b>'+esc(x.name)+'</b><span>'+esc(x.insurerLabel)+' · '+esc(x.coverageKind)+
+   ' · '+esc(x.startOn)+' → '+esc(x.expiresOn)+' · Limit '+money(x.coverageLimitMinor)+
+   ' · Unverified</span></li>').join('')+'</ul>':b5Empty)+b5Note;
+}
+function b5RetirementScreen(){
+ return card('Retirement scenarios · non-executing nominal projections',
+  '<p>Assumed annual returns are not guaranteed. This model excludes market volatility, inflation, taxes, fees and provider balances.</p>'+
+  '<form data-form="b5-retirement">'+field('Plan name','name')+
+  b5Amount('Hypothetical starting retirement balance KES','current',true)+
+  b5Amount('Hypothetical monthly contribution KES','monthly',true)+
+  b5Amount('Target KES','target')+field('Months to project','horizon','number',true,'120','min="1" max="600" step="1"')+
+  field('Assumed nominal annual return %','annualReturn','number',true,'0','min="0" max="15" step="0.01"')+
+  '<button type="submit">Save non-executing projection</button></form>')+
+  card('Saved illustrations',b5.retirement.length?'<ul class="connected-list">'+b5.retirement.map(x=>
+   '<li><b>'+esc(x.name)+'</b><span>'+esc(x.horizonMonths)+' months · Hypothetical '+
+   money(x.simulation.endingMinor)+' · Goal '+money(x.targetMinor)+
+   ' · '+(x.simulation.targetMet?'Illustrative target reached':'Below target in model')+
+   '</span></li>').join('')+'</ul>':b5Empty)+b5Note;
+}
+function b5EstateScreen(){
+ if(workspaces.find(w=>w.id===workspaceId)?.role!=='OWNER')
+  return card('Private estate readiness','<p>Only the workspace owner may read or save estate checklist records. No beneficiary identities or legal documents are stored.</p>');
+ const latest=b5.estate[0];
+ const flags=[['willPrepared','Will prepared'],['beneficiariesReviewed','Beneficiaries reviewed'],
+  ['executorNominated','Executor nominated'],['dependantsConsidered','Dependants considered'],
+  ['recordsSecured','Documents secured']];
+ return card('Estate planning · owner-only readiness',
+  '<p>This saves only yes/no checklist flags, never names, IDs, wills or beneficiary records. It is not a legally valid instrument.</p>'+
+  '<form data-form="b5-estate">'+flags.map(([k,n])=>
+   '<label class="connected-field"><input type="checkbox" name="'+k+'" value="yes" '+
+   (latest?.[k]?'checked':'')+'> '+esc(n)+'</label>').join('')+
+  field('Review date','reviewedOn','date',true,latest?.reviewedOn||new Date().toISOString().slice(0,10))+
+  '<button type="submit">Save private checklist snapshot</button></form>')+
+  card('Latest readiness record',latest?
+   '<p>'+esc(latest.completedCount)+' of '+esc(latest.totalItems)+
+   ' marked complete · '+esc(latest.reviewedOn)+'. This is not a legal document.</p>':b5Empty)+b5Note;
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
@@ -780,6 +903,13 @@ function renderedScreen(){
  case 40:return affordabilityScreen();
  case 41:return fundingApprovals();
  case 42:return scenarioScreen();
+ case 43:return b5DebtScreen();
+ case 44:return b5DebtDetailScreen();
+ case 45:return b5DebtOptimizerScreen();
+ case 46:return b5TaxScreen();
+ case 47:return b5InsuranceScreen();
+ case 48:return b5RetirementScreen();
+ case 49:return b5EstateScreen();
 
  default:return soon(id);
  }
@@ -876,7 +1006,42 @@ async function submit(form){
    notice='A POSTED manual expense was linked as unverified evidence. No payment was initiated.';
    await refresh();return;
   }
-  else if(kind==='b4-bucket'){
+  
+  else if(kind==='b5-debt'){
+   await request(base+'/debts',true,{method:'POST',body:{
+    name:d.name,lenderName:d.lenderName,currency:'KES',originalMinor:asMinor(d.original),
+    outstandingMinor:asMinor(d.outstanding),aprBasisPoints:Math.round(Number(d.apr)*100),
+    minimumPaymentMinor:b4Minor(d.minimum),nextDueOn:d.nextDueOn||null}});
+  }else if(kind==='b5-debt-payment'){
+   await request(base+'/debts/'+encodeURIComponent(d.debtId)+'/payments',true,{method:'POST',
+    body:{manualTransactionId:d.manualTransactionId,amountMinor:asMinor(d.amount)}});
+   notice='Existing manual expense linked; no lender payment was initiated.';await refresh();return;
+  }else if(kind==='b5-tax'){
+   await request(base+'/tax/obligations',true,{method:'POST',body:{
+    label:d.label,taxKind:d.taxKind,taxYear:Number(d.taxYear),
+    estimatedMinor:b4Minor(d.estimated),dueOn:d.dueOn,currency:'KES'}});
+  }else if(kind==='b5-tax-payment'){
+   await request(base+'/tax/obligations/'+encodeURIComponent(d.obligationId)+'/payments',true,{method:'POST',
+    body:{manualTransactionId:d.manualTransactionId,amountMinor:asMinor(d.amount)}});
+   notice='Existing manual expense linked; no tax return filed or KRA receipt verified.';await refresh();return;
+  }else if(kind==='b5-insurance'){
+   await request(base+'/insurance/policies',true,{method:'POST',body:{
+    name:d.name,insurerLabel:d.insurerLabel,coverageKind:d.coverageKind,
+    startOn:d.startOn,expiresOn:d.expiresOn,premiumMinor:b4Minor(d.premium),
+    coverageLimitMinor:b4Minor(d.limit),currency:'KES'}});
+  }else if(kind==='b5-retirement'){
+   await request(base+'/retirement/scenarios',true,{method:'POST',body:{
+    name:d.name,currentMinor:b4Minor(d.current),monthlyContributionMinor:b4Minor(d.monthly),
+    targetMinor:asMinor(d.target),horizonMonths:Number(d.horizon),
+    annualReturnBasisPoints:Math.round(Number(d.annualReturn)*100),currency:'KES'}});
+  }else if(kind==='b5-estate'){
+   const body={reviewedOn:d.reviewedOn};
+   for(const flag of ['willPrepared','beneficiariesReviewed','executorNominated','dependantsConsidered','recordsSecured'])
+    body[flag]=d[flag]==='yes';
+   await request(base+'/estate/checklists',true,{method:'POST',body});
+   notice='Private, nonbinding estate-readiness snapshot saved.';await refresh();return;
+  }
+ else if(kind==='b4-bucket'){
    await request(base+'/money-buckets',true,{method:'POST',body:{
     name:d.name,purpose:d.purpose,priority:Number(d.priority),currency:'KES'}});
   }else if(kind==='b4-goal'){
@@ -960,7 +1125,7 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
  }
@@ -1056,7 +1221,7 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='b4SelectedGoal'){selectedGoal=t.value;draw();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
@@ -1078,6 +1243,13 @@ window.addEventListener('hashchange',()=>{
  if(token&&workspaceId&&active&&b4LoadedFor!==workspaceId&&!busy){
   b4={...b4,summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[]};
   void refresh();
+ }
+});
+window.addEventListener('hashchange',()=>{
+ const active=screen()>=43&&screen()<=49;
+ if(!active)b5LoadedFor='';
+ if(token&&workspaceId&&active&&b5LoadedFor!==workspaceId&&!busy){
+  b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};void refresh();
  }
 });
 (async()=>{await initConfig();if(apiBase)try{await finishOidc();}catch(ex){error=String(ex.message||ex);}draw();})();
