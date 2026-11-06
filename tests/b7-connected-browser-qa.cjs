@@ -17,6 +17,10 @@ function api(url,method,body){
  if(url==='/v1/me')return {id:workspace,displayName:'CI B7 User'};
  if(url==='/v1/workspaces')return {items:[{id:workspace,name:'CI personal',kind:'PERSONAL',role:'OWNER',baseCurrency:'KES'}]};
  const p=url.replace('/v1/workspaces/'+workspace,'').split('?')[0];
+ if(p==='/certification/financial-integrity')return {
+  status:'PASS_MANUAL_LEDGER',canClaimBankReconciled:false,providerVerified:false,
+  productionCertified:false,ledger:{totalManualCashLedgerMinor:300000,
+   cashReconciled:true,postedJournalCount:4,transactionCashEffectMismatches:0}};
  if(p==='/financial-health')return {
   status:'POSITIVE_MANUAL_CASHFLOW',score:null,scoreReason:'No calibrated financial-health scoring or provider verified evidence',
   currency:'KES',incomeMinor:500000,expenseMinor:200000,netCashFlowMinor:300000,
@@ -125,6 +129,11 @@ async function main(){
   await page.getByText('Privacy request logged for authorized review').waitFor();
   assert.equal(state.privacy.length,1);
   assert.equal(state.privacy[0].status,'REQUESTED');
+  await page.locator('button[data-b8-integrity]').click();
+  await page.getByText('PASS_MANUAL_LEDGER').waitFor();
+  assert.ok((await page.locator('main').innerText()).includes('Verified bank evidence: No'));
+  assert.ok((await page.locator('main').innerText()).includes('Production certification: No'));
+
   await page.locator('.connected-side button[data-go="57"]').click();
   await page.getByText('Review manual savings goals against confirmed cash.').waitFor();
   assert.ok((await page.locator('main').innerText()).includes('EXPLAINABLE_RULES_NOT_GENERATIVE_AI'));
