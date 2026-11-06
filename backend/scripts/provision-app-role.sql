@@ -27,7 +27,8 @@ GRANT INSERT ON financial_accounts,financial_categories,ledger_accounts,journal_
  budgets,budget_allocations,spending_guardrails,approval_requests,spending_approval_consumptions,
  income_sources,bills,bill_settlements,money_buckets,savings_goals,capital_funding_requests,capital_allocations,
  financial_scenarios,debts,b5_debt_payments,b5_tax_obligations,b5_tax_payments,
- b5_insurance_policies,b5_retirement_scenarios,b5_estate_checklists
+ b5_insurance_policies,b5_retirement_scenarios,b5_estate_checklists,
+ b6_assets,b6_investments,b6_liabilities,b6_valuations
  TO finance_app;
 GRANT UPDATE(status,posted_at) ON journal_entries TO finance_app;
 GRANT UPDATE(result_id) ON idempotency_records TO finance_app;
