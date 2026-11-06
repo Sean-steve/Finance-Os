@@ -876,7 +876,7 @@ const b6Empty='<p>No matching user-reported wealth records have been saved. Empt
 const b6Amount=(label,key,zero=false)=>field(label,key,'text',true,zero?'0':'','pattern="[0-9]+(\\.[0-9]{1,2})?"');
 const b6Date=()=>new Date().toISOString().slice(0,10);
 const b6Units=value=>{
- const s=String(value||'').trim(),m=/^(\\d{1,6})(?:\\.(\\d{1,6}))?$/.exec(s);
+ const s=String(value||'').trim(),m=/^([0-9]{1,6})(?:[.]([0-9]{1,6}))?$/.exec(s);
  if(!m)throw new Error('Enter 1–6 decimal places of quantity.');
  const x=Number(m[1])*1000000+Number((m[2]||'').padEnd(6,'0'));
  if(!Number.isSafeInteger(x)||x<=0)throw new Error('Quantity must be positive.');
@@ -1161,6 +1161,28 @@ async function submit(form){
    await refresh();return;
   }
   
+
+  else if(kind==='b6-asset'){
+   await request(base+'/wealth/assets',true,{method:'POST',body:{
+    name:d.name,assetKind:d.assetKind,initialValueMinor:b4Minor(d.initial),
+    currency:'KES',acquiredOn:d.acquiredOn||null}});
+   notice='User-estimated asset saved; no independent appraisal.';await refresh();return;
+  }else if(kind==='b6-liability'){
+   await request(base+'/wealth/liabilities',true,{method:'POST',body:{
+    name:d.name,liabilityKind:d.liabilityKind,initialValueMinor:asMinor(d.initial),currency:'KES'}});
+   notice='Manual nonloan liability saved; do not duplicate B5 debts.';await refresh();return;
+  }else if(kind==='b6-investment'){
+   await request(base+'/wealth/investments',true,{method:'POST',body:{
+    name:d.name,investmentKind:d.investmentKind,quantityMicros:b6Units(d.quantity),
+    costBasisMinor:b4Minor(d.cost),initialValueMinor:b4Minor(d.initial),currency:'KES'}});
+   notice='Self-reported investment saved. No trade or provider connection occurred.';await refresh();return;
+  }else if(['b6-asset-value','b6-investment-value','b6-liability-value'].includes(kind)){
+   const resource=kind==='b6-asset-value'?'assets':kind==='b6-investment-value'?'investments':'liabilities';
+   await request(base+'/wealth/'+resource+'/'+encodeURIComponent(d.id)+'/valuations',true,{method:'POST',
+    body:{valueMinor:b4Minor(d.value),recordedOn:d.recordedOn,note:d.note,currency:'KES'}});
+   b6.historyTarget='';b6.history=[];
+   notice='Append-only user valuation saved. No journal, trade or financial transfer occurred.';await refresh();return;
+  }
   else if(kind==='b5-debt'){
    await request(base+'/debts',true,{method:'POST',body:{
     name:d.name,lenderName:d.lenderName,currency:'KES',originalMinor:asMinor(d.original),
@@ -1274,6 +1296,18 @@ document.addEventListener('click',async event=>{
  if(!button)return;
  if(button.hasAttribute('data-go')){nav(Number(button.dataset.go));return;}
  if(button.hasAttribute('data-retry')){void refresh();return;}
+ if(button.hasAttribute('data-b6-history')){
+  const [kind,id]=String(button.dataset.b6History||'').split(':');
+  const resource=kind==='ASSET'?'assets':kind==='INVESTMENT'?'investments':kind==='LIABILITY'?'liabilities':null;
+  if(!resource||!/^[a-fA-F0-9-]{36}$/.test(id||'')){error='Invalid wealth record';draw();return;}
+  try{
+   const rows=await request(path('/wealth/'+resource+'/'+encodeURIComponent(id)+'/valuations'));
+   b6.history=rows.items||[];
+   b6.historyTarget=resource+': '+(kind==='ASSET'?b6.assets:kind==='INVESTMENT'?b6.investments:b6.liabilities).find(x=>x.id===id)?.name;
+   error='';draw();
+  }catch(ex){error=String(ex.message||ex);draw();}
+  return;
+ }
  if(button.hasAttribute('data-oidc-start')){
   try{await startOidc();}catch(ex){error=String(ex.message||ex);draw();}
  }
