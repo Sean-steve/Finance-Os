@@ -185,13 +185,17 @@ async function linkExpense(r:FastifyRequest,finance:pg.Pool,identity:IdentityRes
   const w=wid(r),op=debt?'b5.debt.payment.link':'b5.tax.payment.link';
   const idem=await reserve(db,w,key,op,{targetId,...body});
   if(!idem.fresh)return {id:idem.resultId,replayed:true,quality:moneyQuality};
+  // Advisory transaction locks avoid requiring UPDATE permission on immutable tables.
+  // Serialize both obligation totals and cross-domain reuse of a manual expense.
+  await db.query('SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))',[w,'b5-target:'+domain+':'+targetId]);
+  await db.query('SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))',[w,'b5-tx:'+body.manualTransactionId]);
   const target=await db.query(`SELECT ${ceilingColumn}::text AS ceiling FROM ${targetTable}
-    WHERE workspace_id=$1 AND id=$2 FOR UPDATE`,[w,targetId]);
+    WHERE workspace_id=$1 AND id=$2`,[w,targetId]);
   if(!target.rowCount)throw new DomainError(404,'OBLIGATION_NOT_FOUND','Record not found in workspace');
   // Lock the expense so simultaneous attempts cannot allocate one posting twice.
   const tx=await db.query<{kind:string;amount_minor:string;reverses_transaction_id:string|null}>(`
    SELECT kind,amount_minor::text,reverses_transaction_id FROM manual_transactions
-   WHERE workspace_id=$1 AND id=$2 FOR UPDATE`,[w,body.manualTransactionId]);
+   WHERE workspace_id=$1 AND id=$2`,[w,body.manualTransactionId]);
   if(!tx.rowCount||tx.rows[0]!.kind!=='EXPENSE'||minor(tx.rows[0]!.amount_minor)>=0||
      tx.rows[0]!.reverses_transaction_id)
    throw new DomainError(422,'INVALID_EXPENSE','Requires an original posted manual expense');
