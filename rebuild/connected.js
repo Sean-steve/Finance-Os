@@ -49,6 +49,7 @@ let b4LoadedFor='',selectedGoal='';
 let b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]},b5LoadedFor='';
 let b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''},b6LoadedFor='';
 let b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]},b7LoadedFor='';
+let b8Integrity=null;
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -89,6 +90,7 @@ async function request(path,authenticated=true,options={}){
 const path=segment=>'/v1/workspaces/'+encodeURIComponent(workspaceId)+segment;
 async function refresh(){
  if(!token)return;
+ b8Integrity=null;
  busy=true;draw();
  try{
   identity=await request('/v1/me');
@@ -1120,6 +1122,14 @@ function b7SettingsScreen(){
    '<p>Requests awaiting review: '+esc(p.unresolvedRequests)+' · Automatic erasure: No · Automatic export: No</p>'+
    (b7.privacy.length?'<ul class="connected-list">'+b7.privacy.map(x=>
     '<li><b>'+esc(x.requestKind)+'</b><span>'+esc(x.status)+' · '+esc(x.createdAt)+'</span></li>').join('')+'</ul>':b7Empty))+
+  card('B8 internal manual-ledger reconciliation',
+   '<p>Owner-only integrity check. It cannot verify bank statements, investments or external payments; it never posts journals.</p>'+
+   '<button type="button" data-b8-integrity>Run internal finance integrity check</button>'+
+   (b8Integrity?'<p>Status: <b>'+esc(b8Integrity.status)+'</b> · Internal cash ledger: '+money(b8Integrity.ledger.totalManualCashLedgerMinor)+
+    ' · Transaction cash effects reconciled: '+esc(b8Integrity.ledger.cashReconciled?'Yes':'No')+
+    ' · Posted journals: '+esc(b8Integrity.ledger.postedJournalCount)+
+    ' · Transaction mismatches: '+esc(b8Integrity.ledger.transactionCashEffectMismatches)+
+    ' · Verified bank evidence: No · Production certification: No.</p>':'<p>No workspace integrity report has been run in this browser session.</p>'))+
   card('Security audit · last 50 events',
    b7.audit.length?'<ul class="connected-list">'+b7.audit.map(x=>
     '<li><b>'+esc(x.eventType)+'</b><span>'+esc(x.entityType)+' · '+esc(x.occurredAt)+'</span></li>').join('')+'</ul>':b7Empty)+
@@ -1438,6 +1448,15 @@ document.addEventListener('click',async event=>{
  if(!button)return;
  if(button.hasAttribute('data-go')){nav(Number(button.dataset.go));return;}
  if(button.hasAttribute('data-retry')){void refresh();return;}
+ if(button.hasAttribute('data-b8-integrity')){
+  if(!b7Owner()){error='Owner-only financial certification.';draw();return;}
+  try{
+   b8Integrity=await request(path('/certification/financial-integrity'));
+   notice='Internal manual-ledger reconciliation only; not a bank statement audit or production certification.';
+   error='';draw();
+  }catch(ex){error=String(ex.message||ex);draw();}
+  return;
+ }
  if(button.hasAttribute('data-b7-csv')){
   const kind=button.dataset.b7Csv;
   if(!['monthly','categories'].includes(kind)){error='Invalid export kind';draw();return;}
@@ -1473,7 +1492,7 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b8Integrity=null;b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
  }
@@ -1569,7 +1588,7 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b8Integrity=null;b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='b4SelectedGoal'){selectedGoal=t.value;draw();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
