@@ -1023,6 +1023,109 @@ function b6AnalyticsScreen(){
   b6Caveat;
 }
 
+
+const b7Caveat='<p class="connected-muted">Manual KES records only, not provider-verified. This dashboard cannot confirm complete finances, give regulated advice or make financial decisions. No information is sent to an external AI or banking provider.</p>';
+const b7Empty='<p>No eligible records for this workspace and period. This does not prove zero real-world activity.</p>';
+const b7Owner=()=>workspaces.find(w=>w.id===workspaceId)?.role==='OWNER';
+function b7HealthScreen(){
+ const h=b7.health;
+ if(!h)return card('Financial health unavailable','<p>Current financial evidence could not be loaded.</p>');
+ return card('Financial health · evidence-based indicators',
+  '<div class="connected-kpis"><article><span>Review status</span><strong>'+esc(h.status.replaceAll('_',' '))+'</strong><small>No synthetic 0–100 score</small></article>'+
+  '<article><span>Posted manual income</span><strong>'+money(h.incomeMinor)+'</strong></article>'+
+  '<article><span>Posted manual expenses</span><strong>'+money(h.expenseMinor)+'</strong></article>'+
+  '<article><span>Net posted cash flow</span><strong>'+money(h.netCashFlowMinor)+'</strong></article></div>'+
+  '<p>Observations: '+esc(h.postedTransactionCount)+' · Months with records: '+esc(h.monthsWithRecords)+
+  ' · Coverage: '+esc(h.dataQuality)+'</p>'+
+  '<p>Indicative savings rate: '+(h.savingsRateBasisPoints===null?'Not enough income evidence':
+   esc((h.savingsRateBasisPoints/100).toFixed(2))+'%')+
+  ' · Estimated net worth: '+money(h.estimatedNetWorthMinor)+'</p>')+
+  card('Why there is no fabricated financial score',
+   '<p>'+esc(h.scoreReason)+'. Indicators use posted manual transactions and estimated assets.'+
+   ' Missing or provider-unverified records can change the result materially.</p>')+
+  b7Caveat+btn('Review explainable guidance',57)+btn('Open reports',58);
+}
+function b7AdvisorScreen(){
+ const a=b7.advisor;
+ if(!a)return card('Advisor unavailable','<p>The advice-policy service could not be loaded.</p>');
+ return card('Financial advisor · explainable rule engine',
+  '<p>This is <b>not a generative AI or licensed financial advisor</b>. No third-party AI endpoint is configured.</p>'+
+  '<p>Mode: '+esc(a.mode)+' · External AI used: No · Provider data sent: No</p>'+
+  (!a.enabled?'<p>Guidance is switched off by default. The workspace owner can opt in via Settings, Privacy & Security.</p>'+
+   (b7Owner()?btn('Open advisor preferences',60):'<p>Only the workspace owner may change this consent.</p>'):
+  a.items.length?'<ul class="connected-list">'+a.items.map(x=>
+   '<li><b>'+esc(x.code.replaceAll('_',' '))+'</b><span>'+esc(x.message)+
+   ' · Evidence: '+esc(x.evidence)+'</span></li>').join('')+'</ul>':b7Empty))+
+  card('Human approval remains authoritative',
+  '<p>No loan, investment, savings transfer, tax filing or other financial action can be initiated from these suggestions. Verify information before acting.</p>')+
+  b7Caveat;
+}
+function b7ReportsScreen(){
+ const m=b7.monthly,c=b7.categories;
+ if(!m||!c)return card('Financial reports unavailable','<p>Real posted-manual reports could not be retrieved.</p>');
+ return card('Financial reports · last '+esc(m.months)+' calendar months',
+  '<p>All figures are posted manual KES amounts. Reversed and future postings are excluded.</p>'+
+  '<div class="connected-kpis"><article><span>Income</span><strong>'+money(m.totals.incomeMinor)+'</strong></article>'+
+  '<article><span>Expenses</span><strong>'+money(m.totals.expenseMinor)+'</strong></article>'+
+  '<article><span>Net cash flow</span><strong>'+money(m.totals.netMinor)+'</strong></article></div>'+
+  '<button type="button" data-b7-csv="monthly">Export monthly CSV locally</button>')+
+  card('Monthly posted transaction totals',
+   '<div class="connected-table"><table><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th><th>Count</th></tr></thead><tbody>'+
+   m.periods.map(x=>'<tr><td>'+esc(x.month)+'</td><td>'+money(x.incomeMinor)+
+   '</td><td>'+money(x.expenseMinor)+'</td><td>'+money(x.netMinor)+'</td><td>'+esc(x.transactionCount)+'</td></tr>').join('')+
+   '</tbody></table></div>')+
+  card('Recorded category totals',
+   c.items.length?'<div class="connected-table"><table><thead><tr><th>Category</th><th>Kind</th><th>Total</th></tr></thead><tbody>'+
+   c.items.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.kind)+
+   '</td><td>'+money(x.amountMinor)+'</td></tr>').join('')+
+   '</tbody></table></div><button type="button" data-b7-csv="categories">Export category CSV locally</button>':b7Empty)+
+  b7Caveat;
+}
+function b7IntegrationsScreen(){
+ const catalog=b7.catalog;
+ if(!catalog)return card('Integrations unavailable','<p>Connection capabilities are not available.</p>');
+ return card('Integration readiness · no live bank or broker connections',
+  '<p>All provider integrations are currently <b>unconfigured</b>. Finance OS does not store bank passwords, run OAuth bank consent, import bank feeds, submit tax returns or fetch broker holdings in B7.</p>'+
+  '<ul class="connected-list">'+catalog.items.map(x=>
+   '<li><b>'+esc(x.providerKind)+'</b><span>'+esc(x.capability)+
+   ' · '+esc(x.connectionStatus)+' · Connection unavailable</span></li>').join('')+'</ul>')+
+  card('Request provider integration information',
+  !b7Owner()?'<p>Workspace owners control requests for future integration setup.</p>':
+  '<p>An information request records interest only; it does not authorize access or connect a provider.</p>'+
+  '<form data-form="b7-integration">'+select('Provider category','providerKind',
+   catalog.items.map(x=>[x.providerKind,x.capability]))+
+  '<button type="submit">Record information request</button></form>'+
+  (b7.requests.length?'<ul class="connected-list">'+b7.requests.map(x=>
+   '<li><b>'+esc(x.providerKind)+'</b><span>'+esc(x.connectionStatus)+' · '+esc(x.intentKind)+'</span></li>').join('')+'</ul>':b7Empty))+
+  b7Caveat;
+}
+function b7SettingsScreen(){
+ if(!b7Owner())return card('Private settings and audit','<p>Only the workspace owner may view or update privacy, settings, integration requests and security audit history.</p>')+b7Caveat;
+ const s=b7.settings,p=b7.privacyStatus;
+ if(!s||!p)return card('Settings unavailable','<p>Workspace privacy settings could not be loaded.</p>');
+ return card('Settings · consent and privacy controls',
+  '<form data-form="b7-settings">'+
+  '<label class="connected-field"><input type="checkbox" name="advisorEnabled" value="yes" '+(s.advisorEnabled?'checked':'')+'> Enable rules-only financial guidance (no external AI)</label>'+
+  '<p>Analytics sharing: <b>Disabled and unavailable</b>. No external data sharing is supported in this phase.</p>'+
+  select('Monthly review day','monthlyReviewDay',Array.from({length:28},(_,i)=>[String(i+1),'Day '+(i+1)]),String(s.monthlyReviewDay))+
+  select('Default report period','periodMonths',Array.from({length:12},(_,i)=>[String(i+1),(i+1)+' months']),String(s.periodMonths))+
+  '<button type="submit">Save owner preferences</button></form>'+
+  '<p>Settings source: '+esc(s.configurationSource)+' · Bank sync: Disabled · External AI: Disabled</p>')+
+  card('Privacy requests · human review required',
+   '<p>Data export, access and erasure are <b>review requests</b>, not completed actions. Financial records and audits cannot be deleted without retention, identity and legal review.</p>'+
+   '<form data-form="b7-privacy">'+select('Privacy request','requestKind',[
+    ['EXPORT_REVIEW','Request data export review'],['ACCESS_REVIEW','Request access review'],
+    ['ERASURE_REVIEW','Request erasure eligibility review']])+
+   '<button type="submit">Submit privacy request</button></form>'+
+   '<p>Requests awaiting review: '+esc(p.unresolvedRequests)+' · Automatic erasure: No · Automatic export: No</p>'+
+   (b7.privacy.length?'<ul class="connected-list">'+b7.privacy.map(x=>
+    '<li><b>'+esc(x.requestKind)+'</b><span>'+esc(x.status)+' · '+esc(x.createdAt)+'</span></li>').join('')+'</ul>':b7Empty))+
+  card('Security audit · last 50 events',
+   b7.audit.length?'<ul class="connected-list">'+b7.audit.map(x=>
+    '<li><b>'+esc(x.eventType)+'</b><span>'+esc(x.entityType)+' · '+esc(x.occurredAt)+'</span></li>').join('')+'</ul>':b7Empty)+
+  b7Caveat;
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
