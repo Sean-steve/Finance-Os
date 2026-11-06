@@ -46,6 +46,7 @@ let data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[
 let selectedAccount='',selectedTransaction='',selectedBill='',lastEval=null,lastCheck=null,b3LoadedFor='',loadFailed=false,billHistory=null;
 let b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};
 let b4LoadedFor='',selectedGoal='';
+let b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]},b5LoadedFor='';
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -94,9 +95,12 @@ async function refresh(){
   if(workspaceId){
    const b3Active=screen()>=27&&screen()<=34;
    const b4Active=screen()>=35&&screen()<=42;
+   const b5Active=screen()>=43&&screen()<=49;
+   const estateOwner=workspaces.find(w=>w.id===workspaceId)?.role==='OWNER';
    const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals',
     ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[]),
-    ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[])];
+    ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[]),
+    ...(b5Active?['/debts','/tax/obligations','/insurance/policies','/retirement/scenarios',...(estateOwner?['/estate/checklists']:[])]:[])];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
     journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
@@ -118,6 +122,13 @@ async function refresh(){
     b4LoadedFor=workspaceId;
     selectedGoal=b4.goals.some(g=>g.id===selectedGoal)?selectedGoal:(b4.goals[0]?.id||'');
    }
+   if(b5Active){
+    const offset=10+(b3Active?8:0)+(b4Active?6:0);
+    b5={debts:result[offset].items||[],taxes:result[offset+1].items||[],
+     policies:result[offset+2].items||[],retirement:result[offset+3].items||[],
+     estate:estateOwner?result[offset+4].items||[]:[]};
+    b5LoadedFor=workspaceId;
+   }
    if(b3Active){
     b3LoadedFor=workspaceId;
     billHistory=null;
@@ -130,7 +141,7 @@ async function refresh(){
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
   }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   error='';loadFailed=false;
- }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{const target='screen/'+n;const changed=location.hash.slice(1)!==target;location.hash=target;window.scrollTo(0,0);if(!changed)draw();};
@@ -780,6 +791,13 @@ function renderedScreen(){
  case 40:return affordabilityScreen();
  case 41:return fundingApprovals();
  case 42:return scenarioScreen();
+ case 43:return b5DebtScreen();
+ case 44:return b5DebtDetailScreen();
+ case 45:return b5DebtOptimizerScreen();
+ case 46:return b5TaxScreen();
+ case 47:return b5InsuranceScreen();
+ case 48:return b5RetirementScreen();
+ case 49:return b5EstateScreen();
 
  default:return soon(id);
  }
@@ -960,7 +978,7 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
  }
@@ -1056,7 +1074,7 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='b4SelectedGoal'){selectedGoal=t.value;draw();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
@@ -1078,6 +1096,13 @@ window.addEventListener('hashchange',()=>{
  if(token&&workspaceId&&active&&b4LoadedFor!==workspaceId&&!busy){
   b4={...b4,summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[]};
   void refresh();
+ }
+});
+window.addEventListener('hashchange',()=>{
+ const active=screen()>=43&&screen()<=49;
+ if(!active)b5LoadedFor='';
+ if(token&&workspaceId&&active&&b5LoadedFor!==workspaceId&&!busy){
+  b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};void refresh();
  }
 });
 (async()=>{await initConfig();if(apiBase)try{await finishOidc();}catch(ex){error=String(ex.message||ex);}draw();})();
