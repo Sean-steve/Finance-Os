@@ -1006,7 +1006,42 @@ async function submit(form){
    notice='A POSTED manual expense was linked as unverified evidence. No payment was initiated.';
    await refresh();return;
   }
-  else if(kind==='b4-bucket'){
+  
+  else if(kind==='b5-debt'){
+   await request(base+'/debts',true,{method:'POST',body:{
+    name:d.name,lenderName:d.lenderName,currency:'KES',originalMinor:asMinor(d.original),
+    outstandingMinor:asMinor(d.outstanding),aprBasisPoints:Math.round(Number(d.apr)*100),
+    minimumPaymentMinor:b4Minor(d.minimum),nextDueOn:d.nextDueOn||null}});
+  }else if(kind==='b5-debt-payment'){
+   await request(base+'/debts/'+encodeURIComponent(d.debtId)+'/payments',true,{method:'POST',
+    body:{manualTransactionId:d.manualTransactionId,amountMinor:asMinor(d.amount)}});
+   notice='Existing manual expense linked; no lender payment was initiated.';await refresh();return;
+  }else if(kind==='b5-tax'){
+   await request(base+'/tax/obligations',true,{method:'POST',body:{
+    label:d.label,taxKind:d.taxKind,taxYear:Number(d.taxYear),
+    estimatedMinor:b4Minor(d.estimated),dueOn:d.dueOn,currency:'KES'}});
+  }else if(kind==='b5-tax-payment'){
+   await request(base+'/tax/obligations/'+encodeURIComponent(d.obligationId)+'/payments',true,{method:'POST',
+    body:{manualTransactionId:d.manualTransactionId,amountMinor:asMinor(d.amount)}});
+   notice='Existing manual expense linked; no tax return filed or KRA receipt verified.';await refresh();return;
+  }else if(kind==='b5-insurance'){
+   await request(base+'/insurance/policies',true,{method:'POST',body:{
+    name:d.name,insurerLabel:d.insurerLabel,coverageKind:d.coverageKind,
+    startOn:d.startOn,expiresOn:d.expiresOn,premiumMinor:b4Minor(d.premium),
+    coverageLimitMinor:b4Minor(d.limit),currency:'KES'}});
+  }else if(kind==='b5-retirement'){
+   await request(base+'/retirement/scenarios',true,{method:'POST',body:{
+    name:d.name,currentMinor:b4Minor(d.current),monthlyContributionMinor:b4Minor(d.monthly),
+    targetMinor:asMinor(d.target),horizonMonths:Number(d.horizon),
+    annualReturnBasisPoints:Math.round(Number(d.annualReturn)*100),currency:'KES'}});
+  }else if(kind==='b5-estate'){
+   const body={reviewedOn:d.reviewedOn};
+   for(const flag of ['willPrepared','beneficiariesReviewed','executorNominated','dependantsConsidered','recordsSecured'])
+    body[flag]=d[flag]==='yes';
+   await request(base+'/estate/checklists',true,{method:'POST',body});
+   notice='Private, nonbinding estate-readiness snapshot saved.';await refresh();return;
+  }
+ else if(kind==='b4-bucket'){
    await request(base+'/money-buckets',true,{method:'POST',body:{
     name:d.name,purpose:d.purpose,priority:Number(d.priority),currency:'KES'}});
   }else if(kind==='b4-goal'){
