@@ -48,6 +48,7 @@ let b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[]
 let b4LoadedFor='',selectedGoal='';
 let b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]},b5LoadedFor='';
 let b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''},b6LoadedFor='';
+let b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]},b7LoadedFor='';
 const screen=()=>{const n=Number((location.hash.match(/screen\/(\d+)/)||[])[1]||1);return Number.isInteger(n)&&n>=1&&n<=60?n:1;};
 const isLocal=()=>['localhost','127.0.0.1'].includes(location.hostname)&&location.protocol==='http:';
 async function initConfig(){
@@ -98,12 +99,15 @@ async function refresh(){
    const b4Active=screen()>=35&&screen()<=42;
    const b5Active=screen()>=43&&screen()<=49;
    const b6Active=screen()>=50&&screen()<=55;
+   const b7Active=screen()>=56&&screen()<=60;
    const estateOwner=workspaces.find(w=>w.id===workspaceId)?.role==='OWNER';
    const routes=['/accounts','/categories','/transactions','/ledger/journal-entries','/reconciliation','/ledger/summary','/budgets','/spending/insights?months=6','/spending/guardrails','/spending/approvals',
     ...(b3Active?['/income/sources','/income/overview?months=6','/income/forecast?days=90','/bills','/bills/calendar','/cash-flow/forecast?days=90','/cash-flow/timeline?days=90','/cash-flow/shortfalls?days=90']:[]),
     ...(b4Active?['/capital/summary','/money-buckets','/savings-goals','/capital/allocations','/capital/requests','/planning/scenarios']:[]),
     ...(b5Active?['/debts','/tax/obligations','/insurance/policies','/retirement/scenarios',...(estateOwner?['/estate/checklists']:[])]:[]),
-    ...(b6Active?['/wealth/summary','/wealth/analytics','/wealth/assets','/wealth/investments','/wealth/liabilities']:[])];
+    ...(b6Active?['/wealth/summary','/wealth/analytics','/wealth/assets','/wealth/investments','/wealth/liabilities']:[]),
+    ...(b7Active?['/financial-health','/advisor','/reports/monthly?months=6','/reports/categories?months=6','/integrations/catalog',
+     ...(estateOwner?['/settings','/integrations/requests','/privacy/requests','/privacy/status','/security/audit']:[])]:[])];
    const result=await Promise.all(routes.map(s=>request(path(s))));
    data={accounts:result[0].items||[],categories:result[1].items||[],transactions:result[2].items||[],
     journals:result[3].items||[],reconciliation:result[4].items||[],summary:result[5],
@@ -138,6 +142,16 @@ async function refresh(){
      assets:result[offset+2].items||[],investments:result[offset+3].items||[],
      liabilities:result[offset+4].items||[]};b6LoadedFor=workspaceId;
    }
+   if(b7Active){
+    const offset=10+(b3Active?8:0)+(b4Active?6:0)+(b5Active?(estateOwner?5:4):0)+(b6Active?5:0);
+    b7={health:result[offset],advisor:result[offset+1],monthly:result[offset+2],
+     categories:result[offset+3],catalog:result[offset+4],
+     settings:estateOwner?result[offset+5]:null,
+     requests:estateOwner?result[offset+6].items||[]:[],
+     privacy:estateOwner?result[offset+7].items||[]:[],
+     privacyStatus:estateOwner?result[offset+8]:null,
+     audit:estateOwner?result[offset+9].items||[]:[]};b7LoadedFor=workspaceId;
+   }
    if(b3Active){
     b3LoadedFor=workspaceId;
     billHistory=null;
@@ -150,7 +164,7 @@ async function refresh(){
    selectedTransaction=data.transactions.some(t=>t.id===selectedTransaction)?selectedTransaction:(data.transactions[0]?.id||'');
   }else data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   error='';loadFailed=false;
- }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b6LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
+ }catch(ex){error=String(ex.message||ex);loadFailed=true;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b6LoadedFor='';b7LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};}
  finally{busy=false;draw();}
 }
 const nav=(n)=>{const target='screen/'+n;const changed=location.hash.slice(1)!==target;location.hash=target;window.scrollTo(0,0);if(!changed)draw();};
@@ -1017,7 +1031,7 @@ function renderedScreen(){
   '<p>Authenticated workspace data could not be loaded. No balance, income, bill or cash-flow zero is implied. Check the API connection and retry.</p>'+
   '<button data-retry>Retry loading records</button>');
  switch(id){
- case 1:case 3:case 60:return profile();
+ case 1:case 3:return profile();
  case 2:return workspace();
  case 4:return dashboard();
  case 7:return accounts();
@@ -1064,6 +1078,11 @@ function renderedScreen(){
   case 53:return b6PortfolioScreen();
   case 54:return b6InvestmentDetailsScreen();
   case 55:return b6AnalyticsScreen();
+  case 56:return b7HealthScreen();
+  case 57:return b7AdvisorScreen();
+  case 58:return b7ReportsScreen();
+  case 59:return b7IntegrationsScreen();
+  case 60:return b7SettingsScreen();
 
  default:return soon(id);
  }
@@ -1313,7 +1332,7 @@ document.addEventListener('click',async event=>{
  }
  if(button.hasAttribute('data-logout')){
   try{if(token&&!provider)await request('/v1/auth/logout',true,{method:'POST'});}catch{}
-  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
+  token='';identity=null;workspaces=[];workspaceId='';lastEval=null;lastCheck=null;b3LoadedFor='';b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};billHistory=null;loadFailed=false;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};
   notice='Local API session cleared. Identity-provider single sign-on session must be ended at the provider.';
   draw();
  }
@@ -1409,7 +1428,7 @@ document.addEventListener('submit',event=>{
 });
 document.addEventListener('change',event=>{
  const t=event.target;
- if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
+ if(t.matches('[data-workspace]')){workspaceId=t.value;b4LoadedFor='';b5LoadedFor='';b5={debts:[],taxes:[],policies:[],retirement:[],estate:[]};b6LoadedFor='';b6={summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};b7LoadedFor='';b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};b4={summary:null,buckets:[],goals:[],allocations:[],requests:[],scenarios:[],scenario:null,affordability:null};lastEval=null;lastCheck=null;b3LoadedFor='';billHistory=null;data={accounts:[],categories:[],transactions:[],journals:[],reconciliation:[],summary:null,budgets:[],insights:null,guardrails:[],approvals:[],incomeSources:[],incomeOverview:null,incomeForecast:null,bills:[],billOverview:null,billCalendar:[],cashflow:null,history:null,shortfalls:null};void refresh();}
  if(t.name==='b4SelectedGoal'){selectedGoal=t.value;draw();}
  if(t.name==='selectedAccount'){selectedAccount=t.value;draw();}
  if(t.name==='selectedTransaction'){selectedTransaction=t.value;draw();}
@@ -1445,6 +1464,14 @@ window.addEventListener('hashchange',()=>{
  if(!active)b6LoadedFor='';
  if(token&&workspaceId&&active&&b6LoadedFor!==workspaceId&&!busy){
   b6={...b6,summary:null,analytics:null,assets:[],investments:[],liabilities:[],history:[],historyTarget:''};
+  void refresh();
+ }
+});
+window.addEventListener('hashchange',()=>{
+ const active=screen()>=56&&screen()<=60;
+ if(!active)b7LoadedFor='';
+ if(token&&workspaceId&&active&&b7LoadedFor!==workspaceId&&!busy){
+  b7={health:null,advisor:null,monthly:null,categories:null,catalog:null,settings:null,requests:[],privacy:[],privacyStatus:null,audit:[]};
   void refresh();
  }
 });
