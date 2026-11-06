@@ -116,8 +116,11 @@ test('B5: all five domains, no false provider authority, idempotency, tenant and
    'Reversed manual reference must stop reducing estimated principal');
   await assert.rejects(admin.query('UPDATE b5_tax_obligations SET estimated_minor=1 WHERE id=$1',[taxId]),
    /append-only/);
-  const count=await admin.query(`SELECT count(*)::int AS n FROM journal_entries
-    WHERE workspace_id=$1 AND source_type='MANUAL'`,[w]);
-  assert.equal(count.rows[0].n,4,'Only income, two expenses and the reversal may create manual journals');
+  const counts=await admin.query(`SELECT source_type,count(*)::int AS n FROM journal_entries
+    WHERE workspace_id=$1 AND source_type IN ('MANUAL','REVERSAL') GROUP BY source_type`,[w]);
+  assert.equal(counts.rows.find((x:any)=>x.source_type==='MANUAL')?.n,3,
+   'Only one income and two expenses may create MANUAL journals');
+  assert.equal(counts.rows.find((x:any)=>x.source_type==='REVERSAL')?.n,1,
+   'A compensating REVERSAL journal must remain distinct from original MANUAL postings');
  }finally{await app.close();await financial.end();await auth.end();await admin.end();}
 });
