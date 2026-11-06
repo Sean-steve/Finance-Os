@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Finance OS API",
-    "version": "0.5.0",
-    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability."
+    "version": "0.6.0",
+    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability. B5 implements owner-private estate readiness, user-recorded debt and tax estimates with linked POSTED manual expenses, unverified insurance records and nominal retirement scenarios. No lending payment, tax filing, cover verification, legal document or asset execution."
   },
   "servers": [
     {
@@ -8688,6 +8688,1004 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspaceId}/debts": {
+      "get": {
+        "operationId": "listB5Debts",
+        "summary": "List reported debt and optional payoff illustrations",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB5Debt",
+        "summary": "Record a self-reported debt baseline",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "lenderName",
+                  "currency",
+                  "originalMinor",
+                  "outstandingMinor",
+                  "aprBasisPoints",
+                  "minimumPaymentMinor"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "lenderName": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  },
+                  "originalMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  },
+                  "outstandingMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  },
+                  "aprBasisPoints": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "minimumPaymentMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "nextDueOn": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "201": {
+            "description": "Created; idempotent replay returns 200"
+          },
+          "400": {
+            "description": "Invalid identifier"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          },
+          "409": {
+            "description": "Idempotency, allocation or database integrity conflict"
+          },
+          "422": {
+            "description": "Invalid fields or unsafe money assumptions"
+          },
+          "428": {
+            "description": "Idempotency-Key is mandatory"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/debts/{debtId}/payments": {
+      "post": {
+        "operationId": "linkB5DebtExpense",
+        "summary": "Link a previously POSTED manual expense to estimated principal (no lender payment)",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "debtId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "manualTransactionId",
+                  "amountMinor"
+                ],
+                "properties": {
+                  "manualTransactionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "201": {
+            "description": "Created; idempotent replay returns 200"
+          },
+          "400": {
+            "description": "Invalid identifier"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          },
+          "409": {
+            "description": "Idempotency, allocation or database integrity conflict"
+          },
+          "422": {
+            "description": "Invalid fields or unsafe money assumptions"
+          },
+          "428": {
+            "description": "Idempotency-Key is mandatory"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/tax/obligations": {
+      "get": {
+        "operationId": "listB5TaxEstimates",
+        "summary": "List non-filed user estimates and linked manual expenses",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB5TaxEstimate",
+        "summary": "Record a user-supplied tax estimate (not a KRA calculation or submission)",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "taxKind",
+                  "taxYear",
+                  "estimatedMinor",
+                  "dueOn",
+                  "currency"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "taxKind": {
+                    "type": "string",
+                    "enum": [
+                      "INCOME_TAX",
+                      "VAT",
+                      "TURNOVER_TAX",
+                      "OTHER"
+                    ]
+                  },
+                  "taxYear": {
+                    "type": "integer",
+                    "minimum": 2000,
+                    "maximum": 2100
+                  },
+                  "estimatedMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "dueOn": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "201": {
+            "description": "Created; idempotent replay returns 200"
+          },
+          "400": {
+            "description": "Invalid identifier"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          },
+          "409": {
+            "description": "Idempotency, allocation or database integrity conflict"
+          },
+          "422": {
+            "description": "Invalid fields or unsafe money assumptions"
+          },
+          "428": {
+            "description": "Idempotency-Key is mandatory"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/tax/obligations/{obligationId}/payments": {
+      "post": {
+        "operationId": "linkB5TaxExpense",
+        "summary": "Link a POSTED manual expense (not proof of KRA receipt)",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "obligationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "manualTransactionId",
+                  "amountMinor"
+                ],
+                "properties": {
+                  "manualTransactionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "201": {
+            "description": "Created; idempotent replay returns 200"
+          },
+          "400": {
+            "description": "Invalid identifier"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          },
+          "409": {
+            "description": "Idempotency, allocation or database integrity conflict"
+          },
+          "422": {
+            "description": "Invalid fields or unsafe money assumptions"
+          },
+          "428": {
+            "description": "Idempotency-Key is mandatory"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/insurance/policies": {
+      "get": {
+        "operationId": "listB5Insurance",
+        "summary": "List reported insurance policies (unverified coverage)",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB5Insurance",
+        "summary": "Record insurer and coverage facts supplied by the user",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "insurerLabel",
+                  "coverageKind",
+                  "startOn",
+                  "expiresOn",
+                  "premiumMinor",
+                  "coverageLimitMinor",
+                  "currency"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "insurerLabel": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 150
+                  },
+                  "coverageKind": {
+                    "type": "string",
+                    "enum": [
+                      "HEALTH",
+                      "LIFE",
+                      "MOTOR",
+                      "PROPERTY",
+                      "DISABILITY",
+                      "OTHER"
+                    ]
+                  },
+                  "startOn": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "expiresOn": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "premiumMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "coverageLimitMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "201": {
+            "description": "Created; idempotent replay returns 200"
+          },
+          "400": {
+            "description": "Invalid identifier"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          },
+          "409": {
+            "description": "Idempotency, allocation or database integrity conflict"
+          },
+          "422": {
+            "description": "Invalid fields or unsafe money assumptions"
+          },
+          "428": {
+            "description": "Idempotency-Key is mandatory"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/retirement/scenarios": {
+      "get": {
+        "operationId": "listB5Retirement",
+        "summary": "List immutable nominal retirement simulations (not advice or holdings)",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB5Retirement",
+        "summary": "Save a deterministic, hypothetical retirement scenario",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "currentMinor",
+                  "monthlyContributionMinor",
+                  "targetMinor",
+                  "horizonMonths",
+                  "annualReturnBasisPoints",
+                  "currency"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 150
+                  },
+                  "currentMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "monthlyContributionMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "maximum": 1000000000000
+                  },
+                  "targetMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "maximum": 1000000000000
+                  },
+                  "horizonMonths": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 600
+                  },
+                  "annualReturnBasisPoints": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1500
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "KES"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "201": {
+            "description": "Created; idempotent replay returns 200"
+          },
+          "400": {
+            "description": "Invalid identifier"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          },
+          "409": {
+            "description": "Idempotency, allocation or database integrity conflict"
+          },
+          "422": {
+            "description": "Invalid fields or unsafe money assumptions"
+          },
+          "428": {
+            "description": "Idempotency-Key is mandatory"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/estate/checklists": {
+      "get": {
+        "operationId": "listB5Estate",
+        "summary": "Owner-only estate readiness snapshots; no legal documents or identities",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createB5Estate",
+        "summary": "Create private owner-only nonbinding readiness snapshot",
+        "description": "B5 is local/manual planning only; not verified provider data, investment, tax-filing or legal advice.",
+        "x-implementation-phase": "B5",
+        "x-implementation-status": "IMPLEMENTED_B5",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 160
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "willPrepared",
+                  "beneficiariesReviewed",
+                  "executorNominated",
+                  "dependantsConsidered",
+                  "recordsSecured",
+                  "reviewedOn"
+                ],
+                "properties": {
+                  "willPrepared": {
+                    "type": "boolean"
+                  },
+                  "beneficiariesReviewed": {
+                    "type": "boolean"
+                  },
+                  "executorNominated": {
+                    "type": "boolean"
+                  },
+                  "dependantsConsidered": {
+                    "type": "boolean"
+                  },
+                  "recordsSecured": {
+                    "type": "boolean"
+                  },
+                  "reviewedOn": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace-scoped recorded or simulated data, not provider verified"
+          },
+          "201": {
+            "description": "Created; idempotent replay returns 200"
+          },
+          "400": {
+            "description": "Invalid identifier"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied; estate is owner-only"
+          },
+          "404": {
+            "description": "Workspace or obligation unavailable"
+          },
+          "409": {
+            "description": "Idempotency, allocation or database integrity conflict"
+          },
+          "422": {
+            "description": "Invalid fields or unsafe money assumptions"
+          },
+          "428": {
+            "description": "Idempotency-Key is mandatory"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11437,6 +12435,284 @@
           },
           "isProviderVerified": {
             "type": "boolean"
+          }
+        }
+      },
+      "B5DebtInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "lenderName",
+          "currency",
+          "originalMinor",
+          "outstandingMinor",
+          "aprBasisPoints",
+          "minimumPaymentMinor"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "lenderName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          },
+          "originalMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000000
+          },
+          "outstandingMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000000
+          },
+          "aprBasisPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "minimumPaymentMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "nextDueOn": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        }
+      },
+      "B5TaxEstimateInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "taxKind",
+          "taxYear",
+          "estimatedMinor",
+          "dueOn",
+          "currency"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "taxKind": {
+            "type": "string",
+            "enum": [
+              "INCOME_TAX",
+              "VAT",
+              "TURNOVER_TAX",
+              "OTHER"
+            ]
+          },
+          "taxYear": {
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 2100
+          },
+          "estimatedMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "dueOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          }
+        }
+      },
+      "B5InsuranceRecordInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "insurerLabel",
+          "coverageKind",
+          "startOn",
+          "expiresOn",
+          "premiumMinor",
+          "coverageLimitMinor",
+          "currency"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "insurerLabel": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "coverageKind": {
+            "type": "string",
+            "enum": [
+              "HEALTH",
+              "LIFE",
+              "MOTOR",
+              "PROPERTY",
+              "DISABILITY",
+              "OTHER"
+            ]
+          },
+          "startOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "premiumMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "coverageLimitMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          }
+        }
+      },
+      "B5RetirementInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "currentMinor",
+          "monthlyContributionMinor",
+          "targetMinor",
+          "horizonMonths",
+          "annualReturnBasisPoints",
+          "currency"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "currentMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "monthlyContributionMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "targetMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000000
+          },
+          "horizonMonths": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "annualReturnBasisPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1500
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "KES"
+            ]
+          }
+        }
+      },
+      "B5EstateChecklistInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "willPrepared",
+          "beneficiariesReviewed",
+          "executorNominated",
+          "dependantsConsidered",
+          "recordsSecured",
+          "reviewedOn"
+        ],
+        "properties": {
+          "willPrepared": {
+            "type": "boolean"
+          },
+          "beneficiariesReviewed": {
+            "type": "boolean"
+          },
+          "executorNominated": {
+            "type": "boolean"
+          },
+          "dependantsConsidered": {
+            "type": "boolean"
+          },
+          "recordsSecured": {
+            "type": "boolean"
+          },
+          "reviewedOn": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "B5ManualExpenseLinkInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "manualTransactionId",
+          "amountMinor"
+        ],
+        "properties": {
+          "manualTransactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 1000000000000
           }
         }
       }
