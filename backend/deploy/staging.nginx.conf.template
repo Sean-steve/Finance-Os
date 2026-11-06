@@ -1,0 +1,20 @@
+# B8.1 staging is loopback-only HTTP behind an HTTPS reverse proxy.
+# NGINX_ENVSUBST_FILTER limits substitutions to FINANCE_STAGE_* variables.
+server {
+ listen 8080;
+ server_name _;
+ root /usr/share/nginx/html;
+ index connected.html;
+ server_tokens off;
+ add_header Cache-Control "no-store" always;
+ add_header X-Content-Type-Options "nosniff" always;
+ add_header Referrer-Policy "no-referrer" always;
+ add_header X-Frame-Options "DENY" always;
+ add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' ${FINANCE_STAGE_API_ORIGIN} ${FINANCE_STAGE_IDP_ISSUER}; img-src 'self' data:; form-action 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'" always;
+ location = / { return 302 /connected.html; }
+ location = /connected.html { try_files $uri =404; }
+ location = /connected-config.json { try_files $uri =404; }
+ location = /rebuild/connected.css { try_files $uri =404; }
+ location = /rebuild/connected.js { try_files $uri =404; }
+ location / { return 404; }
+}

@@ -1,0 +1,4 @@
+private/
+*.staging.env
+*.staging.json
+*.secret

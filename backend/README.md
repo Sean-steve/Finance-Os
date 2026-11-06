@@ -1,9 +1,10 @@
-# Finance OS Backend — Phases B0–B8 (Manual Finance)
+# Finance OS Backend — Phases B0–B8.1 (Manual Finance)
 
-**Development status:** Backend domains B0–B7 are implemented, connected to the authenticated 60-screen frontend, and validated in disposable PostgreSQL 17 CI. **B8 adds read-only cross-module reconciliation, production startup migration checks, backup/restore rehearsal and an explicit release evidence gate. Production activation is NOT certified.**
+**Development status:** Backend domains B0–B7 are implemented, connected to the authenticated 60-screen frontend, and validated in disposable PostgreSQL 17 CI. **B8 adds read-only cross-module reconciliation, production startup migration checks, backup/restore rehearsal and an explicit release evidence gate. B8.1 adds a deployable, isolated staging container stack, strict OIDC/TLS/role preflight, restricted staging PostgreSQL certification and an operator-gated remote probe. No external staging or production host has been activated.**
 
 No live bank, broker, lender, tax, insurer or generative AI provider is connected. Bank/provider-verified balances and legally effective export/erasure workflows are **not** implemented. GitHub Pages hosts the separate prototype and connected frontend; it is not a finance API host.
 
+- [B8.1 Staging Deployment, Activation, Evidence & Production Infrastructure Requirements](../docs/backend/B8_1_STAGING_ACTIVATION.md) — begin here; staging host, OIDC and DB are external prerequisites.
 - [B8 Full-System Engineering, Release Gates & Recovery](../docs/backend/B8_ENGINEERING.md) — start here for integration, certification, staging and production requirements.
 - [B7 Financial Health, Reports & Privacy](../docs/backend/B7_ENGINEERING.md)
 - [B6 Net Worth & Wealth Analytics](../docs/backend/B6_ENGINEERING.md)

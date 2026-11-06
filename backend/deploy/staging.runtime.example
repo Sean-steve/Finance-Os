@@ -1,0 +1,18 @@
+# Copy to a HOST-PRIVATE file outside the repository, chmod 600.
+# Never commit filled-in passwords or use this example as live configuration.
+# All staging runtimes use strict production security rules, despite staging data.
+NODE_ENV=production
+LOCAL_AUTH_ENABLED=false
+LOG_LEVEL=info
+DATABASE_URL=postgresql://finance_app:REPLACE_SECRET@STAGING_DB_FQDN/finance_os_staging?sslmode=verify-full
+AUTH_DATABASE_URL=postgresql://finance_auth:REPLACE_DIFFERENT_SECRET@STAGING_DB_FQDN/finance_os_staging?sslmode=verify-full
+CORS_ALLOWED_ORIGINS=https://YOUR-STAGING-UI-FQDN
+OIDC_ISSUER=https://YOUR-STAGING-IDP-FQDN/realms/finance-staging
+OIDC_AUDIENCE=finance-os-staging-api
+OIDC_JWKS_URI=https://YOUR-STAGING-IDP-FQDN/realms/finance-staging/protocol/openid-connect/certs
+OIDC_CLIENT_ID=finance-os-staging-spa
+OIDC_AUTHORIZATION_ENDPOINT=https://YOUR-STAGING-IDP-FQDN/realms/finance-staging/protocol/openid-connect/auth
+OIDC_TOKEN_ENDPOINT=https://YOUR-STAGING-IDP-FQDN/realms/finance-staging/protocol/openid-connect/token
+OIDC_REDIRECT_URI=https://YOUR-STAGING-UI-FQDN/connected.html
+OIDC_REQUIRED_ACR=urn:finance-os:mfa
+OIDC_MAX_AUTH_AGE_SECONDS=3600
