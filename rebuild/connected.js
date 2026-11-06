@@ -870,6 +870,145 @@ function b5EstateScreen(){
    ' marked complete · '+esc(latest.reviewedOn)+'. This is not a legal document.</p>':b5Empty)+b5Note;
 }
 
+
+const b6Caveat='<p class="connected-muted">Estimated KES net worth from manually POSTED cash and user-reported holdings/valuations. No broker links, live prices, professional appraisals, returns or guaranteed balances. B4 earmarks and B5 retirement projections are not additional assets.</p>';
+const b6Empty='<p>No matching user-reported wealth records have been saved. Empty does not confirm a zero real-world balance.</p>';
+const b6Amount=(label,key,zero=false)=>field(label,key,'text',true,zero?'0':'','pattern="[0-9]+(\\.[0-9]{1,2})?"');
+const b6Date=()=>new Date().toISOString().slice(0,10);
+const b6Units=value=>{
+ const s=String(value||'').trim(),m=/^(\\d{1,6})(?:\\.(\\d{1,6}))?$/.exec(s);
+ if(!m)throw new Error('Enter 1–6 decimal places of quantity.');
+ const x=Number(m[1])*1000000+Number((m[2]||'').padEnd(6,'0'));
+ if(!Number.isSafeInteger(x)||x<=0)throw new Error('Quantity must be positive.');
+ return x;
+};
+function b6NetWorthScreen(){
+ const s=b6.summary;
+ if(!s)return card('Net worth unavailable','<p>Wealth API data could not be loaded. No zero net worth is assumed.</p>');
+ return card('Net worth command centre · estimated', 
+  '<div class="connected-kpis"><article><span>Estimated net worth</span><strong>'+money(s.estimatedNetWorthMinor)+'</strong><small>Not provider verified</small></article>'+
+  '<article><span>Estimated total assets</span><strong>'+money(s.assetTotalMinor)+'</strong><small>Manual + self-reported</small></article>'+
+  '<article><span>Reported liabilities</span><strong>'+money(s.liabilityTotalMinor)+'</strong><small>Includes B5 debts</small></article></div>'+
+  '<p>Manual cash: '+money(s.breakdown.manualCashAssetsMinor)+' · Other assets: '+money(s.breakdown.otherAssetsMinor)+
+   ' · Investment estimates: '+money(s.breakdown.investmentEstimatesMinor)+'</p>')+
+  card('How this estimate is assembled',
+  '<ul class="connected-list"><li>Manually posted cash and bank balances, excluding future-dated journal entries</li>'+
+  '<li>User-supplied estimated values of property, vehicles, business assets and investment holdings</li>'+
+  '<li>Less B5 reported loan balances, negative cash/overdraft positions and other non-loan obligations</li>'+
+  '<li>B3 future bills, B4 virtual reserves, insurance cover and retirement scenarios are deliberately excluded</li></ul>')+
+  b6Caveat+btn('View assets and liabilities',51)+btn('View investment positions',53)+btn('Review wealth analytics',55);
+}
+function b6AssetLiabilityScreen(){
+ const s=b6.summary;
+ return card('Record an asset · user-reported value only',
+  '<form data-form="b6-asset">'+field('Asset nickname','name')+
+  select('Asset type','assetKind',[['PROPERTY','Property'],['LAND','Land'],['VEHICLE','Vehicle'],
+   ['BUSINESS','Business'],['EQUIPMENT','Equipment'],['OTHER','Other']])+
+  b6Amount('Initial estimated value KES','initial',true)+field('Acquired on (optional)','acquiredOn','date',false)+
+  '<button type="submit">Save asset estimate</button></form>')+
+  card('Register non-loan liability',
+   '<p>Do not duplicate existing B5 debt or B3 bill entries.</p>'+
+   '<form data-form="b6-liability">'+field('Nonloan liability name','name')+
+   select('Type','liabilityKind',[['UNPAID_OBLIGATION','Other obligation'],['OTHER','Other']])+
+   b6Amount('Starting estimated amount KES','initial')+
+   '<button type="submit">Save nonloan liability</button></form>')+
+  card('Physical and business assets',b6.assets.length?
+   '<ul class="connected-list">'+b6.assets.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>'+esc(x.assetKind)+' · User estimate '+money(x.estimatedValueMinor)+
+    ' · Not independently appraised</span></li>').join('')+'</ul>':b6Empty)+
+  card('Reported obligations', 
+   '<p>B5 debt estimates: '+money(s?.breakdown?.reportedDebtsMinor||0)+
+   ' · Other nonloan obligations: '+money(s?.breakdown?.otherLiabilitiesMinor||0)+
+   ' · Manual cash overdrafts: '+money(s?.breakdown?.manualCashOverdraftMinor||0)+'</p>'+
+   (b6.liabilities.length?'<ul class="connected-list">'+b6.liabilities.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>'+esc(x.liabilityKind)+' · '+money(x.estimatedValueMinor)+'</span></li>').join('')+'</ul>':b6Empty))+
+  b6Caveat+btn('Update estimated values',52);
+}
+function b6HistoryPanel(){
+ if(!b6.historyTarget)return '';
+ return card('Append-only valuation history · '+esc(b6.historyTarget),
+  b6.history.length?'<ul class="connected-list">'+b6.history.map(x=>
+   '<li><b>'+money(x.valueMinor)+'</b><span>'+esc(x.recordedOn)+' · '+esc(x.note)+
+    ' · '+esc(x.evidence)+'</span></li>').join('')+'</ul>':b6Empty);
+}
+function b6AssetDetailsScreen(){
+ const assets=b6.assets,liabs=b6.liabilities;
+ return card('Asset value review',
+  '<p>New appraisals are never overwritten; every user estimate is appended with its own observation date.</p>'+
+  (assets.length?'<form data-form="b6-asset-value">'+
+   select('Asset','id',assets.map(x=>[x.id,x.name+' · '+money(x.estimatedValueMinor)]))+
+   b6Amount('Revised estimated value KES','value',true)+
+   field('As-of date','recordedOn','date',true,b6Date())+
+   field('Basis for user estimate','note')+
+   '<button type="submit">Append estimate (no ledger entry)</button></form>':b6Empty)+
+  (assets.length?assets.map(x=>
+   '<button type="button" data-b6-history="ASSET:'+esc(x.id)+'">View '+esc(x.name)+' valuation history</button>').join(''):'') )+
+  card('Non-loan liability value review',
+   liabs.length?'<form data-form="b6-liability-value">'+
+   select('Liability','id',liabs.map(x=>[x.id,x.name+' · '+money(x.estimatedValueMinor)]))+
+   b6Amount('Updated estimated amount KES (zero is allowed)','value',true)+
+   field('As-of date','recordedOn','date',true,b6Date())+field('Change explanation','note')+
+   '<button type="submit">Append non-loan liability estimate</button></form>':b6Empty)+
+  b6HistoryPanel()+b6Caveat;
+}
+function b6PortfolioScreen(){
+ return card('Investment portfolio · manually reported positions',
+  '<p>Quantities, cost basis and current values are entered by you. This does not buy securities or connect a stockbroker.</p>'+
+  '<form data-form="b6-investment">'+field('Investment name','name')+
+  select('Investment type','investmentKind',[['EQUITY','Equity'],['BOND','Bond'],
+   ['FUND','Fund'],['SACCO','SACCO'],['OTHER','Other']])+
+  field('Holding quantity (up to 6 decimal places)','quantity','text',true,'1','pattern="[0-9]+(\\.[0-9]{1,6})?"')+
+  b6Amount('Self-reported total cost KES','cost',true)+
+  b6Amount('Self-reported current estimated total KES','initial',true)+
+  '<button type="submit">Save a manual investment</button></form>')+
+  card('Investment positions',b6.investments.length?
+   '<ul class="connected-list">'+b6.investments.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>'+esc(x.investmentKind)+
+    ' · Reported quantity '+esc((x.quantityMicros/1000000).toFixed(6))+
+    ' · Estimated value '+money(x.estimatedValueMinor)+' · Cost '+money(x.costBasisMinor)+'</span></li>').join('')+'</ul>':b6Empty)+
+  b6Caveat+btn('Investment valuations',54)+btn('Portfolio analysis',55);
+}
+function b6InvestmentDetailsScreen(){
+ const positions=b6.investments;
+ return card('Investment details & user-supplied values',
+  '<p>Append a position-value estimate without changing quantity, cost basis or executing trades. Any nominal difference is not verified investment performance.</p>'+
+  (positions.length?'<form data-form="b6-investment-value">'+
+   select('Holding','id',positions.map(x=>[x.id,x.name+' · '+money(x.estimatedValueMinor)]))+
+   b6Amount('Updated total holding value KES','value',true)+
+   field('Observed on','recordedOn','date',true,b6Date())+field('Source of manual estimate','note')+
+   '<button type="submit">Append investment valuation only</button></form>':b6Empty)+
+  (positions.length?positions.map(x=>
+   '<button type="button" data-b6-history="INVESTMENT:'+esc(x.id)+'">View '+esc(x.name)+' valuation history</button>').join(''):'') )+
+  card('Cost-vs-estimate summary',positions.length?
+   '<ul class="connected-list">'+positions.map(x=>
+    '<li><b>'+esc(x.name)+'</b><span>Self-reported cost '+money(x.costBasisMinor)+
+    ' · Estimated value '+money(x.estimatedValueMinor)+
+    ' · Nominal difference '+money(x.nominalUnrealizedDifferenceMinor)+
+    ' · No realised/annualised return verified</span></li>').join('')+'</ul>':b6Empty)+
+  b6HistoryPanel()+b6Caveat;
+}
+function b6AnalyticsScreen(){
+ const a=b6.analytics,s=b6.summary;
+ if(!a||!s)return card('Wealth insights unavailable','<p>No certified local estimate was loaded.</p>');
+ return card('Wealth analytics · non-provider-verified',
+  '<div class="connected-kpis"><article><span>Estimated net worth</span><strong>'+money(a.estimatedNetWorthMinor)+'</strong></article>'+
+  '<article><span>Investment estimated value</span><strong>'+money(a.estimatedInvestmentValueMinor)+'</strong></article>'+
+  '<article><span>Nominal value minus reported cost</span><strong>'+money(a.nominalUnrealizedDifferenceMinor)+'</strong><small>Not a verified return</small></article></div>')+
+  card('Estimated asset allocation',a.assetsByClass.length?
+   '<div class="connected-table"><table><thead><tr><th>Class</th><th>Estimated value</th><th>Share</th></tr></thead><tbody>'+
+   a.assetsByClass.map(x=>
+    '<tr><td>'+esc(x.name)+'</td><td>'+money(x.amountMinor)+'</td>'+
+    '<td>'+(x.shareBasisPoints===null?'Not applicable':esc((x.shareBasisPoints/100).toFixed(2))+'%')+'</td></tr>').join('')+
+   '</tbody></table></div>':b6Empty)+
+  card('Portfolio concentration and quality',
+   '<p>Largest self-reported investment: '+(a.largestExposure?esc(a.largestExposure.name)+
+    ' · '+money(a.largestExposure.estimatedValueMinor):'No positions recorded')+'</p>'+
+   '<p>Cost basis: '+money(a.estimatedInvestmentCostMinor)+
+    ' · Nominal unverified difference: '+money(a.nominalUnrealizedDifferenceMinor)+'</p>'+
+   '<p>Verification: unavailable. Tax effects, dividends, inflation and time-weighted investment performance are not calculated.</p>')+
+  b6Caveat;
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
