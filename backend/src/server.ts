@@ -12,5 +12,12 @@ const app=await buildApp({config,database:financePool,financePool,authPool});
 async function close(){await app.close();await financePool.end();if(authPool)await authPool.end();}
 process.once('SIGTERM',()=>{void close().finally(()=>process.exit(0));});
 process.once('SIGINT',()=>{void close().finally(()=>process.exit(0));});
-try{await app.listen({port:config.port,host:config.host});}
+try{
+ if(config.nodeEnv==='production'){
+  const readiness=await app.inject({method:'GET',url:'/health/ready'});
+  if(readiness.statusCode!==200)throw new Error('Production startup refused: migrations or database not ready');
+  // Startup checks only local prerequisites; external MFA, backups, legal privacy and operations still gate launch.
+ }
+ await app.listen({port:config.port,host:config.host});
+}
 catch(error){app.log.error(error);await close();process.exitCode=1;}

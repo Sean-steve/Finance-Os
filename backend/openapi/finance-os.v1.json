@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Finance OS API",
-    "version": "0.8.0",
-    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability. B5 implements owner-private estate readiness, user-recorded debt and tax estimates with linked POSTED manual expenses, unverified insurance records and nominal retirement scenarios. No lending payment, tax filing, cover verification, legal document or asset execution. B6 adds workspace-scoped unverified manual asset, investment, liability and valuation records and a current estimated KES net worth: manually POSTED cash plus latest user estimates minus B5 linked-debt estimates, overdrafts and non-loan liabilities. No live market, automatic trade, double-counted virtual capital, historical returns, or verified net-worth claim. B7 adds evidence-limited financial health with no fabricated score, consent-gated on-server rule-based guidance (not an LLM), manual monthly/category reports, unconfigured provider catalog and owner-only immutable settings, privacy review requests, integration information interests and audit. No real bank syncing, third-party AI data sharing, automatic erasure or automated private-data export."
+    "version": "0.9.0",
+    "description": "B0 contract-first architecture. ONLY /health/live, /health/ready and /v1/meta are implemented. Protected finance routes are PLANNED, not operational. All amounts are integer minor units. B1 adds separately authenticated local development services for workspace accounts, manually posted double-entry journals, and reconciliation. Password login is explicitly disabled in production. Unimplemented routes retain PLANNED status. B3: user-estimated income, immutable due obligations, posted-manual-expense settlement evidence, and indicative non-provider-verified cashflow forecasts. No automatic provider payments. B4: virtual (non-custodial) money buckets, savings/emergency goals, independent capital planning approvals and deterministic what-if scenarios; no bank transfer, investment execution, or verified affordability. B5 implements owner-private estate readiness, user-recorded debt and tax estimates with linked POSTED manual expenses, unverified insurance records and nominal retirement scenarios. No lending payment, tax filing, cover verification, legal document or asset execution. B6 adds workspace-scoped unverified manual asset, investment, liability and valuation records and a current estimated KES net worth: manually POSTED cash plus latest user estimates minus B5 linked-debt estimates, overdrafts and non-loan liabilities. No live market, automatic trade, double-counted virtual capital, historical returns, or verified net-worth claim. B7 adds evidence-limited financial health with no fabricated score, consent-gated on-server rule-based guidance (not an LLM), manual monthly/category reports, unconfigured provider catalog and owner-only immutable settings, privacy review requests, integration information interests and audit. No real bank syncing, third-party AI data sharing, automatic erasure or automated private-data export. B8 adds an authenticated owner-only internal KES journal/manual-transaction integrity reconciliation; it is not an independent financial audit or bank statement reconciliation. Production activation requires independently verified external evidence."
   },
   "servers": [
     {
@@ -11423,6 +11423,45 @@
           },
           "422": {
             "description": "Invalid or unsupported request"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/certification/financial-integrity": {
+      "get": {
+        "operationId": "getB8FinancialIntegrityCertification",
+        "summary": "Check immutable posted ledger, reversal links and manual KES account effects",
+        "description": "Owner-only, read-only workspace financial integrity check. Status PASS_MANUAL_LEDGER verifies internal manual cash invariants only, not an external bank reconciliation or production certification. Empty records produce INSUFFICIENT_EVIDENCE.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "x-implementation-phase": "B8",
+        "x-implementation-status": "IMPLEMENTED_B8",
+        "responses": {
+          "200": {
+            "description": "Internal evidence-limited integrity result with explicit external verification gaps"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Owner-only certification data"
+          },
+          "404": {
+            "description": "Workspace not found"
           }
         }
       }

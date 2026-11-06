@@ -1,0 +1,98 @@
+name: Finance OS Backend B8 — Full-System Reconciliation & Recovery Certification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'phase-b8*']
+    paths:
+      - 'backend/**'
+      - 'rebuild/connected.*'
+      - 'tests/connected-contract.cjs'
+      - 'docs/backend/B8_*'
+      - '.github/workflows/backend-b8.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'rebuild/connected.*'
+      - 'tests/connected-contract.cjs'
+      - 'docs/backend/B8_*'
+      - '.github/workflows/backend-b8.yml'
+permissions:
+  contents: read
+jobs:
+  b8-system-release-certification:
+    name: PostgreSQL 17 cross-domain reconciliation, tenant isolation and backup restore
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: finance_migrator
+          POSTGRES_PASSWORD: ci-migrator-only
+          POSTGRES_DB: finance_os_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U finance_migrator -d finance_os_test"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      MIGRATION_DATABASE_URL: postgresql://finance_migrator:ci-migrator-only@127.0.0.1:5432/finance_os_test
+      TEST_APP_DATABASE_URL: postgresql://finance_app:ci-app-only@127.0.0.1:5432/finance_os_test
+      TEST_AUTH_DATABASE_URL: postgresql://finance_auth:ci-auth-only@127.0.0.1:5432/finance_os_test
+      PGPASSWORD: ci-migrator-only
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Locked dependency install
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: Strict TypeScript and OpenAPI contract validation
+        run: |
+          npm --prefix backend run build
+          npm --prefix backend run contract:check
+      - name: B0–B8 unit financial arithmetic/security invariants
+        run: npm --prefix backend test
+      - name: Apply forward-only migrations, verify checksums and no drift
+        run: |
+          npm --prefix backend run migrate
+          npm --prefix backend run migrate
+      - name: Provision least-privilege separated finance and auth roles
+        run: |
+          psql -h 127.0.0.1 -U finance_migrator -d finance_os_test \
+            -v app_password="ci-app-only" -v auth_password="ci-auth-only" \
+            -f backend/scripts/provision-app-role.sql
+      - name: B0 immutable journal / RLS
+        run: npm --prefix backend run test:db
+      - name: B1 manual posted ledger/reversals
+        run: npm --prefix backend run test:b1
+      - name: B1.1 identity tenant boundary
+        run: npm --prefix backend run test:oidc:db
+      - name: B2 budget and spending controls
+        run: npm --prefix backend run test:b2
+      - name: B3 income/bills and cashflow
+        run: npm --prefix backend run test:b3
+      - name: B4 real PostgreSQL virtual capital certification
+        run: npm --prefix backend run test:b4
+      - name: B5 real PostgreSQL protection lifecycle and owner-only estate certification
+        run: npm --prefix backend run test:b5
+      - name: B6 real PostgreSQL wealth and investment provenance certification
+        run: npm --prefix backend run test:b6
+      - name: B7 real PostgreSQL owner governance and manual reporting certification
+        run: npm --prefix backend run test:b7
+      - name: B8 full-system finance, owner privacy and reversal scenario on PostgreSQL
+        run: npm --prefix backend run test:b8
+      - name: B8 release gate must remain blocked without independent production evidence
+        run: |
+          node --test backend/test/release-gate.test.mjs
+          npm --prefix backend run release:gate -- --assert-blocked
+      - name: B8 disposable backup restore rehearsal on PostgreSQL 17
+        env:
+          B8_DISPOSABLE_RESTORE_CI: '1'
+        run: sh backend/scripts/disposable-backup-restore.sh
+      - name: Connected frontend safety and no fake money
+        run: |
+          node --check rebuild/connected.js
+          node tests/connected-contract.cjs
