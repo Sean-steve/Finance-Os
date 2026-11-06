@@ -749,6 +749,118 @@ function scenarioScreen(){
  b4MonthNote;
 }
 
+
+const b5Note='<p class="connected-muted">These are user-reported records, estimates or non-executing simulations. No creditor, KRA or insurer connection, payment, return filing, guaranteed investment result or legal instrument.</p>';
+const b5Empty='<p>No records saved in this workspace; no zero balance is implied.</p>';
+const b5Amount=(label,name,zero=false)=>field(label,name,'text',true,zero?'0':'','pattern="[0-9]+(\\.[0-9]{1,2})?"');
+function b5DebtScreen(){
+ return card('Debt register · lender not connected',
+  '<form data-form="b5-debt">'+field('Debt name','name')+
+  field('Lender label (no account or ID numbers)','lenderName')+
+  b5Amount('Original principal KES','original')+b5Amount('Starting outstanding KES','outstanding')+
+  field('User-entered APR %','apr','number',true,'0','min="0" max="1000" step="0.01"')+
+  b5Amount('Estimated minimum monthly payment KES','minimum',true)+
+  field('Next expected due date','nextDueOn','date',false)+
+  '<button type="submit">Record user-reported debt</button></form>')+
+  card('Estimated debt positions',b5.debts.length?
+   '<ul class="connected-list">'+b5.debts.map(x=>'<li><b>'+esc(x.name)+'</b>'+
+   '<span>'+esc(x.lenderName)+' · Estimated outstanding '+money(x.estimatedOutstandingMinor)+
+   ' · APR '+esc((x.aprBasisPoints/100).toFixed(2))+'% · '+esc(x.evidence)+'</span></li>').join('')+'</ul>':b5Empty)+
+  b5Note+btn('Debt detail & manual repayment links',44)+btn('Payoff illustrations',45);
+}
+function b5DebtDetailScreen(){
+ const expenses=data.transactions.filter(x=>x.kind==='EXPENSE'&&!x.reversesTransactionId);
+ return card('Manual debt principal cross-reference',
+  '<p>Link an already POSTED expense to a reported principal reduction. No loan repayment is initiated. A journal reversal automatically invalidates the derived reduction.</p>'+
+  (b5.debts.length&&expenses.length?
+   '<form data-form="b5-debt-payment">'+select('Debt','debtId',b5.debts.map(x=>[x.id,x.name]))+
+    select('Posted expense','manualTransactionId',expenses.map(x=>[x.id,x.description+' · '+money(Math.abs(x.amountMinor))]))+
+    b5Amount('Principal portion KES','amount')+
+    '<button type="submit">Link recorded expense</button></form>':
+    '<p>First record a debt and an EXPENSE in the manual ledger.</p>'))+
+  card('Principal tracking',b5.debts.length?'<ul class="connected-list">'+b5.debts.map(x=>
+   '<li><b>'+esc(x.name)+'</b><span>Initial '+money(x.startingOutstandingMinor)+
+   ' · linked principal '+money(x.linkedPrincipalMinor)+
+   ' · estimated remaining '+money(x.estimatedOutstandingMinor)+'</span></li>').join('')+'</ul>':b5Empty)+b5Note;
+}
+function b5DebtOptimizerScreen(){
+ return card('Debt repayment optimizer · indicative only',
+  '<p>Fixed-rate payoff estimates use your APR and minimum monthly payment. They exclude lender fees, changing rates and exact amortization schedules.</p>'+
+  (b5.debts.length?'<div class="connected-table"><table><thead><tr><th>Debt</th><th>Est. outstanding</th><th>APR</th><th>Illustrative payoff</th></tr></thead><tbody>'+
+    [...b5.debts].sort((a,b)=>b.aprBasisPoints-a.aprBasisPoints).map(x=>
+     '<tr><td>'+esc(x.name)+'</td><td>'+money(x.estimatedOutstandingMinor)+'</td>'+
+     '<td>'+esc((x.aprBasisPoints/100).toFixed(2))+'%</td><td>'+
+     (x.payoffIllustration?esc(x.payoffIllustration.months)+' months; '+money(x.payoffIllustration.interestMinor)+' estimated interest':
+      'Cannot confirm payoff from current assumptions')+'</td></tr>').join('')+'</tbody></table></div>':b5Empty)+b5Note);
+}
+function b5TaxScreen(){
+ const expenses=data.transactions.filter(x=>x.kind==='EXPENSE'&&!x.reversesTransactionId);
+ return card('Tax overview · user-entered estimates only',
+  '<p>Not a KRA integration. No legal tax determination, filings, payment initiation or receipt verification.</p>'+
+  '<form data-form="b5-tax">'+field('Tax estimate label','label')+
+  select('Tax category','taxKind',[['INCOME_TAX','Income tax'],['VAT','VAT'],['TURNOVER_TAX','Turnover tax'],['OTHER','Other']])+
+  field('Tax year','taxYear','number',true,String(new Date().getFullYear()),'min="2000" max="2100" step="1"')+
+  b5Amount('Estimated tax KES','estimated',true)+field('Estimated due date','dueOn','date')+
+  '<button type="submit">Save manual estimate</button></form>')+
+  card('Estimated obligations',b5.taxes.length?'<ul class="connected-list">'+b5.taxes.map(x=>
+   '<li><b>'+esc(x.label)+'</b><span>'+esc(x.taxKind)+' · '+esc(x.dueOn)+
+   ' · Estimated remaining '+money(x.estimatedRemainingMinor)+
+   ' · Not filed by Finance OS</span></li>').join('')+'</ul>':b5Empty)+
+  card('Cross-reference a POSTED manual expense',b5.taxes.length&&expenses.length?
+   '<form data-form="b5-tax-payment">'+select('Tax estimate','obligationId',b5.taxes.map(x=>[x.id,x.label]))+
+   select('Manual expense','manualTransactionId',expenses.map(x=>[x.id,x.description+' · '+money(Math.abs(x.amountMinor))]))+
+   b5Amount('Tax portion KES','amount')+'<button type="submit">Link existing expense (no KRA receipt)</button></form>':
+   '<p>Record a tax estimate and a manual EXPENSE first.</p>')+b5Note;
+}
+function b5InsuranceScreen(){
+ return card('Insurance & protection · unverified register',
+  '<p>Coverage is user-reported. Dates are reminders, not insurer-confirmed protection or claims eligibility.</p>'+
+  '<form data-form="b5-insurance">'+field('Cover nickname','name')+
+  field('Insurer label (never enter a policy number)','insurerLabel')+
+  select('Cover type','coverageKind',[['HEALTH','Health'],['LIFE','Life'],['MOTOR','Motor'],
+   ['PROPERTY','Property'],['DISABILITY','Disability'],['OTHER','Other']])+
+  field('Start date','startOn','date')+field('Expiry date','expiresOn','date')+
+  b5Amount('Reported premium KES','premium',true)+b5Amount('Reported cover limit KES','limit',true)+
+  '<button type="submit">Save unverified cover</button></form>')+
+  card('Insurance register',b5.policies.length?'<ul class="connected-list">'+b5.policies.map(x=>
+   '<li><b>'+esc(x.name)+'</b><span>'+esc(x.insurerLabel)+' · '+esc(x.coverageKind)+
+   ' · '+esc(x.startOn)+' → '+esc(x.expiresOn)+' · Limit '+money(x.coverageLimitMinor)+
+   ' · Unverified</span></li>').join('')+'</ul>':b5Empty)+b5Note;
+}
+function b5RetirementScreen(){
+ return card('Retirement scenarios · non-executing nominal projections',
+  '<p>Assumed annual returns are not guaranteed. This model excludes market volatility, inflation, taxes, fees and provider balances.</p>'+
+  '<form data-form="b5-retirement">'+field('Plan name','name')+
+  b5Amount('Hypothetical starting retirement balance KES','current',true)+
+  b5Amount('Hypothetical monthly contribution KES','monthly',true)+
+  b5Amount('Target KES','target')+field('Months to project','horizon','number',true,'120','min="1" max="600" step="1"')+
+  field('Assumed nominal annual return %','annualReturn','number',true,'0','min="0" max="15" step="0.01"')+
+  '<button type="submit">Save non-executing projection</button></form>')+
+  card('Saved illustrations',b5.retirement.length?'<ul class="connected-list">'+b5.retirement.map(x=>
+   '<li><b>'+esc(x.name)+'</b><span>'+esc(x.horizonMonths)+' months · Hypothetical '+
+   money(x.simulation.endingMinor)+' · Goal '+money(x.targetMinor)+
+   ' · '+(x.simulation.targetMet?'Illustrative target reached':'Below target in model')+
+   '</span></li>').join('')+'</ul>':b5Empty)+b5Note;
+}
+function b5EstateScreen(){
+ if(workspaces.find(w=>w.id===workspaceId)?.role!=='OWNER')
+  return card('Private estate readiness','<p>Only the workspace owner may read or save estate checklist records. No beneficiary identities or legal documents are stored.</p>');
+ const latest=b5.estate[0];
+ const flags=[['willPrepared','Will prepared'],['beneficiariesReviewed','Beneficiaries reviewed'],
+  ['executorNominated','Executor nominated'],['dependantsConsidered','Dependants considered'],
+  ['recordsSecured','Documents secured']];
+ return card('Estate planning · owner-only readiness',
+  '<p>This saves only yes/no checklist flags, never names, IDs, wills or beneficiary records. It is not a legally valid instrument.</p>'+
+  '<form data-form="b5-estate">'+flags.map(([k,n])=>
+   '<label class="connected-field"><input type="checkbox" name="'+k+'" value="yes" '+
+   (latest?.[k]?'checked':'')+'> '+esc(n)+'</label>').join('')+
+  field('Review date','reviewedOn','date',true,latest?.reviewedOn||new Date().toISOString().slice(0,10))+
+  '<button type="submit">Save private checklist snapshot</button></form>')+
+  card('Latest readiness record',latest?
+   '<p>'+esc(latest.completedCount)+' of '+esc(latest.totalItems)+
+   ' marked complete · '+esc(latest.reviewedOn)+'. This is not a legal document.</p>':b5Empty)+b5Note;
+}
+
 function renderedScreen(){
  const id=screen();
  if(!token)return signIn();
