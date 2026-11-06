@@ -1284,6 +1284,26 @@ async function submit(form){
   }
   
 
+
+  else if(kind==='b7-settings'){
+   if(!b7Owner())throw new Error('Only workspace owners can update advisor consent.');
+   await request(base+'/settings',true,{method:'POST',body:{
+    advisorEnabled:d.advisorEnabled==='yes',analyticsSharingEnabled:false,
+    monthlyReviewDay:Number(d.monthlyReviewDay),periodMonths:Number(d.periodMonths)}});
+   notice='Privacy-first preferences saved; no external AI or financial provider accessed.';
+   await refresh();return;
+  }else if(kind==='b7-integration'){
+   if(!b7Owner())throw new Error('Only workspace owners can request integration information.');
+   await request(base+'/integrations/requests',true,{method:'POST',
+    body:{providerKind:d.providerKind,intentKind:'REQUEST_INFORMATION'}});
+   notice='Information request saved. Provider connection remains NOT_CONNECTED.';
+   await refresh();return;
+  }else if(kind==='b7-privacy'){
+   if(!b7Owner())throw new Error('Only workspace owners can submit privacy requests.');
+   await request(base+'/privacy/requests',true,{method:'POST',body:{requestKind:d.requestKind}});
+   notice='Privacy request logged for authorized review. Nothing was exported or deleted.';
+   await refresh();return;
+  }
   else if(kind==='b6-asset'){
    await request(base+'/wealth/assets',true,{method:'POST',body:{
     name:d.name,assetKind:d.assetKind,initialValueMinor:b4Minor(d.initial),
@@ -1418,6 +1438,24 @@ document.addEventListener('click',async event=>{
  if(!button)return;
  if(button.hasAttribute('data-go')){nav(Number(button.dataset.go));return;}
  if(button.hasAttribute('data-retry')){void refresh();return;}
+ if(button.hasAttribute('data-b7-csv')){
+  const kind=button.dataset.b7Csv;
+  if(!['monthly','categories'].includes(kind)){error='Invalid export kind';draw();return;}
+  const dataset=kind==='monthly'?b7.monthly?.periods:b7.categories?.items;
+  if(!Array.isArray(dataset)){error='No report is available';draw();return;}
+  // Export only the explicitly loaded, bounded manual report; never persist in browser storage.
+  const fields=kind==='monthly'?['month','incomeMinor','expenseMinor','netMinor','transactionCount']:
+   ['name','kind','amountMinor','recordCount'];
+  const cell=v=>'"'+String(v??'').replaceAll('"','""')+'"';
+  const csv=[fields.map(cell).join(','),...dataset.map(row=>fields.map(k=>cell(row[k])).join(','))].join('\\r\\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download='finance-os-manual-'+kind+'.csv';
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  notice='Local manual-data CSV prepared. No bank, cloud or external AI export occurred.';draw();
+  return;
+ }
+
  if(button.hasAttribute('data-b6-history')){
   const [kind,id]=String(button.dataset.b6History||'').split(':');
   const resource=kind==='ASSET'?'assets':kind==='INVESTMENT'?'investments':kind==='LIABILITY'?'liabilities':null;
