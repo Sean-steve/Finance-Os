@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f8f5">
+<title>Finance OS V3 · Welcome & Onboarding Prototype</title><link rel="stylesheet" href="./styles.css">
+<style>
+.welcome-shell{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
+.welcome-intro{background:linear-gradient(145deg,#063f36,#0b6b53);color:white;padding:clamp(32px,7vw,90px);display:flex;flex-direction:column;justify-content:space-between;min-height:620px}
+.welcome-intro .brand{color:white;padding:0}.welcome-intro .logo-mark{background:#d8f3e5;color:#0b5b46}
+.welcome-intro h1{font:800 clamp(35px,4.8vw,65px)/1.12 Manrope,sans-serif;letter-spacing:-.07em;margin:0 0 23px}
+.welcome-intro p{color:#d1e9dc;font-size:15px;max-width:430px;line-height:1.8}
+.welcome-promise{background:#ffffff13;border:1px solid #ffffff30;border-radius:17px;padding:24px;margin-top:45px;max-width:530px}
+.welcome-promise b{display:block;font-size:14px}.welcome-promise p{font-size:12px;margin:7px 0 0}
+.welcome-body{display:grid;place-items:center;padding:40px 28px}
+.welcome-card{max-width:430px;width:100%}.welcome-card h2{font:800 32px Manrope,sans-serif;letter-spacing:-.05em;margin:10px 0}.welcome-card p{font-size:13px;color:var(--muted);line-height:1.8}
+.welcome-card .btn{justify-content:center;width:100%;margin-top:12px;font-size:13px;padding:15px}
+.step{display:none}.step.active{display:block}.step-num{font-size:10px;font-weight:800;letter-spacing:.15em;color:var(--green)}
+.choice{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:18px;text-align:left;margin:8px 0;display:flex;align-items:center;gap:12px}.choice.active,.choice:hover{border-color:var(--green);background:#eff8f2}.choice strong{display:block;font-size:13px}.choice small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.welcome-footer{font-size:10px;color:#d1e9dc}
+@media(max-width:760px){.welcome-shell{display:block}.welcome-intro{min-height:auto;padding:25px 24px 33px}.welcome-intro h1{font-size:36px;margin:25px 0 10px}.welcome-intro p{font-size:13px}.welcome-promise{display:none}.welcome-body{padding:40px 24px}.welcome-card h2{font-size:28px}}
+</style></head>
+<body><div class="welcome-shell"><section class="welcome-intro"><a href="./welcome.html" class="brand"><span class="logo-mark">◈</span><span>financeos<small style="color:#cfecde">YOUR MONEY, IN FOCUS</small></span></a>
+<div><h1>Make sense of<br>your money.<br><span style="color:#a7ebc8">Make your next move.</span></h1><p>A simpler way to understand income, spending, obligations and progress — without endless spreadsheets or complicated menus.</p><div class="welcome-promise"><b>Built for financial clarity, not financial noise.</b><p>Know what is recorded, what is planned and what still needs your attention.</p></div></div>
+<div class="welcome-footer">UX1 INTERACTIVE DESIGN PREVIEW · NOT LIVE AUTHENTICATION</div></section>
+<section class="welcome-body"><div class="welcome-card">
+<div class="step active" data-step="0"><span class="eyebrow">WELCOME TO FINANCE OS</span><h2>One place for a clearer financial picture.</h2><p>This is a visual onboarding demonstration, not a real signup. No personal details or credentials are requested or stored.</p><button class="btn" data-next>Explore your setup →</button><a href="./index.html#home" class="btn secondary" style="text-decoration:none">Skip to prototype dashboard</a></div>
+<div class="step" data-step="1"><span class="step-num">STEP 1 OF 3</span><h2>What matters most today?</h2><p>Choose a starting point. You can explore everything later.</p><button class="choice active" data-choice="Clarity"><span>◈</span><span><strong>Know where my money goes</strong><small>Track recorded income and expenses</small></span></button><button class="choice" data-choice="Planning"><span>▤</span><span><strong>Stay ahead of bills and budgets</strong><small>See what is coming next</small></span></button><button class="choice" data-choice="Progress"><span>◎</span><span><strong>Build savings and meet goals</strong><small>Turn plans into visible progress</small></span></button><button class="btn" data-next>Continue →</button><button class="btn secondary" data-back>Back</button></div>
+<div class="step" data-step="2"><span class="step-num">STEP 2 OF 3</span><h2>Your financial home starts here.</h2><p>We'll begin with a personal workspace and KES as the example currency. You can change this in the real connected application when supported.</p><div class="workspace" style="margin:20px 0"><span class="workspace-icon">S</span><span><strong>Personal finances</strong><span>Sample workspace · Kenyan shillings</span></span></div><p class="notice">Manual records are not verified bank data. M-Pesa, bank syncing and payments are not activated.</p><button class="btn" data-next>Continue →</button><button class="btn secondary" data-back>Back</button></div>
+<div class="step" data-step="3"><span class="step-num">STEP 3 OF 3</span><h2>Your next step is simple.</h2><p>Create a manual account, record your first transaction and let Finance OS organize the picture. You can try every action safely in the synthetic demo.</p><div class="action-banner"><div class="action-emblem">✦</div><div><strong>Ready to explore</strong><p>No credentials, financial data or payments are involved.</p></div></div><a class="btn" href="./index.html#home" style="text-decoration:none">Open Finance OS preview →</a><button class="btn secondary" data-back>Back</button></div>
+</div></section></div>
+<script>
+(()=>{const steps=[...document.querySelectorAll('.step')];let page=0;function show(){steps.forEach((x,i)=>x.classList.toggle('active',i===page));window.scrollTo(0,0);}document.addEventListener('click',e=>{const b=e.target.closest('[data-next],[data-back],[data-choice]');if(!b)return;if(b.hasAttribute('data-next'))page=Math.min(3,page+1);if(b.hasAttribute('data-back'))page=Math.max(0,page-1);if(b.hasAttribute('data-choice')){document.querySelectorAll('[data-choice]').forEach(x=>x.classList.remove('active'));b.classList.add('active');}show();});})();
+</script></body></html>
