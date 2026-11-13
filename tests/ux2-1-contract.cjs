@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const c=read('ux2/src/advanced.tsx'),shell=read('ux2/src/components.tsx'),app=read('ux2/src/app.tsx');
+const postRoutes=['transactions/','reconciliation/matches','budgets/','spending/guardrails/','spending/purchase-checks',
+'spending/approvals/','bills/','income/sources/','capital/requests','capital/affordability','wealth/','debts/','tax/obligations/','estate/checklists','settings'];
+for(const route of postRoutes)assert.ok(c.includes(route),'Missing UX2.1 workflow '+route);
+for(const domain of ['activity','spending','cash-flow','goals','wealth','settings'])assert.ok(c.includes(domain),'Workflow area not found '+domain);
+assert.match(c,/I understand/);
+assert.match(c,/only the workspace owner|Only the workspace owner/);
+assert.match(c,/cannot be undone/);
+assert.match(c,/does not transfer bank funds/);
+assert.match(c,/no provider-verified assets/i);
+assert.match(c,/useItems<.*>\('\/transactions'/);
+assert.match(c,/useItems<.*>\('\/reconciliation'/);
+assert.match(c,/workspacePost<unknown>\(workspaceId,path,body\)/,'Must use selected workspace');
+assert.ok(c.includes('refreshFinancialData(queryClient,workspaceId,path)'),'Refresh only affected records in the selected workspace');
+assert.match(shell,/Workflow tools/);
+assert.match(app,/WorkflowHub/);
+assert.doesNotMatch(c,/Math\.random|localStorage|sessionStorage/,'No synthetic financial entries or persistent credentials');
+const css=read('ux2/src/styles.css');assert.match(css,/\.ux21-legal/);assert.match(css,/@media\(max-width:740px\)/);
+console.log('PASS UX2.1 contract: real B1–B7 finance workflows, selective workspace reads, conservative disclosure and explicit mutation approvals');

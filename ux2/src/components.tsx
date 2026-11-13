@@ -11,7 +11,7 @@ const entries=[
  ['cash-flow','Cash Flow',CalendarClock],['goals','Goals',Target],['wealth','Wealth',Landmark],['insights','Insights',Lightbulb],['settings','Settings',Settings]
 ] as const;
 export function Brand(){return <div className="brand"><span className="brand-symbol">◈</span><span className="brand-name">finance<span style={{color:'var(--emerald)'}}>os</span><small>YOUR MONEY, IN FOCUS</small></span></div>;}
-export function AppShell({onAdd}:{onAdd:()=>void}){
+export function AppShell({onAdd,onTools}:{onAdd:()=>void;onTools:()=>void}){
  const {workspaces,workspaceId,selectWorkspace,signOut,role}=useSession();
  const navigate=useNavigate(),loc=useLocation(),current=entries.find(x=>loc.pathname.startsWith('/'+x[0]))?.[1]||'Home';
  const active=entries.find(x=>loc.pathname.startsWith('/'+x[0]))?.[0]||'home';
@@ -23,7 +23,7 @@ export function AppShell({onAdd}:{onAdd:()=>void}){
   <div className="app-body"><header className="topbar"><div className="topbar-left"><div className="topbar-path">Workspace / <b>{current}</b></div></div>
     <div className="topbar-actions"><span className="pill subtle">POSTGRESQL · MANUAL</span><label className="sr-only" htmlFor="workspace-picker">Workspace</label>
       <select id="workspace-picker" className="connected-select" value={workspaceId} onChange={ev=>{selectWorkspace(ev.target.value);navigate('/home');}}>{workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}</select>
-      <button className="btn btn-primary top-add" onClick={onAdd}><Plus size={17}/> Add new</button>
+      <button className="btn btn-outline ux21-tools-btn" onClick={onTools}>Workflow tools</button><button className="btn btn-primary top-add" onClick={onAdd}><Plus size={17}/> Add new</button>
       <button className="btn btn-icon btn-outline" title="Sign out" aria-label="Sign out" onClick={()=>{void signOut();navigate('/home');}}><LogOut size={18}/></button>
     </div></header>
    <main className="main" id="main"><div className="session-note" role="note">Financial source: manual PostgreSQL records · No bank or M-Pesa sync · No payments executed · {role==='VIEWER'?'View-only role':'Workspace: '+(workspaces.find(w=>w.id===workspaceId)?.name||'')}</div><Outlet/></main>

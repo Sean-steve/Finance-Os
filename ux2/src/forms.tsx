@@ -11,7 +11,7 @@ export const actions:Record<ActionKind,string>={
 const values=(list:string[])=>list.map(value=>({value,label:value.replaceAll('_',' ').toLowerCase().replace(/^./,s=>s.toUpperCase())}));
 export function RecordDrawer({kind,onClose}:{kind:ActionKind;onClose:()=>void}){
  const {role}=useSession(),mut=useWrite(),[error,setError]=useState(''),[txKind,setTxKind]=useState<'INCOME'|'EXPENSE'>('EXPENSE');
- const accounts=useItems<Account>('/accounts'),categories=useItems<Category>('/categories'),goals=useItems<Goal>('/savings-goals');
+ const accounts=useItems<Account>('/accounts',['transaction','import'].includes(kind)),categories=useItems<Category>('/categories',['transaction','budget','income','bill'].includes(kind)),goals=useItems<Goal>('/savings-goals',kind==='allocation');
  const expenses=categories.items.filter(c=>c.kind==='EXPENSE'),incoming=categories.items.filter(c=>c.kind==='INCOME');
  const categoryOptions=(txKind==='INCOME'?incoming:expenses).map(x=>({value:x.id,label:x.name}));
  const name=(d:FormData,k:string)=>String(d.get(k)||'').trim();
