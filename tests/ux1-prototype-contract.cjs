@@ -14,7 +14,7 @@ assert.match(js,/Sample financial data/);
 assert.match(js,/NO API calls/);
 assert.doesNotMatch(js,/\bfetch\s*\(|\blocalStorage\b\.|\bsessionStorage\b\.|document\.cookie/);
 for(const id of ['home','activity','spending','cash-flow','goals','wealth','insights','settings']){
- assert.match(js,new RegExp("!'?"+id+"'?"),'V3 navigation includes '+id);
+ assert.match(js,new RegExp("'"+id+"'"),'V3 navigation includes '+id);
 }
 assert.match(js,/function welcome\(\)/);
 assert.match(js,/function authPreview\(\)/);
