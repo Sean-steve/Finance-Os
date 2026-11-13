@@ -117,7 +117,10 @@ async function main(){
   await hub.getByText('Server response received').waitFor();
   await hub.getByRole('combobox',{name:'Workflow area'}).selectOption('activity');
   hub=page.getByRole('dialog',{name:'Ledger & reconciliation'});
-  await hub.getByRole('combobox',{name:'Original posted transaction'}).selectOption({index:1});
+  const groceriesOption=hub.getByRole('combobox',{name:'Original posted transaction'}).locator('option').filter({hasText:'Test household grocery'});
+  const groceriesId=await groceriesOption.getAttribute('value');
+  assert.ok(groceriesId,'The expense to reverse must be a selectable original entry');
+  await hub.getByRole('combobox',{name:'Original posted transaction'}).selectOption(groceriesId);
   await hub.locator('.ux21-ack input').check();
   await hub.getByRole('button',{name:'Post compensating reversal'}).click();
   await hub.getByText('Server response received').waitFor();
