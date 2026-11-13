@@ -82,3 +82,7 @@
 @media(max-width:740px){.ux21-tools-btn{font-size:0;min-width:37px;width:39px;height:38px;padding:0;position:relative}.ux21-tools-btn:before{content:'⚙';font-size:20px}.ux21-panel{padding:15px 12px}.ux21-body .segments{margin:12px 0}.ux21-item{flex-wrap:wrap}}
 
 @media(max-width:740px){.topbar .ux21-tools-btn{display:inline-flex!important;align-items:center;justify-content:center}}
+
+/* Recharts temporarily holds its previous width during 390→320px viewport changes; contain transient SVG layout without scrolling the whole page. */
+.connected-chart{max-width:100%;min-width:0;overflow-x:clip}
+.connected-chart .recharts-responsive-container{min-width:0;max-width:100%}
