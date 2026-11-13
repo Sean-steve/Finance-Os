@@ -201,7 +201,7 @@ function chart(){
   return '<g role="button" tabindex="0" data-chart-index="'+i+'" aria-label="'+r.label+': income '+amount(r.income)+', expenses '+amount(r.expense)+'" class="chart-col">'+
    '<rect x="'+(x-barWidth-2)+'" y="'+(bottom-hi)+'" width="'+barWidth+'" height="'+Math.max(1,hi)+'" rx="4" fill="#087e60"/>'+
    '<rect x="'+(x+2)+'" y="'+(bottom-he)+'" width="'+barWidth+'" height="'+Math.max(1,he)+'" rx="4" fill="#b8d9ca"/>'+
-   '<text class="chart-axis" x="'+x+'" y="207" text-anchor="middle">'+r.label+'</text></g>';
+   '<text class="chart-axis" x="'+x+'" y="207" text-anchor="middle">'+r.label+'</text>'+   '<rect x="'+(x-slot*.44)+'" y="'+top+'" width="'+(slot*.88)+'" height="'+(bottom-top+12)+'" fill="transparent" pointer-events="all" aria-hidden="true"/></g>';
  }).join('');
  const grid=[0,.25,.5,.75,1].map(n=>'<line class="chart-grid" x1="'+left+'" x2="'+right+'" y1="'+(bottom-n*(bottom-top))+'" y2="'+(bottom-n*(bottom-top))+'"/>'+
   '<text class="chart-axis" x="'+(left-8)+'" y="'+(bottom-n*(bottom-top)+4)+'" text-anchor="end">'+(n===0?'0':Math.round(max*n/100000)+'k')+'</text>').join('');
