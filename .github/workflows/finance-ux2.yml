@@ -28,3 +28,73 @@ jobs:
           test -f ux2/dist/index.html
           test -f ux2/dist/config.json
           node -e "const f=require('fs');const c=JSON.parse(f.readFileSync('ux2/dist/config.json'));if(c.apiBase!==null)process.exit(1)"
+
+  ux2-e2e:
+    name: PostgreSQL 17 and Chromium connected V3 golden flow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: finance_migrator
+          POSTGRES_PASSWORD: ci-migrator-only
+          POSTGRES_DB: finance_os_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U finance_migrator -d finance_os_test"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      MIGRATION_DATABASE_URL: postgresql://finance_migrator:ci-migrator-only@127.0.0.1:5432/finance_os_test
+      DATABASE_URL: postgresql://finance_app:ci-app-only@127.0.0.1:5432/finance_os_test
+      AUTH_DATABASE_URL: postgresql://finance_auth:ci-auth-only@127.0.0.1:5432/finance_os_test
+      FINANCE_DB_MIGRATOR_PASSWORD: ci-migrator-only
+      PGPASSWORD: ci-migrator-only
+      LOCAL_AUTH_ENABLED: 'true'
+      NODE_ENV: test
+      HOST: 127.0.0.1
+      PORT: '3101'
+      CORS_ALLOWED_ORIGINS: http://127.0.0.1:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install finance backend and isolated V3 frontend
+        run: |
+          npm ci --prefix backend --no-audit --no-fund
+          npm install --prefix ux2 --no-audit --no-fund
+          npm install --prefix ux2 --no-save --no-audit --no-fund playwright@1.56.1
+          ./ux2/node_modules/.bin/playwright install --with-deps chromium
+      - name: Migrate database and provision least-privilege roles
+        run: |
+          npm --prefix backend run migrate
+          psql -h 127.0.0.1 -U finance_migrator -d finance_os_test \
+            -v app_password="ci-app-only" -v auth_password="ci-auth-only" \
+            -f backend/scripts/provision-app-role.sql
+          npm --prefix backend run build
+      - name: Execute true browser-to-API-to-PostgreSQL golden path
+        run: |
+          set -euo pipefail
+          node backend/dist/server.js > /tmp/finance-api.log 2>&1 &
+          api_pid=$!
+          npm --prefix ux2 run dev > /tmp/finance-vite.log 2>&1 &
+          web_pid=$!
+          trap 'kill "$api_pid" "$web_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 50); do
+            if curl -fsS http://127.0.0.1:3101/health/ready >/dev/null && curl -fsS http://127.0.0.1:5173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3101/health/ready
+          curl -fsS http://127.0.0.1:5173/ >/dev/null
+          node tests/ux2-live-browser.cjs || (cat /tmp/finance-api.log; cat /tmp/finance-vite.log; exit 1)
+      - name: Attach reviewed desktop and mobile browser evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finance-os-ux2-real-db-browser-evidence
+          path: qa-artifacts/ux2
+          retention-days: 14
+          if-no-files-found: ignore
