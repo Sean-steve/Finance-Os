@@ -1,7 +1,7 @@
 name: Finance OS V3 UX2 React Build and Contract
 on:
   pull_request:
-    paths: ['ux2/**','tests/ux2-contract.cjs','.github/workflows/finance-ux2.yml']
+    paths: ['ux2/**','tests/ux2-contract.cjs','tests/ux2-1-contract.cjs','tests/ux2-live-browser.cjs','.github/workflows/finance-ux2.yml']
   push:
     branches: [main]
     paths: ['ux2/**','tests/ux2-contract.cjs','.github/workflows/finance-ux2.yml']
@@ -18,7 +18,9 @@ jobs:
         with:
           node-version: '22'
       - name: Verify non-mock connected architecture
-        run: node tests/ux2-contract.cjs
+        run: |
+          node tests/ux2-contract.cjs
+          node tests/ux2-1-contract.cjs
       - name: Install isolated frontend dependencies
         run: npm install --prefix ux2 --no-audit --no-fund
       - name: TypeScript strict check and build
