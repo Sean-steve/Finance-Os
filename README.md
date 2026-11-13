@@ -1,3 +1,27 @@
+# Finance OS V3 — React + TypeScript Connected Application (UX2 / UX2.1)
+
+**Use this for real local testing.** The V3 application lives under `ux2/`, not the old numbered-page viewer, UX1 example dashboard, or `connected.html`. It connects to the **existing B1–B8 Fastify API / PostgreSQL**, while presenting the premium UX1 design language and eight outcome-oriented destinations.
+
+```bash
+# Terminal 1: start the preconfigured backend at 127.0.0.1:3101
+cd ~/Sites/Finance-Os/backend
+npm run dev
+
+# Terminal 2: start the actual V3 React interface
+cd ~/Sites/Finance-Os/ux2
+npm install
+npm run dev
+# Open http://127.0.0.1:5173/
+```
+
+The existing local API must have `/health/ready` = ready, `/v1/meta` financial endpoints/auth enabled, and dedicated PostgreSQL auth/app roles. Local password sign-in is **development-only**. The V3 frontend stores session access tokens in memory, isolates queries by workspace, sends idempotent financial mutations and **never substitutes synthetic demo balances**. Use the **Workflow tools** button for B1–B7 advanced operations; the primary Home command centre stays focused. Workflows include journal reversals, reconciliation, guardrails/independent approvals, bill settlement evidence, virtual allocations, user-estimated wealth and owner governance.
+
+**Evidence / safety:** [UX2.1 local PostgreSQL 17 + Chromium results and outstanding release gates](product/ux2/UX2_1_RELEASE_EVIDENCE.md) · [UX2 local testing guide](docs/backend/UX2_REACT_CONNECTED_APPLICATION.md). CI validates the actual PostgreSQL API, not just static fixtures. **Full role/edge-case certification, real production OIDC MFA, dedicated HTTPS staging, privacy approvals and external banking are not complete.**
+
+**Important:** The public [V3 UX1 demo](https://sean-steve.github.io/Finance-Os/v3/) is a **separate, synthetic design preview**. It is not the private connected V3 app. Do not enter real financial data into the public prototype or deploy the authenticated UX2 app to Pages without production identity and hosting certification.
+
+---
+
 # Finance OS — V3 Premium Experience (UX1 Interactive Preview)
 
 > **Finance OS V3 — UX1 premium interactive preview (sandbox only):** `v3/index.html` presents a redesigned eight-destination experience, dashboard cards, keyboard-accessible financial chart, bill/budget/goal workflows, separate onboarding and sign-in concept, and mobile navigation. This static preview uses clearly labeled, session-only illustrative records and **never** connects to PostgreSQL or collects real credentials. For actual local financial API testing continue to use `connected.html`.  
