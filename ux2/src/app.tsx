@@ -59,9 +59,9 @@ function SignedIn(){
  </>;
 }
 export function Application(){
- const {status,error,reload,workspaceId}=useSession();
+ const {status,error,workspaceId}=useSession();
  if(status==='loading')return <div className="connected-loading"><Busy/></div>;
- if(status==='error')return <div className="connected-loading"><Failure error={error} retry={()=>void reload()}/></div>;
+ if(status==='error')return <div className="connected-loading"><Failure error={error} retry={()=>window.location.reload()}/></div>;
  if(status==='ready')return <AuthScreen/>;
  if(!workspaceId)return <WorkspaceStart/>;
  return <SignedIn/>;
