@@ -15,6 +15,7 @@ on:
       - 'connected-config.json'
       - 'index.html'
       - 'tests/**'
+      - 'v3/**'
       - '.github/workflows/browser-qa.yml'
 permissions:
   contents: read
@@ -36,6 +37,8 @@ jobs:
         run: |
           npm install --no-save playwright@1.56.1 axe-core@4.10.3
           npx playwright install --with-deps chromium
+      - name: Certify UX1 V3 premium desktop/mobile interactive prototype
+        run: node tests/ux1-browser-qa.cjs
       - name: Exercise all 60 screens in Chromium
         run: node tests/browser-qa.cjs
       - name: Audit exact approved design image fidelity and interaction hotspots
