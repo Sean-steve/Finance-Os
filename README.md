@@ -1,3 +1,11 @@
+# Finance OS — V3 UX0 Experience Strategy (in planning)
+
+> **Finance OS V3 — UX0 Strategy and Experience Architecture (proposed; not yet implemented UI)**  
+> The backend remains B0–B8.1. UX0 defines the V3 eight-destination, outcomes-first product, all 60 legacy feature mappings, financial-truth rules, design direction and UX1 research gates. The page at `connected.html` is **still the V2 technical test interface**, not the V3 premium product. No customer validation, investor approval or real-provider activation is claimed.
+>
+> Read: [Product Strategy](product/ux0/PRODUCT_STRATEGY.md) · [Experience Architecture](product/ux0/EXPERIENCE_ARCHITECTURE.md) · [Design Direction](product/ux0/DESIGN_DIRECTION.md) · [Delivery & Research](product/ux0/DELIVERY_AND_RESEARCH.md) · [60-Screen Machine Mapping](product/ux0/experience-architecture.json).  
+> Verify UX0: `npm run ux0:check`.
+
 # Finance OS V2 — Approved Screen Fidelity Prototype
 
 **Current correction:** The landing page now displays the **original supplied screen designs**, not a redesigned approximation.
