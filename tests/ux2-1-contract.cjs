@@ -15,7 +15,7 @@ assert.match(c,/no provider-verified assets/i);
 assert.match(c,/useItems<.*>\('\/transactions'/);
 assert.match(c,/useItems<.*>\('\/reconciliation'/);
 assert.match(c,/workspacePost<unknown>\(workspaceId,path,body\)/,'Must use selected workspace');
-assert.match(c,/refreshFinancialData\\(queryClient,workspaceId,path\\)/,'Refresh only affected records in the selected workspace');
+assert.ok(c.includes('refreshFinancialData(queryClient,workspaceId,path)'),'Refresh only affected records in the selected workspace');
 assert.match(shell,/Workflow tools/);
 assert.match(app,/WorkflowHub/);
 assert.doesNotMatch(c,/Math\.random|localStorage|sessionStorage/,'No synthetic financial entries or persistent credentials');
