@@ -74,7 +74,7 @@ export function SessionProvider({children}:{children:ReactNode}){
       if(access){token.current=access;await populate(publicApi);return;}
     }else if(new URL(location.href).searchParams.has('error')){
       const provider=await publicApi.get<OidcProvider>('/v1/auth/provider',false);
-      await callback(publicApi,provider);
+      await callback(provider);
     }
     setStatus('ready');
    }catch(ex){setError(ex instanceof Error?ex.message:'Unable to initialize Finance OS.');setStatus('error');}
