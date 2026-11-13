@@ -5,7 +5,7 @@ import {CheckCircle2,ShieldAlert} from 'lucide-react';
 import {useSession} from './session';
 import {Drawer,Busy,Failure,Empty,Notice,Segments} from './components';
 import {useRead,useItems,formatMoney,parseMinor,today,dateText,describeError} from './finance';
-import type {Account,Transaction,Budget,Bill,Category,Entity} from './finance';
+import type {Account,Transaction,Budget,Bill,Category} from './finance';
 
 type Section='activity'|'spending'|'cash-flow'|'goals'|'wealth'|'settings';
 type Item={id:string;name?:string;status?:string;amountMinor?:number;requestedBy?:string;active?:boolean;enabled?:boolean;kind?:string;[key:string]:unknown};
@@ -29,7 +29,7 @@ function Records({items,source='Manual workspace records'}:{items:Item[];source?
 function KnownError({q}:{q:{isPending:boolean;error:unknown;refetch:()=>unknown}}){if(q.isPending)return <Busy/>;if(q.error)return <Failure error={q.error} retry={()=>void q.refetch()}/>;return null;}
 function Evidence({result}:{result:unknown}){return <div className="ux21-evidence"><CheckCircle2 size={18}/><div><b>Server response received</b><pre>{JSON.stringify(result,null,2).slice(0,3000)}</pre></div></div>;}
 export function WorkflowHub({initialSection,onClose}:{initialSection:string;onClose:()=>void}){
- const {user,role,workspaceId,api}=useSession(),queryClient=useQueryClient();
+ const {role,workspaceId,api}=useSession(),queryClient=useQueryClient();
  const sectionInitial=sectionKeys.includes(initialSection as Section)?initialSection as Section:'activity';
  const [section,setSection]=useState<Section>(sectionInitial),[operationChoice,setOperation]=useState(''),[ack,setAck]=useState(false);
  const defaults:Record<Section,string>={activity:'reversals',spending:'budgets','cash-flow':'calendar',goals:'funding',wealth:'value-assets',settings:'preferences'};
