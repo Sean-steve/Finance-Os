@@ -1,4 +1,5 @@
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
+import type {QueryClient} from '@tanstack/react-query';
 import {useSession} from './session';
 import type {Items} from './api';
 export type Account={id:string;displayName:string;kind:string;currency:string;balanceMinor:number;balanceQuality:string;providerStatus:string};
@@ -33,13 +34,58 @@ export function useItems<T>(tail:string,enabled=true){
  const q=useRead<Items<T>>(tail,enabled);
  return {...q,items:q.data?.items??[]};
 }
+// Avoid redundant concurrent refetches of EVERY active finance panel after each write.
+// Mark all workspace cache entries stale, then refresh only the affected active views.
+// Inactive modules refetch as soon as they are opened, with their normal tenant-specific keys.
+export async function refreshFinancialData(qc:QueryClient,workspaceId:string,path:string){
+ if(!workspaceId)return;
+ const core=['/accounts','/transactions','/ledger/summary','/reports/monthly?months=6','/reports/categories?months=6'];
+ const groups:Record<string,string[]>={
+  '/accounts':['/accounts','/ledger/summary','/wealth/summary'],
+  '/categories':['/categories','/reports/categories?months=6'],
+  '/transactions':[...core,'/spending/insights?months=6','/budgets','/financial-health','/advisor','/wealth/summary','/bills'],
+  '/budgets':['/budgets','/spending/insights?months=6'],
+  '/spending/guardrails':['/spending/guardrails','/spending/approvals'],
+  '/spending/approvals':['/spending/approvals'],
+  '/income/sources':['/income/sources','/income/overview','/income/forecast','/cash-flow/forecast?days=90','/cash-flow/shortfalls?days=90'],
+  '/bills':['/bills','/cash-flow/forecast?days=90','/cash-flow/shortfalls?days=90'],
+  '/savings-goals':['/savings-goals','/capital/summary'],
+  '/money-buckets':['/money-buckets','/capital/summary'],
+  '/capital/allocations':['/capital/allocations','/savings-goals','/money-buckets','/capital/summary'],
+  '/capital/requests':['/capital/requests'],
+  '/planning/scenarios':['/planning/scenarios'],
+  '/debts':['/debts','/wealth/summary','/financial-health'],
+  '/wealth/assets':['/wealth/assets','/wealth/summary','/wealth/analytics'],
+  '/wealth/investments':['/wealth/investments','/wealth/summary','/wealth/analytics'],
+  '/wealth/liabilities':['/wealth/liabilities','/wealth/summary','/wealth/analytics'],
+  '/tax/obligations':['/tax/obligations'],
+  '/insurance/policies':['/insurance/policies'],
+  '/retirement/scenarios':['/retirement/scenarios'],
+  '/estate/checklists':['/estate/checklists'],
+  '/settings':['/settings','/advisor','/privacy/status'],
+  '/privacy/requests':['/privacy/requests','/privacy/status'],
+  '/integrations/requests':['/integrations/requests'],
+  '/statement-imports':['/reconciliation'],
+  '/reconciliation/matches':['/reconciliation']
+ };
+ const key=Object.keys(groups).filter(prefix=>path===prefix||path.startsWith(prefix+'/')).sort((a,b)=>b.length-a.length)[0];
+ const affected=new Set(groups[key||'']||[]);
+ if(path.includes('/reverse'))core.forEach(x=>affected.add(x));
+ if(path.includes('/reverse'))['/budgets','/spending/insights?months=6','/bills','/wealth/summary'].forEach(x=>affected.add(x));
+ if(path.includes('/settlements')||path.includes('/cancel'))affected.add('/bills');
+ if(path.includes('/payments'))['/debts','/tax/obligations','/wealth/summary'].forEach(x=>affected.add(x));
+ if(path.includes('/valuations'))['/wealth/assets','/wealth/investments','/wealth/liabilities','/wealth/summary'].forEach(x=>affected.add(x));
+ if(path.includes('/decision'))['/spending/approvals','/capital/requests'].forEach(x=>affected.add(x));
+ await qc.invalidateQueries({queryKey:['ws',workspaceId],refetchType:'none'});
+ await Promise.all([...affected].map(tail=>qc.refetchQueries({queryKey:['ws',workspaceId,tail],exact:true,type:'active'})));
+}
 export function useWrite(){
  const {api,workspaceId,role}=useSession(),qc=useQueryClient();
  return useMutation({mutationFn:async(v:{path:string;body:unknown})=>{
   if(!api||!workspaceId)throw new Error('Sign in and select a workspace.');
   if(role==='VIEWER')throw new Error('This workspace role cannot make changes.');
   return api.workspacePost<unknown>(workspaceId,v.path,v.body);
- },onSuccess:async()=>{await qc.invalidateQueries({queryKey:['ws',workspaceId]});}});
+ },onSuccess:async(_result,variables)=>{await refreshFinancialData(qc,workspaceId,variables.path);}});
 }
 export function useOwnerCheck(){
  const {api,workspaceId,role}=useSession();
