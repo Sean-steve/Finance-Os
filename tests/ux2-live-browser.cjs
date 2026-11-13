@@ -142,7 +142,8 @@ async function main(){
   hub=page.getByRole('dialog',{name:'Privacy & governance'});
   await hub.getByRole('button',{name:'Privacy status'}).click();
   await hub.getByText(/Unresolved requests/).waitFor();
-  await hub.getByRole('button',{name:'Close'}).click();
+  await page.keyboard.press('Escape');
+  await hub.waitFor({state:'detached'});
   await page.getByRole('link',{name:'Home'}).click();
   await page.locator('.position-card').getByText(/KES 100,000.00/).waitFor();
   await page.setViewportSize({width:390,height:844});
@@ -156,10 +157,6 @@ async function main(){
   await page.screenshot({path:path.join(artifacts,'home-narrow-mobile.png'),fullPage:true});
   assert.equal(narrow.documentWidth>narrow.width+2,false,'320px narrow view must not overflow');
   await page.setViewportSize({width:1440,height:900});
-  await page.getByRole('button',{name:'Workflow tools'}).click();
-  await page.getByRole('dialog').waitFor();
-  await page.keyboard.press('Escape');
-  await page.getByRole('dialog').waitFor({state:'detached'});
   await page.getByRole('button',{name:'Sign out'}).click();
   await page.getByRole('heading',{name:/Welcome back/i}).waitFor();
   await page.reload();
