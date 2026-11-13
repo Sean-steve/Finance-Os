@@ -4,7 +4,7 @@ import {ArrowUpRight,Plus,Check,Info,CalendarClock} from 'lucide-react';
 import {useSession} from './session';
 import {PageHead,Card,Empty,Busy,Failure,Source,Metric,Row,Notice,Segments,FinancialChart,NoWrite} from './components';
 import type {ReportPeriod} from './components';
-import {useRead,useItems,useWrite,useOwnerCheck,formatMoney,dateText,describeError} from './finance';
+import {useRead,useItems,useOwnerCheck,formatMoney,dateText,describeError} from './finance';
 import type {Account,Transaction,Category,Ledger,Bill,Goal,Budget,Entity} from './finance';
 import type {ActionKind} from './forms';
 
@@ -136,7 +136,7 @@ export function Wealth({open}:{open:OpenAction}){
  <ListPanel tail={selected[tab].tail} title={selected[tab].title} sub="User-reported records only" emptyTitle="No recorded items" kind={selected[tab].action} open={open}/>}
  <Notice>Retirement illustrations are not guaranteed. A policy record is not proof of coverage. Tax records are not official KRA assessments.</Notice></>;
 }
-type Advisor={items?:{title?:string;message?:string;detail?:string}[];recommendations?:{title?:string;message?:string}[];sourceQuality?:string};
+type Advisor={items?:{title?:string;message?:string;detail?:string}[];recommendations?:{title?:string;message?:string;detail?:string}[];sourceQuality?:string};
 export function Insights(){
  const [tab,setTab]=useState('reports'),tabs=[{id:'reports',label:'Monthly reports'},{id:'categories',label:'Categories'},{id:'health',label:'Financial health'},{id:'advisor',label:'Guidance'}];
  const report=useRead<Report>('/reports/monthly?months=6',tab==='reports'),categories=useRead<{items:{name:string;kind:string;amountMinor:number}[];quality:string}>('/reports/categories?months=6',tab==='categories'),
