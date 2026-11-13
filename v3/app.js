@@ -494,7 +494,7 @@ function openPanel(type,idValue){
 function setToast(message){
  state.toast=message;render();
  window.clearTimeout(setToast.timer);
- setToast.timer=window.setTimeout(()=>{state.toast='';render();},3600);
+ setToast.timer=window.setTimeout(()=>{state.toast='';root.querySelector('.toast')?.remove();},3600);
 }
 function closePanels(){
  state.drawer=null;state.more=false;state.error='';render();
