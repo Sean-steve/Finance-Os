@@ -1,4 +1,8 @@
-# Finance OS — V3 UX0 Experience Strategy (in planning)
+# Finance OS — V3 Premium Experience (UX1 Interactive Preview)
+
+> **Finance OS V3 — UX1 premium interactive preview (sandbox only):** `v3/index.html` presents a redesigned eight-destination experience, dashboard cards, keyboard-accessible financial chart, bill/budget/goal workflows, separate onboarding and sign-in concept, and mobile navigation. This static preview uses clearly labeled, session-only illustrative records and **never** connects to PostgreSQL or collects real credentials. For actual local financial API testing continue to use `connected.html`.  
+> **Local:** `python3 -m http.server 8080 --bind 127.0.0.1` → `http://127.0.0.1:8080/v3/`. **Public preview after verified Pages deployment:** [Finance OS V3 concept](https://sean-steve.github.io/Finance-Os/v3/). **Design system & truth boundaries:** [UX1 design specification](product/ux1/INTERACTIVE_DESIGN_SYSTEM.md).  
+> **Check:** `npm run ux1:check`, with separate Playwright UX1 journey QA in the browser workflow.
 
 > **Finance OS V3 — UX0 Strategy and Experience Architecture (proposed; not yet implemented UI)**  
 > The backend remains B0–B8.1. UX0 defines the V3 eight-destination, outcomes-first product, all 60 legacy feature mappings, financial-truth rules, design direction and UX1 research gates. The page at `connected.html` is **still the V2 technical test interface**, not the V3 premium product. No customer validation, investor approval or real-provider activation is claimed.
