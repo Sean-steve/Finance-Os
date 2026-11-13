@@ -150,8 +150,10 @@ async function main(){
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2);
   assert.equal(overflow,false,'Mobile layout must not overflow');
   await page.setViewportSize({width:320,height:700});
-  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2),false,'320px narrow view must not overflow');
+  const narrow=await page.evaluate(()=>({width:window.innerWidth,documentWidth:document.documentElement.scrollWidth,overflows:[...document.querySelectorAll('body *')].filter(el=>{const box=el.getBoundingClientRect();return box.width>0&&(box.right>window.innerWidth+2||box.left< -2);}).slice(0,16).map(el=>({tag:el.tagName,cls:String(el.className).slice(0,110),label:(el.textContent||'').trim().slice(0,55),rect:{left:Math.round(el.getBoundingClientRect().left),right:Math.round(el.getBoundingClientRect().right)}}))}));
+  console.log('UX2_320_LAYOUT',JSON.stringify(narrow));
   await page.screenshot({path:path.join(artifacts,'home-narrow-mobile.png'),fullPage:true});
+  assert.equal(narrow.documentWidth>narrow.width+2,false,'320px narrow view must not overflow');
   await page.setViewportSize({width:1440,height:900});
   await page.getByRole('button',{name:'Workflow tools'}).click();
   await page.getByRole('dialog').waitFor();
