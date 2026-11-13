@@ -50,3 +50,33 @@
 @media(max-width:1040px){.app-shell.connected-layout{grid-template-columns:205px minmax(0,1fr)}.connected-grid,.connected-grid-main{grid-template-columns:1fr}.connected-auth{grid-template-columns:1fr 1fr}.topbar .connected-select{max-width:135px}}
 @media(max-width:740px){.app-shell.connected-layout{display:block}.connected-mobile-nav{display:grid}.connected-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.connected-metrics .position-card{grid-column:1/-1}.metric-live{padding:16px;min-height:125px}.metric-live strong{font-size:20px}.connected-grid,.connected-grid-main{grid-template-columns:1fr}.topbar .connected-select{max-width:120px}.session-note{margin:0 0 18px}.connected-auth{display:block}.connected-auth-left{min-height:280px;padding:27px}.connected-auth-left .brand{margin-bottom:20px}.connected-auth-left h1{font-size:38px;margin:10px 0}.connected-auth-left p{font-size:13px}.connected-auth-visual{display:none}.connected-auth-right{padding:17px}.connected-auth-panel h2{font-size:27px}.connected-mobile-nav .mobile-nav-item svg{height:20px;width:20px}.topbar .top-add{padding:9px!important}}
 @media(max-width:415px){.connected-metrics .position-card h2{font-size:27px}.metric-live strong{font-size:18px}.connected-select{max-width:115px}.connected-row{flex-wrap:wrap}.connected-row .list-end{max-width:40%}}
+
+
+/* UX2.1 advanced progressive-disclosure workflow centre */
+.ux21-tools-btn{white-space:nowrap;font-size:12px;padding:10px 13px}
+.ux21-body{padding-top:4px;font-size:13px}
+.ux21-body .segments{margin:18px 0 21px;overflow:auto}
+.ux21-panel{border:1px solid var(--line);border-radius:14px;padding:19px 16px;margin:14px 0;background:#fdfefd}
+.ux21-panel h3{font-size:14px;margin:0 0 15px;line-height:1.45}
+.ux21-panel .form-field{margin:11px 0}
+.ux21-panel .form-field span{font-weight:700;font-size:12px}
+.ux21-body .form-field select,.ux21-body .form-field input{max-width:100%;height:44px;padding:9px;border:1px solid var(--line-strong);border-radius:10px;background:white}
+.ux21-body .form-field{display:flex;flex-direction:column;gap:7px}
+.ux21-ack,.ux21-check{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:#516459;line-height:1.55;margin:12px 0}
+.ux21-check{text-transform:capitalize;color:var(--ink)}
+.ux21-ack input,.ux21-check input{width:16px;height:16px;margin-top:2px;accent-color:var(--emerald);flex:none}
+.ux21-action{display:grid;gap:8px;margin-top:17px}
+.ux21-action .btn,.ux21-panel form>.btn{width:100%;justify-content:center}
+.btn-danger{background:#aa4044;color:#fff;border-color:#aa4044}
+.btn-danger:hover{background:#8a2e35}
+.ux21-item{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px}
+.ux21-item:last-child{border-bottom:0}
+.ux21-item div{min-width:0}.ux21-item b{font-size:12px;display:block;overflow-wrap:anywhere}
+.ux21-item small{display:block;font-size:10px;color:var(--muted);line-height:1.5;margin-top:4px}
+.ux21-item strong{font-size:11px;white-space:nowrap}
+.ux21-records{max-height:270px;overflow:auto}
+.ux21-evidence{display:flex;align-items:flex-start;gap:10px;border:1px solid #b0d7c1;background:#ecf8ef;color:#1f5f42;border-radius:12px;padding:13px;margin-top:16px;font-size:12px}
+.ux21-evidence svg{flex:none}.ux21-evidence pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto;margin:8px 0 0;color:#214534;font-size:10px}
+.ux21-legal{border-top:1px solid var(--line);padding:16px 0;margin-top:18px;display:flex;gap:9px;align-items:flex-start;font-size:10px;color:var(--muted)}
+.ux21-legal svg{flex:none}
+@media(max-width:740px){.ux21-tools-btn{font-size:0;min-width:37px;width:39px;height:38px;padding:0;position:relative}.ux21-tools-btn:before{content:'⚙';font-size:20px}.ux21-panel{padding:15px 12px}.ux21-body .segments{margin:12px 0}.ux21-item{flex-wrap:wrap}}
