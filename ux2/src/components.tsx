@@ -12,7 +12,7 @@ const entries=[
 ] as const;
 export function Brand(){return <div className="brand"><span className="brand-symbol">◈</span><span className="brand-name">finance<span style={{color:'var(--emerald)'}}>os</span><small>YOUR MONEY, IN FOCUS</small></span></div>;}
 export function AppShell({onAdd}:{onAdd:()=>void}){
- const {user,workspaces,workspaceId,selectWorkspace,signOut,role}=useSession();
+ const {workspaces,workspaceId,selectWorkspace,signOut,role}=useSession();
  const navigate=useNavigate(),loc=useLocation(),current=entries.find(x=>loc.pathname.startsWith('/'+x[0]))?.[1]||'Home';
  const active=entries.find(x=>loc.pathname.startsWith('/'+x[0]))?.[0]||'home';
  return <div className="app-shell connected-layout">
@@ -57,8 +57,8 @@ export function Drawer({title,onClose,children}:{title:string;onClose:()=>void;c
   window.addEventListener('keydown',key);return ()=>{window.removeEventListener('keydown',key);(previous.current as HTMLElement|null)?.focus();};},[onClose]);
  return <div className="drawer-backdrop" onMouseDown={ev=>{if(ev.target===ev.currentTarget)onClose();}}><div className="drawer" ref={target} role="dialog" aria-modal="true" aria-label={title}><div className="drawer-header"><div><span className="eyebrow">RECORDED FINANCE · WORKSPACE</span><h2>{title}</h2><p>Real PostgreSQL data, no synthetic fallbacks.</p></div><button type="button" className="btn btn-icon btn-outline" aria-label="Close" onClick={onClose}><X size={18}/></button></div>{children}</div></div>;
 }
-export function FormField({label,name,type='text',required=true,options,min,step,defaultValue,placeholder}:{label:string;name:string;type?:string;required?:boolean;options?:{value:string;label:string}[];min?:string;step?:string;defaultValue?:string;placeholder?:string}){
- return <div className="form-field"><label htmlFor={'f-'+name}>{label}</label>{options?<select id={'f-'+name} name={name} required={required} defaultValue={defaultValue}>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>:<input id={'f-'+name} name={name} type={type} required={required} min={min} step={step} defaultValue={defaultValue} placeholder={placeholder} maxLength={type==='text'?200:undefined}/>}</div>;
+export function FormField({label,name,type='text',required=true,options,min,max,step,defaultValue,placeholder}:{label:string;name:string;type?:string;required?:boolean;options?:{value:string;label:string}[];min?:string;max?:string;step?:string;defaultValue?:string;placeholder?:string}){
+ return <div className="form-field"><label htmlFor={'f-'+name}>{label}</label>{options?<select id={'f-'+name} name={name} required={required} defaultValue={defaultValue}>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>:<input id={'f-'+name} name={name} type={type} required={required} min={min} max={max} step={step} defaultValue={defaultValue} placeholder={placeholder} maxLength={type==='text'?200:undefined}/>}</div>;
 }
 export function SaveForm({children,onSubmit,pending,error,close}:{children:ReactNode;onSubmit:(data:FormData)=>void;pending:boolean;error:string;close:()=>void}){
  return <form className="drawer-form" onSubmit={(ev:FormEvent<HTMLFormElement>)=>{ev.preventDefault();onSubmit(new FormData(ev.currentTarget));}}><div className="drawer-body">{children}{error&&<div role="alert" className="form-error">{error}</div>}</div><div className="drawer-footer"><button type="button" className="btn btn-outline" onClick={close}>Cancel</button><button className="btn btn-primary" type="submit" disabled={pending}>{pending?'Saving…':'Save record'}</button></div></form>;
