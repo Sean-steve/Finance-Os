@@ -1,10 +1,10 @@
 import {useState} from 'react';
-import type {FormEvent,ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {ArrowRightLeft,CheckCircle2,Info,ShieldAlert} from 'lucide-react';
+import {CheckCircle2,ShieldAlert} from 'lucide-react';
 import {useSession} from './session';
 import {Drawer,Busy,Failure,Empty,Notice,Segments} from './components';
-import {useRead,useItems,useWrite,formatMoney,parseMinor,today,dateText,describeError} from './finance';
+import {useRead,useItems,formatMoney,parseMinor,today,dateText,describeError} from './finance';
 import type {Account,Transaction,Budget,Bill,Category,Entity} from './finance';
 
 type Section='activity'|'spending'|'cash-flow'|'goals'|'wealth'|'settings';
@@ -13,7 +13,6 @@ type ImportItem=Item&{description:string;date:string;financialAccountId:string;a
 type Source=Item&{enabled:boolean;expectedMinor:number};
 type BillEvent={billId:string;billName:string;date:string;amountMinor:number;status:string;settlementId:string|null};
 type Valuation=Item&{valueMinor:number;recordedOn:string;note:string};
-type ButtonProps={title:string;path:string;body?:unknown;danger?:boolean;owner?:boolean;disabled?:boolean;hint?:string};
 const sections:Record<Section,string>={activity:'Ledger & reconciliation',spending:'Budgets & controls','cash-flow':'Bills & settlements',goals:'Capital & approvals',wealth:'Valuations & obligations',settings:'Privacy & governance'};
 const sectionKeys=Object.keys(sections) as Section[];
 const future=()=>{const d=new Date();d.setUTCDate(d.getUTCDate()+90);return d.toISOString().slice(0,10);};
@@ -32,7 +31,9 @@ function Evidence({result}:{result:unknown}){return <div className="ux21-evidenc
 export function WorkflowHub({initialSection,onClose}:{initialSection:string;onClose:()=>void}){
  const {user,role,workspaceId,api}=useSession(),queryClient=useQueryClient();
  const sectionInitial=sectionKeys.includes(initialSection as Section)?initialSection as Section:'activity';
- const [section,setSection]=useState<Section>(sectionInitial),[operation,setOperation]=useState(''),[ack,setAck]=useState(false);
+ const [section,setSection]=useState<Section>(sectionInitial),[operationChoice,setOperation]=useState(''),[ack,setAck]=useState(false);
+ const defaults:Record<Section,string>={activity:'reversals',spending:'budgets','cash-flow':'calendar',goals:'funding',wealth:'value-assets',settings:'preferences'};
+ const operation=operationChoice||defaults[section];
  const [chosen,setChosen]=useState(''),[secondary,setSecondary]=useState(''),[tertiary,setTertiary]=useState('');
  const [result,setResult]=useState<unknown>(null),[error,setError]=useState(''),[pending,setPending]=useState(false);
  const [purchaseResult,setPurchaseResult]=useState<unknown>(null);
@@ -162,13 +163,7 @@ export function WorkflowHub({initialSection,onClose}:{initialSection:string;onCl
    <ReadPanel title="Workspace audit events"><KnownError q={audit}/><Records items={audit.items}/></ReadPanel>}
   </>;
  }
- const ops:Record<Section,string>={activity:'reversals',spending:'budgets','cash-flow':'calendar',goals:'funding',wealth:'value-assets',settings:'preferences'};
- const active=operation||ops[section];
- // Inner() reads operation; use effective operation without mutating state.
- const current=active;const body=(function(){
-   // Reuse section-specific logic while keeping stable operation after tab switch.
-   return <ActiveArea operation={current} render={Inner}/>;
- })();
+ const body=<Inner/>;
  return <Drawer title={sections[section]} onClose={onClose}><div className="ux21-body"><p className="tiny muted">Advanced, audited actions are separate from the daily command centre. A posted ledger event cannot be overwritten. All requests target the selected authenticated workspace.</p>
    <label className="form-field"><span>Workflow area</span><select aria-label="Workflow area" value={section} onChange={ev=>show(ev.target.value as Section)}>{sectionKeys.map(s=><option value={s} key={s}>{sections[s]}</option>)}</select></label>
    {body}
@@ -177,8 +172,4 @@ export function WorkflowHub({initialSection,onClose}:{initialSection:string;onCl
    {result!==null&&<Evidence result={result}/>}
    <div className="ux21-legal"><ShieldAlert size={17}/><span>FINANCE OS MANUAL MODE: no provider-verified assets, no banking payments, no automatic tax filing. The server remains authoritative.</span></div>
  </div></Drawer>;
-}
-function ActiveArea({operation,render}:{operation:string;render:()=>ReactNode}){
- // Operation is set explicitly by clicking the module tab. It is not inferred from a URL.
- void operation;return <>{render()}</>;
 }
