@@ -80,9 +80,9 @@ export function WorkflowHub({initialSection,onClose}:{initialSection:string;onCl
   setPending(true);setError('');setResult(null);
   try{
    const response=await api.workspacePost<unknown>(workspaceId,path,body);
-   setResult(response);
    await queryClient.invalidateQueries({queryKey:['ws',workspaceId]});
    setAck(false);
+   setResult(response);
   }catch(ex){setError(describeError(ex));}finally{setPending(false);}
  }
  function Action({title,path,body={},danger=false,owner:requiredOwner=false,disabled=false,hint}:{title:string;path:string;body?:unknown;danger?:boolean;owner?:boolean;disabled?:boolean;hint?:string}){
