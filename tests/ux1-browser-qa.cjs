@@ -44,11 +44,10 @@ async function run(){
   await page.getByRole('heading',{name:'Spending',exact:true}).waitFor();
   await page.locator('[data-open="budget"]').first().click();
   await page.locator('.drawer [name="amount"]').fill('21000');
+  await page.waitForTimeout(3900); // An older toast must not wipe a partially filled form.
+  assert.equal(await page.locator('.drawer [name="amount"]').inputValue(),'21000','Toast dismissal erased input');
   await page.locator('.drawer button[type="submit"]').click();
-  await page.waitForTimeout(200);
-  const budgetForm=await page.locator('.drawer form').evaluate(f=>({kind:f.dataset.form,checkValidity:f.checkValidity(),controls:[...f.elements].map(x=>({name:x.name,tag:x.tagName,type:x.type,value:x.value,valid:x.checkValidity?.(),message:x.validationMessage}))}));
-  const budgetState={toast:await page.locator('.toast').allTextContents(),formError:await page.locator('.form-error').allTextContents(),drawer:await page.locator('.drawer').count(),budgetForm,pageErrors:errors};
-  assert.ok(budgetState.toast.join('').includes('Monthly planning budget updated.'),'Budget did not save: '+JSON.stringify(budgetState));
+  await page.getByText('Monthly planning budget updated.').waitFor({timeout:5000});
   await page.locator('.sidebar [data-go="cash-flow"]').click();
   await page.getByRole('heading',{name:'Cash Flow',exact:true}).waitFor();
   await page.locator('[data-open="bill"]').first().click();
