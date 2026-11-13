@@ -7,7 +7,7 @@ export type Transaction={id:string;description:string;kind:'INCOME'|'EXPENSE'|'R
 export type Ledger={totalByCurrency:{currency:string;amountMinor:number;quality:string}[];asOf:string};
 export type Bill={id:string;name:string;amountMinor:number;firstDueOn:string;cadence:string;status:string;currency:string};
 export type Goal={id:string;name:string;kind:string;targetMinor:number;allocatedMinor?:number;fundedMinor?:number;status:string};
-export type Budget={id:string;name:string;amountMinor:number;startsOn:string;endsOn:string;status:string;allocations?:{categoryId:string;limitMinor:number}[]};
+export type Budget={id:string;name:string;amountMinor:number;spentMinor?:number;startsOn:string;endsOn:string;status:string;allocations?:{categoryId:string;limitMinor:number}[]};
 export type Source={id:string;name:string;expectedMinor:number;firstExpectedOn:string;cadence:string};
 export type Entity={id:string;name?:string;label?:string;status?:string;currency?:string;[key:string]:unknown};
 export const formatMoney=(value:unknown,currency='KES')=>{
