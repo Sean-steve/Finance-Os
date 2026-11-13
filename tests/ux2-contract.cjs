@@ -11,7 +11,7 @@ assert.match(session,/qc.clear\(\)/,'Clear all TanStack Query caches on identity
 for(const id of ['home','activity','spending','cash-flow','goals','wealth','insights','settings'])assert.match(app,new RegExp('path="/'+id+'"'));
 for(const title of ['Accounts','Transactions','Budgets','Cash Flow','Goals','Wealth'])assert.ok(pages.includes(title));
 assert.match(pages,/\/reports\/monthly\?months=6/);
-assert.match(pages,/\/certification\/financial-integrity/); // via useOwnerCheck helper
+assert.match(read('src/finance.ts'),/\/certification\/financial-integrity/); // owner-only helper
 assert.match(forms,/\/transactions/);assert.match(forms,/\/bills/);assert.match(forms,/\/wealth\/assets/);
 assert.match(forms,/\/privacy\/requests/);assert.match(forms,/\/budgets/);
 assert.match(css,/\.connected-metrics/);assert.match(css,/@media\(max-width:740px\)/);
