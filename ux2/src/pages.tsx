@@ -81,7 +81,7 @@ function ListPanel({tail,title,sub,emptyTitle,open,kind}:{tail:string;title:stri
  if(q.error)return <Failure error={q.error} retry={()=>void q.refetch()}/>;
  const shown=q.items.slice(0,8);
  return <Card title={title} sub={sub} action={kind&&open?<Add label="Add" kind={kind} open={open}/>:undefined}>
-  {shown.length?shown.map(x=><Row key={x.id} title={String(x.name||x.label||x.id.slice(0,8))} detail={String(x.status||x.currency||x.kind||'User recorded')} value={moneyFrom(x)}/>):<Empty title={emptyTitle} action={kind&&open?<Add label="Create record" kind={kind} open={open}/>} />}
+  {shown.length?shown.map(x=><Row key={x.id} title={String(x.name||x.label||x.id.slice(0,8))} detail={String(x.status||x.currency||x.kind||'User recorded')} value={moneyFrom(x)}/>):<Empty title={emptyTitle} action={kind&&open?<Add label="Create record" kind={kind} open={open}/>:undefined} />}
   {q.items.length>shown.length&&<p className="tiny muted">Showing {shown.length} of {q.items.length} records.</p>}
  </Card>;
 }
