@@ -149,7 +149,14 @@ async function main(){
   await page.screenshot({path:path.join(artifacts,'home-mobile.png'),fullPage:true});
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2);
   assert.equal(overflow,false,'Mobile layout must not overflow');
+  await page.setViewportSize({width:320,height:700});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2),false,'320px narrow view must not overflow');
+  await page.screenshot({path:path.join(artifacts,'home-narrow-mobile.png'),fullPage:true});
   await page.setViewportSize({width:1440,height:900});
+  await page.getByRole('button',{name:'Workflow tools'}).click();
+  await page.getByRole('dialog').waitFor();
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').waitFor({state:'detached'});
   await page.getByRole('button',{name:'Sign out'}).click();
   await page.getByRole('heading',{name:/Welcome back/i}).waitFor();
   await page.reload();
