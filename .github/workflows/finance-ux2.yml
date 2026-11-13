@@ -1,0 +1,30 @@
+name: Finance OS V3 UX2 React Build and Contract
+on:
+  pull_request:
+    paths: ['ux2/**','tests/ux2-contract.cjs','.github/workflows/finance-ux2.yml']
+  push:
+    branches: [main]
+    paths: ['ux2/**','tests/ux2-contract.cjs','.github/workflows/finance-ux2.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ux2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify non-mock connected architecture
+        run: node tests/ux2-contract.cjs
+      - name: Install isolated frontend dependencies
+        run: npm install --prefix ux2 --no-audit --no-fund
+      - name: TypeScript strict check and build
+        run: npm --prefix ux2 run build
+      - name: Verify build artifact and private-default runtime configuration
+        run: |
+          test -f ux2/dist/index.html
+          test -f ux2/dist/config.json
+          node -e "const f=require('fs');const c=JSON.parse(f.readFileSync('ux2/dist/config.json'));if(c.apiBase!==null)process.exit(1)"
