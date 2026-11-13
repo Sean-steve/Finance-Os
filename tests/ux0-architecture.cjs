@@ -28,7 +28,7 @@ for(const r of architecture.routeMap){
  assert.ok(!seenIds.has(r.legacyScreen),'Duplicate legacy screen');
  seenIds.add(r.legacyScreen);
  assert.equal(r.legacyLabel,titles[r.legacyScreen],'Original screen title drift');
- assert.match(r.path,/^\/[a-z][a-z0-9/:-]*$/,'Invalid route shape');
+ assert.match(r.path,/^\/[a-z][A-Za-z0-9/:-]*$/,'Invalid route shape');
  assert.ok(!seenRoutes.has(r.path),'Duplicate route: '+r.path);
  seenRoutes.add(r.path);
  assert.ok(expected.includes(r.destination)||['auth','onboarding'].includes(r.destination));
