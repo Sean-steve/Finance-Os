@@ -17,7 +17,7 @@ const Context=createContext<Session|null>(null);
 const PKCE_KEY='finance-os-v3-pkce';
 function isLocal(){return ['127.0.0.1','localhost'].includes(location.hostname);}
 const b64=(buf:Uint8Array)=>btoa(Array.from(buf,x=>String.fromCharCode(x)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
-async function callback(api:FinanceApi,provider:OidcProvider):Promise<string|null>{
+async function callback(provider:OidcProvider):Promise<string|null>{
  const uri=new URL(window.location.href);
  const code=uri.searchParams.get('code'),state=uri.searchParams.get('state'),rejected=uri.searchParams.get('error');
  if(!code&&!rejected)return null;
@@ -70,7 +70,7 @@ export function SessionProvider({children}:{children:ReactNode}){
     setBase(found);setMeta(state);
     if(state.authenticationScope==='OIDC_VERIFIED_MFA'&&new URL(location.href).searchParams.has('code')){
       const provider=await publicApi.get<OidcProvider>('/v1/auth/provider',false);
-      const access=await callback(publicApi,provider);
+      const access=await callback(provider);
       if(access){token.current=access;await populate(publicApi);return;}
     }else if(new URL(location.href).searchParams.has('error')){
       const provider=await publicApi.get<OidcProvider>('/v1/auth/provider',false);
