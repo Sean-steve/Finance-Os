@@ -142,7 +142,7 @@
       "legacyScreen": 7,
       "legacyLabel": "Accounts Overview",
       "destination": "activity",
-      "path": "/activity/accounts",
+      "path": "/activity",
       "presentation": "page"
     },
     {
@@ -540,7 +540,7 @@
       "legacyScreen": 60,
       "legacyLabel": "Settings, Privacy, Security & Audit History",
       "destination": "settings",
-      "path": "/settings/security",
+      "path": "/settings",
       "presentation": "page",
       "trustRule": "Owner-only privacy checks do not substitute for fulfilled data rights; B8 ledger status is manual-only."
     }
