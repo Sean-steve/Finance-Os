@@ -4,7 +4,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {CheckCircle2,ShieldAlert} from 'lucide-react';
 import {useSession} from './session';
 import {Drawer,Busy,Failure,Empty,Notice,Segments} from './components';
-import {useRead,useItems,formatMoney,parseMinor,today,dateText,describeError} from './finance';
+import {useRead,useItems,refreshFinancialData,formatMoney,parseMinor,today,dateText,describeError} from './finance';
 import type {Account,Transaction,Budget,Bill,Category} from './finance';
 
 type Section='activity'|'spending'|'cash-flow'|'goals'|'wealth'|'settings';
@@ -83,7 +83,7 @@ export function WorkflowHub({initialSection,onClose}:{initialSection:string;onCl
   setPending(true);setError('');setResult(null);
   try{
    const response=await api.workspacePost<unknown>(workspaceId,path,body);
-   await queryClient.invalidateQueries({queryKey:['ws',workspaceId]});
+   await refreshFinancialData(queryClient,workspaceId,path);
    setAck(false);
    setResult(response);
   }catch(ex){setError(describeError(ex));}finally{setPending(false);}
