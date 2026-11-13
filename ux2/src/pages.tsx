@@ -22,7 +22,8 @@ function ErrorView({queries}:{queries:{isPending:boolean;error:unknown;refetch:(
 export function Home({open}:{open:OpenAction}){
  const navigate=useNavigate(),accounts=useItems<Account>('/accounts'),transactions=useItems<Transaction>('/transactions'),
   summary=useRead<Ledger>('/ledger/summary'),report=useRead<Report>('/reports/monthly?months=6'),bills=useRead<Bills>('/bills'),goals=useItems<Goal>('/savings-goals');
- const blocker=<ErrorView queries={[accounts,transactions,summary,report,bills,goals]}/>;
+ const queries=[accounts,transactions,summary,report,bills,goals];
+ const blocker=queries.some(q=>q.isPending||q.error)?<ErrorView queries={queries}/>:null;
  if(blocker)return <><PageHead title="Your financial command centre" sub="Workspace-backed financial clarity."/>{blocker}</>;
  const hasRecords=accounts.items.length>0;
  const total=summary.data?.totalByCurrency.find(x=>x.currency==='KES')?.amountMinor;
@@ -65,7 +66,8 @@ export function Activity({open}:{open:OpenAction}){
  const accounts=useItems<Account>('/accounts'),transactions=useItems<Transaction>('/transactions'),cats=useItems<Category>('/categories'),
  summary=useRead<Ledger>('/ledger/summary'),imports=useRead<Record<string,unknown>>('/reconciliation',tab==='reconciliation');
  const tabs=[{id:'transactions',label:'Transactions'},{id:'accounts',label:'Accounts'},{id:'categories',label:'Categories'},{id:'reconciliation',label:'Reconciliation'}];
- const blocker=<ErrorView queries={[accounts,transactions,cats,summary,...(tab==='reconciliation'?[imports]:[])]}/>;
+ const queries=[accounts,transactions,cats,summary,...(tab==='reconciliation'?[imports]:[])];
+ const blocker=queries.some(q=>q.isPending||q.error)?<ErrorView queries={queries}/>:null;
  return <><PageHead title="Activity" sub="Understand every movement, and trace the financial records behind it." action={<Add label="Record transaction" kind="transaction" open={open}/>}/><Segments items={tabs} selected={tab} onChange={setTab}/>
  {blocker||<div className="connected-grid connected-grid-main">
    {tab==='transactions'?<><Card title="Posted transactions" sub="Journal-backed, manually entered"><FilterList items={transactions.items} kind={tab}/></Card><Card title="Record movement" sub="Fast actions" action={<Source/>}><div className="connected-action-stack"><Add label="Record income or expense" kind="transaction" open={open}/><Add label="Stage statement entry" kind="import" open={open}/></div><Notice>Statement imports remain unverified until explicitly matched.</Notice></Card></>:
@@ -91,7 +93,8 @@ export function Spending({open}:{open:OpenAction}){
  const budgets=useItems<Budget>('/budgets',tab==='overview'||tab==='budgets'),insight=useRead<Insight>('/spending/insights?months=6',tab==='overview');
  const cats=useItems<Category>('/categories',tab==='overview');
  const tabs=[{id:'overview',label:'Overview'},{id:'budgets',label:'Budgets'},{id:'guardrails',label:'Guardrails'},{id:'approvals',label:'Approvals'}];
- const blocker=<ErrorView queries={tab==='overview'?[budgets,insight,cats]:tab==='budgets'?[budgets]:[]}/>;
+ const queries=tab==='overview'?[budgets,insight,cats]:tab==='budgets'?[budgets]:[];
+ const blocker=queries.some(q=>q.isPending||q.error)?<ErrorView queries={queries}/>:null;
  return <><PageHead title="Spending" sub="Know what was posted, what is planned, and where to review." action={<Add label="Create budget" kind="budget" open={open}/>}/><Segments items={tabs} selected={tab} onChange={setTab}/>
  {blocker||(tab==='overview'?<div className="connected-grid"><Card title="Spending categories" sub="Posted manual transactions · last six months">{insight.data?.categories.length?insight.data.categories.slice(0,7).map(c=><div className="connected-category" key={c.name}><span>{c.name}</span><strong>{formatMoney(c.netSpentMinor)}</strong><div className="connected-track"><span style={{width:(100*Math.max(0,c.netSpentMinor)/Math.max(1,...insight.data!.categories.map(x=>x.netSpentMinor)))+'%'}}/></div></div>):<Empty title="No posted spending data"/>}<Source label={insight.data?.sourceQuality}/></Card>
  <Card title="Monthly budgets" sub="Allocated spending limits">{budgets.items.length?budgets.items.slice(0,5).map(b=><div className="connected-category" key={b.id}><span>{b.name}</span><strong>{formatMoney(b.spentMinor)} / {formatMoney(b.amountMinor)}</strong><div className="connected-track"><span style={{width:Math.min(100,(b.spentMinor||0)/Math.max(b.amountMinor,1)*100)+'%'}}/></div></div>):<Empty title="No budgets recorded" action={<Add label="Create budget" kind="budget" open={open}/>}/>}</Card></div>:
@@ -103,7 +106,8 @@ export function CashFlow({open}:{open:OpenAction}){
  const [tab,setTab]=useState('bills'),bills=useRead<Bills>('/bills',tab==='bills'),
   overview=useRead<Record<string,unknown>>('/cash-flow/forecast?days=90',tab==='forecast'),risks=useRead<{recommendations?:string[];firstPotentialShortfallOn?:string|null}>('/cash-flow/shortfalls?days=90',tab==='risks');
  const tabs=[{id:'bills',label:'Bills'},{id:'income',label:'Income sources'},{id:'forecast',label:'Forecast'},{id:'risks',label:'Risks'}];
- const blocker=<ErrorView queries={tab==='bills'?[bills]:tab==='forecast'?[overview]:tab==='risks'?[risks]:[]}/>;
+ const queries=tab==='bills'?[bills]:tab==='forecast'?[overview]:tab==='risks'?[risks]:[];
+ const blocker=queries.some(q=>q.isPending||q.error)?<ErrorView queries={queries}/>:null;
  return <><PageHead title="Cash Flow" sub="Separate expected income and obligations from money actually received." action={<Add label="Schedule bill" kind="bill" open={open}/>}/><Segments items={tabs} selected={tab} onChange={setTab}/>
  {blocker||(tab==='bills'?<div className="connected-grid"><Card title="Bills & obligations" sub="User-reported, not automatically paid">{bills.data?.items.length?bills.data.items.slice(0,12).map(b=><Row key={b.id} title={b.name} detail={b.cadence+' · Due '+dateText(b.firstDueOn)} value={<Money v={b.amountMinor}/>}/>):<Empty title="No bills recorded" action={<Add label="Add bill" kind="bill" open={open}/>}/>}</Card><Card title="Upcoming exposure" sub="Scheduled obligations not provider verified"><div className="connected-value">{formatMoney(bills.data?.overview.upcomingUnverifiedMinor)}</div><Notice>Paying an external bill does not update Finance OS unless manually recorded and reconciled.</Notice><Add label="Add bill" kind="bill" open={open}/></Card></div>:
  tab==='income'?<ListPanel tail="/income/sources" title="Expected income sources" sub="Not money received" emptyTitle="No income sources recorded" open={open} kind="income"/>:
@@ -117,7 +121,8 @@ function SummaryFields({value}:{value:Record<string,unknown>}){
 export function Goals({open}:{open:OpenAction}){
  const [tab,setTab]=useState('goals'),tabs=[{id:'goals',label:'Savings goals'},{id:'buckets',label:'Money buckets'},{id:'allocations',label:'Virtual allocations'},{id:'scenarios',label:'Scenarios'},{id:'requests',label:'Funding approvals'}];
  const goals=useItems<Goal>('/savings-goals',tab==='goals');
- const blocker=<ErrorView queries={tab==='goals'?[goals]:[]}/>;
+ const queries=tab==='goals'?[goals]:[];
+ const blocker=queries.some(q=>q.isPending||q.error)?<ErrorView queries={queries}/>:null;
  return <><PageHead title="Goals" sub="Build a plan without confusing virtual allocations for real money." action={<Add label="Create savings goal" kind="goal" open={open}/>}/><Segments items={tabs} selected={tab} onChange={setTab}/>
  {blocker||(tab==='goals'?<div className="connected-grid">{goals.items.length?goals.items.slice(0,9).map(g=><Card key={g.id} title={g.name} sub={g.kind+' · planning target'}><div className="connected-value">{formatMoney(g.targetMinor)}</div><progress value={Math.max(0,g.allocatedMinor||0)} max={Math.max(1,g.targetMinor)}/><p className="tiny muted">Virtual allocation {formatMoney(g.allocatedMinor||0)}. No funds transferred.</p></Card>):<Card title="Your first goal" sub="Save for what matters"><Empty title="No savings goals" action={<Add label="Create goal" kind="goal" open={open}/>}/></Card>}</div>:
  tab==='buckets'?<ListPanel tail="/money-buckets" title="Virtual money buckets" sub="Planning envelopes only" emptyTitle="No money buckets" kind="bucket" open={open}/>:
@@ -141,7 +146,8 @@ export function Insights(){
  const [tab,setTab]=useState('reports'),tabs=[{id:'reports',label:'Monthly reports'},{id:'categories',label:'Categories'},{id:'health',label:'Financial health'},{id:'advisor',label:'Guidance'}];
  const report=useRead<Report>('/reports/monthly?months=6',tab==='reports'),categories=useRead<{items:{name:string;kind:string;amountMinor:number}[];quality:string}>('/reports/categories?months=6',tab==='categories'),
  health=useRead<Record<string,unknown>>('/financial-health',tab==='health'),advisor=useRead<Advisor>('/advisor',tab==='advisor');
- const blocker=<ErrorView queries={tab==='reports'?[report]:tab==='categories'?[categories]:tab==='health'?[health]:[advisor]}/>;
+ const queries=tab==='reports'?[report]:tab==='categories'?[categories]:tab==='health'?[health]:[advisor];
+ const blocker=queries.some(q=>q.isPending||q.error)?<ErrorView queries={queries}/>:null;
  return <><PageHead title="Insights" sub="Understand your manual records and avoid conclusions unsupported by the evidence."/><Segments items={tabs} selected={tab} onChange={setTab}/>
  {blocker||(tab==='reports'?<div className="connected-grid"><Card title="Income & expense history" sub="Posted manual KES · last six months"><FinancialChart rows={report.data?.periods||[]}/></Card><Card title="Period summary" sub="All amounts from the ledger"><div className="connected-value">{formatMoney(report.data?.totals.netMinor)}</div><p className="tiny muted">Net posted position across the displayed periods</p><SummaryFields value={report.data?.totals||{}}/><Source label={report.data?.quality}/></Card></div>:
  tab==='categories'?<Card title="Recorded category totals" sub="No invented spending analysis">{categories.data?.items.length?categories.data.items.map((x,i)=><Row key={i} title={x.name} detail={x.kind} value={<Money v={x.amountMinor}/>}/>):<Empty title="No posted category totals"/>}<Source label={categories.data?.quality}/></Card>:
