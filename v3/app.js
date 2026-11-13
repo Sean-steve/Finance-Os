@@ -115,13 +115,24 @@ function welcome(){
   '<p>See the whole picture. Understand your next move. Build momentum toward what matters — in one calm financial workspace.</p>'+
   '<div class="welcome-actions"><button class="btn btn-accent" data-action="demo">Explore interactive preview '+icon('arrow')+'</button>'+
   '<button class="btn btn-outline" data-action="onboarding">Start with an empty workspace</button></div>'+
-  '<div class="welcome-note">'+icon('shield')+' UX design prototype. No sign-up required, no real accounts connected, and nothing leaves this browser session.</div></section>'+
+  '<button class="link-action" style="color:#cae7d6;margin-top:19px" data-action="auth">View sign-in concept '+icon('arrow')+'</button>'+'<div class="welcome-note">'+icon('shield')+' UX design prototype. No sign-up required, no real accounts connected, and nothing leaves this browser session.</div></section>'+
   '<aside class="welcome-visual" aria-hidden="true"><span class="visual-tag">A clearer picture. Every day. ↗</span><div class="sample-board">'+
   '<span class="eyebrow">YOUR FINANCIAL PICTURE</span><h2 style="margin:13px 0 5px">KES 286,400</h2><p class="small muted">Illustrative recorded position</p>'+
   '<div class="mini-line"><svg viewBox="0 0 330 145" width="100%" aria-hidden="true"><defs><linearGradient id="introfill" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#53a887" stop-opacity=".30"/><stop offset="1" stop-color="#53a887" stop-opacity="0"/></linearGradient></defs>'+
   '<path d="M '+chart.map(p=>p.x+' '+p.y).join(' L ')+' L 300 145 L 18 145Z" fill="url(#introfill)"/>'+
   '<polyline points="'+chart.map(p=>p.x+','+p.y).join(' ')+'" stroke="#087e60" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
   '<div class="sample-board-footer"><div class="sample-chip">Money in<strong>+18.4%</strong></div><div class="sample-chip">Goals on track<strong>2 of 3</strong></div></div></div></aside></div>';
+}
+function authPreview(){
+ return topNotice()+'<main id="main" class="onboarding"><section class="onboarding-card">'+
+ '<div class="brand" style="padding:0;margin-bottom:30px">'+brand()+'</div>'+
+ '<span class="eyebrow">Welcome back</span><h1>A calmer way to manage money.</h1>'+
+ '<p>Sign-in design concept. Authentication is intentionally disabled in this static preview; never enter a real password here.</p>'+
+ '<div class="form-field"><label for="preview-email">Email (disabled in preview)</label><input id="preview-email" type="text" value="preview@example.invalid" disabled></div>'+
+ '<div class="form-field"><label for="preview-password">Password (disabled in preview)</label><input id="preview-password" type="text" value="Not collected in UX1" disabled></div>'+
+ '<div class="notice">'+icon('shield')+' Actual local testing uses the separate PostgreSQL-backed <code>connected.html</code>; production requires real OIDC MFA.</div>'+
+ '<button class="btn btn-primary" data-action="demo">Continue to illustrative preview '+icon('arrow')+'</button>'+
+ '<button class="btn btn-text" data-action="welcome">Return to intro</button></section></main>';
 }
 function onboarding(){
  return topNotice()+'<main id="main" class="onboarding"><section class="onboarding-card">'+
@@ -490,7 +501,7 @@ function closePanels(){
 }
 function render(){
  const active=document.activeElement;
- root.innerHTML=state.stage==='welcome'?welcome():state.stage==='onboarding'?onboarding():shell();
+ root.innerHTML=state.stage==='welcome'?welcome():state.stage==='auth'?authPreview():state.stage==='onboarding'?onboarding():shell();
  document.title='Finance OS V3 · '+(state.stage==='app'?(NAV.find(x=>x[0]===state.route)?.[1]||'Home'):'Interactive Preview');
  if(active?.dataset?.go&&state.stage==='app'){
   const b=root.querySelector('[data-go="'+CSS.escape(active.dataset.go)+'"]');
@@ -589,6 +600,7 @@ root.addEventListener('click',e=>{
  if(['close-drawer','close-more'].includes(action)){closePanels();return;}
  if(action==='welcome'||action==='exit'){state.stage='welcome';state.more=false;state.drawer=null;location.hash='';render();return;}
  if(action==='onboarding'){state.stage='onboarding';render();return;}
+ if(action==='auth'){state.stage='auth';render();return;}
  if(action==='demo'){state.stage='app';state.route='home';state.records=demoRecords();state.isDemo=true;state.firstName='Alex';state.workspace='Personal workspace';location.hash='home';render();return;}
  if(action==='reset-demo'){state.records=demoRecords();state.isDemo=true;state.route='home';location.hash='home';setToast('Illustrative sample data restored.');return;}
  if(action==='reset-empty'){state.records=emptyRecords();state.isDemo=false;state.route='home';location.hash='home';setToast('Empty preview ready. Add your first account.');return;}
