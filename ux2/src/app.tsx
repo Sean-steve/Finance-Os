@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import type {FormEvent} from 'react';
-import {Routes,Route,Navigate,useNavigate} from 'react-router-dom';
+import {Routes,Route,Navigate,useNavigate,useLocation} from 'react-router-dom';
 import {Plus,ShieldCheck} from 'lucide-react';
 import {useSession} from './session';
 import {Brand,AppShell,Drawer,Busy,Failure,Notice} from './components';
@@ -8,6 +8,7 @@ import {Home,Activity,Spending,CashFlow,Goals,Wealth,Insights,SettingsPage} from
 import {RecordDrawer,actions} from './forms';
 import type {ActionKind} from './forms';
 import {describeError} from './finance';
+import {WorkflowHub} from './advanced';
 
 function AuthScreen(){
  const {meta,signIn,register,beginOidc}=useSession(),[mode,setMode]=useState<'login'|'register'>('login'),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -40,10 +41,10 @@ function WorkspaceStart(){
  return <div className="connected-workspace-start"><div className="connected-auth-panel"><Brand/><span className="eyebrow">ONE SMALL STEP</span><h1>Let's create your financial workspace.</h1><p>Start with a personal workspace. Accounts and transactions can be added afterwards.</p><form onSubmit={ev=>void submit(ev)}><label className="form-field"><span>Workspace name</span><input value={name} onChange={ev=>setName(ev.target.value)} minLength={2} maxLength={160} required/></label>{error&&<div role="alert" className="form-error">{error}</div>}<button className="btn btn-primary" disabled={busy}>Create workspace</button></form><Notice>New workspaces have no seeded financial information and remain isolated from other workspaces.</Notice></div></div>;
 }
 function SignedIn(){
- const [drawer,setDrawer]=useState<ActionKind|null>(null),[quick,setQuick]=useState(false);
- const navigate=useNavigate();const {role}=useSession();
+ const [drawer,setDrawer]=useState<ActionKind|null>(null),[quick,setQuick]=useState(false),[tools,setTools]=useState(false);
+ const navigate=useNavigate(),location=useLocation();const {role,workspaceId}=useSession();
  const open=(kind:ActionKind)=>{setQuick(false);setDrawer(kind);};
- return <><Routes><Route element={<AppShell onAdd={()=>setQuick(true)}/>}>
+ return <><Routes><Route element={<AppShell onAdd={()=>setQuick(true)} onTools={()=>setTools(true)}/>}>
  <Route path="/home" element={<Home open={open}/>}/>
  <Route path="/activity" element={<Activity open={open}/>}/>
  <Route path="/spending" element={<Spending open={open}/>}/>
@@ -56,6 +57,7 @@ function SignedIn(){
  </Route></Routes>
  {quick&&<Drawer title="What would you like to do?" onClose={()=>setQuick(false)}><div className="connected-quick-menu">{(['transaction','account','category','budget','bill','income','goal','debt','asset'] as ActionKind[]).map(k=><button key={k} disabled={role==='VIEWER'} className="connected-quick-item" onClick={()=>open(k)}><Plus size={17}/><span>{actions[k]}</span></button>)}<div className="notice"><ShieldCheck size={15}/> Manual finance controls only. No bank connection or payment execution.</div><button className="btn btn-outline" onClick={()=>{setQuick(false);navigate('/activity');}}>Go to Activity</button></div></Drawer>}
  {drawer&&<RecordDrawer key={drawer} kind={drawer} onClose={()=>setDrawer(null)}/>}
+ {tools&&<WorkflowHub key={workspaceId+location.pathname} initialSection={location.pathname.slice(1)} onClose={()=>setTools(false)}/>}
  </>;
 }
 export function Application(){
