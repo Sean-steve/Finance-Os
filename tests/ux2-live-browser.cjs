@@ -97,6 +97,7 @@ async function main(){
   await page.screenshot({path:path.join(artifacts,'home-mobile.png'),fullPage:true});
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2);
   assert.equal(overflow,false,'Mobile layout must not overflow');
+  await page.setViewportSize({width:1440,height:900});
   await page.getByRole('button',{name:'Sign out'}).click();
   await page.getByRole('heading',{name:/Welcome back/i}).waitFor();
   await page.reload();
