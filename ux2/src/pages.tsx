@@ -1,11 +1,11 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {ArrowUpRight,Plus,Check,Info,TrendingUp,CalendarClock} from 'lucide-react';
+import {ArrowUpRight,Plus,Check,Info,CalendarClock} from 'lucide-react';
 import {useSession} from './session';
 import {PageHead,Card,Empty,Busy,Failure,Source,Metric,Row,Notice,Segments,FinancialChart,NoWrite} from './components';
 import type {ReportPeriod} from './components';
-import {useRead,useItems,useWrite,useOwnerCheck,formatMoney,dateText,describeError,today} from './finance';
-import type {Account,Transaction,Category,Ledger,Bill,Goal,Budget,Source as IncomeSource,Entity} from './finance';
+import {useRead,useItems,useWrite,useOwnerCheck,formatMoney,dateText,describeError} from './finance';
+import type {Account,Transaction,Category,Ledger,Bill,Goal,Budget,Entity} from './finance';
 import type {ActionKind} from './forms';
 
 export type OpenAction=(kind:ActionKind)=>void;
