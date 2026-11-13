@@ -4,7 +4,7 @@ import {BrowserRouter} from 'react-router-dom';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {SessionProvider} from './session';
 import {Application} from './app';
-import '../../v3/styles.css';
+import './base.css';
 import './styles.css';
 
 const queryClient=new QueryClient({defaultOptions:{queries:{retry:1,staleTime:30_000,refetchOnWindowFocus:false}}});
