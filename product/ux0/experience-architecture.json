@@ -1,0 +1,591 @@
+{
+  "phase": "UX0",
+  "product": "Finance OS V3",
+  "version": "0.1",
+  "status": "DESIGN_CONTRACT_PROPOSED_NOT_USER_VALIDATED",
+  "updated": "2026-11-13",
+  "navigation": [
+    {
+      "id": "home",
+      "label": "Home",
+      "path": "/home",
+      "job": "Know where I stand and what matters next",
+      "icon": "house"
+    },
+    {
+      "id": "activity",
+      "label": "Activity",
+      "path": "/activity",
+      "job": "Record, review and reconcile money movement",
+      "icon": "arrows-left-right"
+    },
+    {
+      "id": "spending",
+      "label": "Spending",
+      "path": "/spending",
+      "job": "Control discretionary and planned spending",
+      "icon": "chart-pie"
+    },
+    {
+      "id": "cash-flow",
+      "label": "Cash Flow",
+      "path": "/cash-flow",
+      "job": "See income, bills and forward obligations",
+      "icon": "calendar-clock"
+    },
+    {
+      "id": "goals",
+      "label": "Goals",
+      "path": "/goals",
+      "job": "Build savings and reduce debt",
+      "icon": "target"
+    },
+    {
+      "id": "wealth",
+      "label": "Wealth",
+      "path": "/wealth",
+      "job": "Track asset, liability and investment estimates",
+      "icon": "layers"
+    },
+    {
+      "id": "insights",
+      "label": "Insights",
+      "path": "/insights",
+      "job": "Review trends and trustworthy recommendations",
+      "icon": "lightbulb"
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "path": "/settings",
+      "job": "Manage preferences, privacy and integrations",
+      "icon": "settings"
+    }
+  ],
+  "mobilePrimary": [
+    "home",
+    "activity",
+    "spending",
+    "goals",
+    "more"
+  ],
+  "outsideAuthenticatedNavigation": [
+    "auth",
+    "onboarding"
+  ],
+  "userJourneyRoutes": {
+    "firstValue": [
+      "/auth",
+      "/onboarding",
+      "/activity/accounts/new",
+      "/activity/transactions/new",
+      "/home"
+    ],
+    "monthlyControl": [
+      "/cash-flow",
+      "/spending/budgets",
+      "/cash-flow/bills",
+      "/spending"
+    ],
+    "financialProgress": [
+      "/goals",
+      "/goals/debt",
+      "/wealth",
+      "/insights"
+    ]
+  },
+  "routeMap": [
+    {
+      "legacyScreen": 1,
+      "legacyLabel": "Welcome & Authentication",
+      "destination": "auth",
+      "path": "/auth",
+      "presentation": "full-page"
+    },
+    {
+      "legacyScreen": 2,
+      "legacyLabel": "Financial Onboarding",
+      "destination": "onboarding",
+      "path": "/onboarding",
+      "presentation": "guided"
+    },
+    {
+      "legacyScreen": 3,
+      "legacyLabel": "Financial Profile & Setup",
+      "destination": "onboarding",
+      "path": "/onboarding/profile",
+      "presentation": "guided"
+    },
+    {
+      "legacyScreen": 4,
+      "legacyLabel": "Financial Command Centre",
+      "destination": "home",
+      "path": "/home",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 5,
+      "legacyLabel": "Today: Safe to Spend",
+      "destination": "home",
+      "path": "/home/planning-availability",
+      "presentation": "detail",
+      "trustRule": "Do not assert safe-to-spend; render missing evidence or bounded planning estimate with assumptions."
+    },
+    {
+      "legacyScreen": 6,
+      "legacyLabel": "Financial Calendar & Action Centre",
+      "destination": "home",
+      "path": "/home/calendar",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 7,
+      "legacyLabel": "Accounts Overview",
+      "destination": "activity",
+      "path": "/activity",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 8,
+      "legacyLabel": "Account Details",
+      "destination": "activity",
+      "path": "/activity/accounts/:accountId",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 9,
+      "legacyLabel": "Add / Connect Financial Account",
+      "destination": "activity",
+      "path": "/activity/accounts/new",
+      "presentation": "modal",
+      "trustRule": "Create manual account only; bank/mobile-money connections not activated."
+    },
+    {
+      "legacyScreen": 10,
+      "legacyLabel": "Transaction Management",
+      "destination": "activity",
+      "path": "/activity/transactions",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 11,
+      "legacyLabel": "Transaction Details",
+      "destination": "activity",
+      "path": "/activity/transactions/:transactionId",
+      "presentation": "drawer"
+    },
+    {
+      "legacyScreen": 12,
+      "legacyLabel": "Record / Edit Transaction",
+      "destination": "activity",
+      "path": "/activity/transactions/new",
+      "presentation": "drawer"
+    },
+    {
+      "legacyScreen": 13,
+      "legacyLabel": "Statement Import",
+      "destination": "activity",
+      "path": "/activity/imports",
+      "presentation": "page",
+      "trustRule": "Imported statements are unverified until reconciled."
+    },
+    {
+      "legacyScreen": 14,
+      "legacyLabel": "Transfers & Payments",
+      "destination": "activity",
+      "path": "/activity/transfers",
+      "presentation": "disabled",
+      "trustRule": "No actual transfers or payments are supported; disable the action and explain why."
+    },
+    {
+      "legacyScreen": 15,
+      "legacyLabel": "Reconciliation & Financial Ledger",
+      "destination": "activity",
+      "path": "/activity/reconciliation",
+      "presentation": "page",
+      "trustRule": "Internal manual-ledger reconciliation is not bank reconciliation."
+    },
+    {
+      "legacyScreen": 16,
+      "legacyLabel": "Spending Intelligence",
+      "destination": "spending",
+      "path": "/spending",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 17,
+      "legacyLabel": "Expenditure Trends",
+      "destination": "spending",
+      "path": "/spending/trends",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 18,
+      "legacyLabel": "Spending Category Analysis",
+      "destination": "spending",
+      "path": "/spending/categories",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 19,
+      "legacyLabel": "Merchant & Lifestyle Analysis",
+      "destination": "spending",
+      "path": "/spending/merchants",
+      "presentation": "detail",
+      "trustRule": "Merchant insights limited to available manual transaction metadata."
+    },
+    {
+      "legacyScreen": 20,
+      "legacyLabel": "Spending Leak Detector",
+      "destination": "spending",
+      "path": "/spending/leaks",
+      "presentation": "detail",
+      "trustRule": "Insights are hypotheses until reliable categorization exists; no invented leaks."
+    },
+    {
+      "legacyScreen": 21,
+      "legacyLabel": "Budget Management",
+      "destination": "spending",
+      "path": "/spending/budgets",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 22,
+      "legacyLabel": "Create / Edit Budget",
+      "destination": "spending",
+      "path": "/spending/budgets/:budgetId/edit",
+      "presentation": "drawer"
+    },
+    {
+      "legacyScreen": 23,
+      "legacyLabel": "Daily / Weekly Spending Allowance",
+      "destination": "spending",
+      "path": "/spending/allowance",
+      "presentation": "detail",
+      "trustRule": "Allowance is advisory, not an enforced account balance."
+    },
+    {
+      "legacyScreen": 24,
+      "legacyLabel": "Spending Guardrails & Purchase Approval Check",
+      "destination": "spending",
+      "path": "/spending/guardrails",
+      "presentation": "page",
+      "trustRule": "Guardrails advise; they do not block payment providers."
+    },
+    {
+      "legacyScreen": 25,
+      "legacyLabel": "Subscriptions & Recurring Expenses",
+      "destination": "spending",
+      "path": "/spending/recurring",
+      "presentation": "detail",
+      "trustRule": "Recurring suggestions require explicit confidence and not imply provider verification."
+    },
+    {
+      "legacyScreen": 26,
+      "legacyLabel": "Spending Review & Recovery Plan",
+      "destination": "spending",
+      "path": "/spending/recovery",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 27,
+      "legacyLabel": "Income Dashboard",
+      "destination": "cash-flow",
+      "path": "/cash-flow",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 28,
+      "legacyLabel": "Income Sources",
+      "destination": "cash-flow",
+      "path": "/cash-flow/income",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 29,
+      "legacyLabel": "Income Planning & Forecasting",
+      "destination": "cash-flow",
+      "path": "/cash-flow/income/forecast",
+      "presentation": "detail",
+      "trustRule": "Forecast must state assumptions, horizon, snapshot and source."
+    },
+    {
+      "legacyScreen": 30,
+      "legacyLabel": "Bills & Financial Obligations",
+      "destination": "cash-flow",
+      "path": "/cash-flow/bills",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 31,
+      "legacyLabel": "Bill Details & Payment",
+      "destination": "cash-flow",
+      "path": "/cash-flow/bills/:billId",
+      "presentation": "drawer",
+      "trustRule": "Record a bill settlement, not a bank-verified payment."
+    },
+    {
+      "legacyScreen": 32,
+      "legacyLabel": "Cash Flow Timeline",
+      "destination": "cash-flow",
+      "path": "/cash-flow/timeline",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 33,
+      "legacyLabel": "Cash Flow Forecast & Financial Runway",
+      "destination": "cash-flow",
+      "path": "/cash-flow/forecast",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 34,
+      "legacyLabel": "Cash Shortfall Recovery",
+      "destination": "cash-flow",
+      "path": "/cash-flow/shortfalls",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 35,
+      "legacyLabel": "Capital Allocation Command Centre",
+      "destination": "goals",
+      "path": "/goals/allocations",
+      "presentation": "detail",
+      "trustRule": "Capital allocation is a virtual plan, not transfer of funds."
+    },
+    {
+      "legacyScreen": 36,
+      "legacyLabel": "Allocation Rules & Money Buckets",
+      "destination": "goals",
+      "path": "/goals/buckets",
+      "presentation": "detail",
+      "trustRule": "Money buckets are virtual earmarks, not separate real bank accounts."
+    },
+    {
+      "legacyScreen": 37,
+      "legacyLabel": "Savings & Financial Goals",
+      "destination": "goals",
+      "path": "/goals",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 38,
+      "legacyLabel": "Goal Details & Funding",
+      "destination": "goals",
+      "path": "/goals/:goalId",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 39,
+      "legacyLabel": "Emergency Fund Management",
+      "destination": "goals",
+      "path": "/goals/emergency",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 40,
+      "legacyLabel": "Affordability & Purchase Simulator",
+      "destination": "goals",
+      "path": "/goals/affordability",
+      "presentation": "detail",
+      "trustRule": "Affordability result is tentative or unavailable with insufficient data."
+    },
+    {
+      "legacyScreen": 41,
+      "legacyLabel": "Funding Requests & Approvals",
+      "destination": "goals",
+      "path": "/goals/approvals",
+      "presentation": "detail",
+      "trustRule": "Funding approvals are internal decisions, not fund movements."
+    },
+    {
+      "legacyScreen": 42,
+      "legacyLabel": "Financial Scenario Planning",
+      "destination": "goals",
+      "path": "/goals/scenarios",
+      "presentation": "detail",
+      "trustRule": "Scenario simulations are not predictions or guarantees."
+    },
+    {
+      "legacyScreen": 43,
+      "legacyLabel": "Debt Management Centre",
+      "destination": "goals",
+      "path": "/goals/debt",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 44,
+      "legacyLabel": "Debt Details & Repayment Schedule",
+      "destination": "goals",
+      "path": "/goals/debt/:debtId",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 45,
+      "legacyLabel": "Debt Repayment Optimizer",
+      "destination": "goals",
+      "path": "/goals/debt/optimizer",
+      "presentation": "detail",
+      "trustRule": "Debt optimization uses estimates; does not execute payment."
+    },
+    {
+      "legacyScreen": 46,
+      "legacyLabel": "Tax Overview & Planning",
+      "destination": "wealth",
+      "path": "/wealth/tax",
+      "presentation": "detail",
+      "trustRule": "Tax estimates are not tax advice or filing."
+    },
+    {
+      "legacyScreen": 47,
+      "legacyLabel": "Insurance & Financial Protection",
+      "destination": "wealth",
+      "path": "/wealth/insurance",
+      "presentation": "detail",
+      "trustRule": "Insurance records are not proof of coverage."
+    },
+    {
+      "legacyScreen": 48,
+      "legacyLabel": "Retirement Planning",
+      "destination": "wealth",
+      "path": "/wealth/retirement",
+      "presentation": "detail",
+      "trustRule": "Retirement scenarios are models, not guaranteed returns."
+    },
+    {
+      "legacyScreen": 49,
+      "legacyLabel": "Estate & Beneficiary Planning",
+      "destination": "settings",
+      "path": "/settings/estate",
+      "presentation": "detail",
+      "trustRule": "Estate checklists are not legally effective documents."
+    },
+    {
+      "legacyScreen": 50,
+      "legacyLabel": "Net Worth Dashboard",
+      "destination": "wealth",
+      "path": "/wealth",
+      "presentation": "page",
+      "trustRule": "Net-worth is estimate unless independently valued records exist."
+    },
+    {
+      "legacyScreen": 51,
+      "legacyLabel": "Assets & Liabilities Overview",
+      "destination": "wealth",
+      "path": "/wealth/assets",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 52,
+      "legacyLabel": "Asset Details & Valuation",
+      "destination": "wealth",
+      "path": "/wealth/assets/:assetId",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 53,
+      "legacyLabel": "Investment Portfolio",
+      "destination": "wealth",
+      "path": "/wealth/investments",
+      "presentation": "page",
+      "trustRule": "Investments are manual estimates; no live market price feed."
+    },
+    {
+      "legacyScreen": 54,
+      "legacyLabel": "Investment Details & Performance",
+      "destination": "wealth",
+      "path": "/wealth/investments/:investmentId",
+      "presentation": "detail"
+    },
+    {
+      "legacyScreen": 55,
+      "legacyLabel": "Wealth Growth & Risk Analysis",
+      "destination": "wealth",
+      "path": "/wealth/analytics",
+      "presentation": "detail",
+      "trustRule": "Risk analytics disclose models and provenance."
+    },
+    {
+      "legacyScreen": 56,
+      "legacyLabel": "Financial Health & Insights",
+      "destination": "insights",
+      "path": "/insights",
+      "presentation": "page",
+      "trustRule": "Health score is explainable heuristic; never present unvalidated objective score."
+    },
+    {
+      "legacyScreen": 57,
+      "legacyLabel": "AI Financial Advisor",
+      "destination": "insights",
+      "path": "/insights/advisor",
+      "presentation": "detail",
+      "trustRule": "Rules-based assistance only; no external generative AI service activated."
+    },
+    {
+      "legacyScreen": 58,
+      "legacyLabel": "Financial Reports & Reviews",
+      "destination": "insights",
+      "path": "/insights/reports",
+      "presentation": "page"
+    },
+    {
+      "legacyScreen": 59,
+      "legacyLabel": "Integrations & Account Synchronization",
+      "destination": "settings",
+      "path": "/settings/integrations",
+      "presentation": "page",
+      "trustRule": "Integrations are requests/intents, not active bank or M-Pesa sync."
+    },
+    {
+      "legacyScreen": 60,
+      "legacyLabel": "Settings, Privacy, Security & Audit History",
+      "destination": "settings",
+      "path": "/settings",
+      "presentation": "page",
+      "trustRule": "Owner-only privacy checks do not substitute for fulfilled data rights; B8 ledger status is manual-only."
+    }
+  ],
+  "designRules": {
+    "noNumbersInNavigation": true,
+    "noAuthOrOnboardingInAuthenticatedMenu": true,
+    "realMoneyProvenanceRequired": true,
+    "suppressUnverifiedAvailableToSpend": true,
+    "noSyntheticFinancialRecordsInAuthenticatedUI": true,
+    "showEmptyAndUnavailableStates": true,
+    "settingsNeverHoldsFullProductFunctionality": true,
+    "lowFrictionPrimaryAction": true,
+    "chartsRequireDataSourceAndTimeRange": true
+  },
+  "flowRules": [
+    {
+      "capability": "transfers",
+      "implementation": "BLOCKED",
+      "reason": "Ledger-backed financial transfers not available"
+    },
+    {
+      "capability": "provider_connections",
+      "implementation": "BLOCKED",
+      "reason": "No live M-Pesa/bank provider integration"
+    },
+    {
+      "capability": "payments",
+      "implementation": "BLOCKED",
+      "reason": "Bill settlement records are not provider receipts"
+    },
+    {
+      "capability": "AI advice",
+      "implementation": "RULES_ONLY",
+      "reason": "No generative AI provider; explanatory heuristics only"
+    },
+    {
+      "capability": "savings_buckets",
+      "implementation": "VIRTUAL_ONLY",
+      "reason": "No fund custody or actual transfer"
+    },
+    {
+      "capability": "financial_integrity",
+      "implementation": "MANUAL_LEDGER_ONLY",
+      "reason": "Not independently bank reconciled"
+    }
+  ]
+}
