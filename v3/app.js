@@ -303,7 +303,7 @@ function spending(){
  '<div class="mini-stat"><small>Planned monthly budgets</small><strong>'+(rows.length?amount(budgetTotal):'—')+'</strong></div>'+
  '<div class="mini-stat"><small>Budget pressure</small><strong>'+(rows.length?Math.round(spend/Math.max(1,budgetTotal)*100)+'%':'Not set')+'</strong></div></div>'+
  '<div class="content-grid">'+surface('Monthly budget','Plan versus manual spending',
- rows.length?'<div class="category-rows">'+rows.map(r=>{
+ (rows.length?'<div class="category-rows">'+rows.map(r=>{
   const spent=spentFor(r.category),pct=Math.min(100,Math.round(spent/Math.max(1,r.limitMinor)*100));
   return '<div class="category-row"><span class="category-label">'+esc(r.category)+'</span><strong>'+amount(spent)+' / '+amount(r.limitMinor)+'</strong><div class="progress-track"><span style="width:'+pct+'%;background:'+(pct>85?'#be8759':'#108363')+'"></span></div></div>';
  }).join('')+'</div>':empty('No budgets yet','Start with one category and a realistic limit.','Create budget','budget'))+
