@@ -46,7 +46,8 @@ async function run(){
   await page.locator('.drawer [name="amount"]').fill('21000');
   await page.locator('.drawer button[type="submit"]').click();
   await page.waitForTimeout(200);
-  const budgetState={toast:await page.locator('.toast').allTextContents(),formError:await page.locator('.form-error').allTextContents(),drawer:await page.locator('.drawer').count(),pageErrors:errors};
+  const budgetForm=await page.locator('.drawer form').evaluate(f=>({kind:f.dataset.form,checkValidity:f.checkValidity(),controls:[...f.elements].map(x=>({name:x.name,tag:x.tagName,type:x.type,value:x.value,valid:x.checkValidity?.(),message:x.validationMessage}))}));
+  const budgetState={toast:await page.locator('.toast').allTextContents(),formError:await page.locator('.form-error').allTextContents(),drawer:await page.locator('.drawer').count(),budgetForm,pageErrors:errors};
   assert.ok(budgetState.toast.join('').includes('Monthly planning budget updated.'),'Budget did not save: '+JSON.stringify(budgetState));
   await page.locator('.sidebar [data-go="cash-flow"]').click();
   await page.getByRole('heading',{name:'Cash Flow',exact:true}).waitFor();
