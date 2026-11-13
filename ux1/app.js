@@ -28,7 +28,7 @@ transactions:[{id:'t1',name:'Salary received',category:'Income',account:'a1',amo
 budgets:[{name:'Food & groceries',limit:18000},{name:'Transport',limit:9500},{name:'Shopping',limit:12500},{name:'Bills',limit:22000}],
 bills:[{id:'b1',name:'Rent',amount:22000,due:stamp(3),reviewed:false},{id:'b2',name:'Internet',amount:4999,due:stamp(8),reviewed:false},{id:'b3',name:'Electricity',amount:3400,due:stamp(13),reviewed:false}],
 goals:[{id:'g1',name:'Emergency reserve',target:150000,saved:102000,emoji:'✦'},{id:'g2',name:'New laptop',target:85000,saved:26000,emoji:'▣'}]});
-let store=fresh(),state={view:'home',period:30,drawer:'',kind:'expense',filter:'all',empty:false,more:false,toast:''};
+let store=fresh(),state={view:'home',period:30,drawer:'',kind:'expense',filter:'all',empty:false,more:false,toast:'',userStarted:false};
 const db=()=>state.empty?{accounts:[],transactions:[],budgets:[],bills:[],goals:[]}:store;
 const recent=()=>db().transactions.filter(t=>{const n=-days(t.date);return n>=0&&n<state.period;});
 const income=()=>recent().filter(t=>t.amount>0).reduce((n,t)=>n+t.amount,0);
@@ -79,7 +79,7 @@ function cashflow(){return heading('Plan what’s next','See upcoming bills befo
 function goals(){const items=db().goals.map(g=>'<article class="panel"><div class="row-left"><div class="row-icon violet">'+e(g.emoji)+'</div><div><div class="row-name">'+e(g.name)+'</div><div class="row-detail">Virtual planning · no transferred funds</div></div></div><div class="mini-number" style="margin-top:22px">'+money(g.saved)+'</div><div class="between" style="display:flex;justify-content:space-between;margin:8px 0;font-size:11px;color:var(--muted)"><span>of '+money(g.target)+'</span><strong>'+pct(g.saved,g.target)+'%</strong></div><div class="progress-track"><div class="progress-fill" style="width:'+pct(g.saved,g.target)+'%"></div></div><div style="margin-top:16px">'+btn('Adjust plan','goal:'+g.id,true)+'</div></article>').join('');
 return heading('Make progress visible','Small steps toward a stronger financial future.')+
 '<div style="margin:0 0 18px">'+btn('＋ New savings goal','new:goal')+'</div><div class="grid">'+(items||panel('No goals','Create a virtual target to begin.'))+panel('Planning note','<div class="action-banner"><div class="action-emblem">◎</div><div><strong>Plans are not transfers</strong><p>These progress values are hypothetical. Connected V3 will distinguish actual funding from virtual earmarks.</p></div></div>')+'</div>'+notice();}
-function wealth(){return heading('Your bigger financial picture','Separate user-reported estimates from recorded money.')+
+function wealth(){if(state.userStarted)return heading('Your bigger financial picture','No asset or liability data has been recorded yet.')+panel('No wealth estimates',empty('No estimates to show','Add verified records after connected backend activation.'))+notice();return heading('Your bigger financial picture','Separate user-reported estimates from recorded money.')+
 '<div class="metrics"><article class="metric primary"><div class="metric-label">Illustrative net worth</div><div class="number">'+money(balance()+340000-95000)+'</div><small>Mixed synthetic cash + manual estimates</small></article><article class="metric"><div class="metric-label">Recorded cash illustration</div><div class="number">'+money(balance())+'</div><small>Not bank verified</small></article><article class="metric"><div class="metric-label">Other assets estimate</div><div class="number">KES 340,000</div><small>Illustrative user-reported</small></article><article class="metric"><div class="metric-label">Liabilities estimate</div><div class="number">KES 95,000</div><small>Illustrative user-reported</small></article></div>'+
 panel('Manual financial components',row('Recorded cash','Synthetic manual account totals',money(balance()))+row('Other assets','User-reported example estimate',money(340000))+row('Liabilities','User-reported example estimate','−'+money(95000)),'','No market prices, providers or third-party verification')+notice();}
 function insights(){return heading('Clarity, not noise','Insights backed by visible evidence and simple rules.')+
@@ -143,9 +143,9 @@ if(node.dataset.kind){state.kind=node.dataset.kind;render();return;}
 const act=node.dataset.action;if(!act)return;
 if(act==='close'){close();return;}
 if(act==='submit'){submit();return;}
-if(act==='journey'){state.empty=false;go('activity');state.drawer='transaction';render();return;}
-if(act==='reset'){store=fresh();state.empty=false;state.filter='all';toast('Synthetic records restored.');return;}
-if(act==='toggle:empty'){state.empty=!state.empty;state.view='home';toast(state.empty?'First-run preview enabled.':'Example records restored.');return;}
+if(act==='journey'){if(state.empty){go('home');state.drawer='account';}else{go('activity');state.drawer='transaction';}render();return;}
+if(act==='reset'){store=fresh();state.empty=false;state.userStarted=false;state.filter='all';toast('Synthetic records restored.');return;}
+if(act==='toggle:empty'){if(!state.userStarted){store={accounts:[],transactions:[],budgets:[],bills:[],goals:[]};state.empty=true;state.userStarted=true;}else{store=fresh();state.empty=false;state.userStarted=false;}state.view='home';state.filter='all';toast(state.empty?'First-run empty workspace enabled.':'Synthetic example records restored.');return;}
 if(act.startsWith('new:')){state.drawer=act.slice(4);state.toast='';render();return;}
 if(act.startsWith('nav:')){go(act.slice(4));return;}
 if(act.startsWith('goal:')){state.drawer='goal:'+act.slice(5);render();return;}
